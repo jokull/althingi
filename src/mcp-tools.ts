@@ -4,7 +4,7 @@ import { documentPageUrl, lawPageUrl, matterPageUrl, memberPageUrl, speechPageUr
 // and a structured `why` when a search returns nothing.
 import type { Sql } from "./db.ts";
 import { parseQuery, describe } from "./explain.ts";
-import { matterPage, memberPage, partiesFor, speechPage } from "./queries.ts";
+import { lawPage, matterPage, memberPage, partiesFor, speechPage } from "./queries.ts";
 import { phraseTsQuery, recallTsQuery, search } from "./search.ts";
 import { fmtTime, citation, SITE } from "./pages.tsx";
 
@@ -90,9 +90,12 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
 
 export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number; to?: number }) {
   const s = await speechPage(ctx.sql, a.speech_id);
-  if (!s) return { error: "speech_not_found", speech_id: a.speech_id, corpus: await corpusBlock(ctx.sql) };
+  if (!s) return { error: "speech_not_found", hint: "Speech ids look like rad20180306T163325 and come from search_speeches, get_matter or get_member.", speech_id: a.speech_id, corpus: await corpusBlock(ctx.sql) };
   const [rev] = await ctx.sql<{ raw_sha256: string | null; fetched_at: Date | null; lemma_is_version: string | null }[]>`
     select raw_sha256, fetched_at, lemma_is_version from speeches where id = ${a.speech_id}`;
+  const [link] = await ctx.sql<{ reply_to_id: string | null; reply_to_inferred: boolean }[]>`select reply_to_id, reply_to_inferred from speeches where id = ${a.speech_id}`;
+  const replies = await ctx.sql<{ id: string; member_name: string | null; type: string; inferred: boolean }[]>`
+    select id, member_name, type, reply_to_inferred as inferred from speeches where reply_to_id = ${a.speech_id} order by started limit 50`;
   const from = Math.max(1, a.from ?? 1);
   // budget: at most 40 paragraphs / ~12 KB of text per call, then `next_from`
   let bytes = 0;
@@ -115,6 +118,8 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
       provisional: s.provisional, // true: Alþingi's provisional text (bráðabirgðatexti); replaced when the final arrives
       text_source: s.textSource,
       prev_in_matter: s.prevId, next_in_matter: s.nextId, // same matter, by time: strong link
+      reply_to: link?.reply_to_id ? { speech_id: link.reply_to_id, url: `${SITE}/raeda/${link.reply_to_id}`, inferred: link.reply_to_inferred } : null,
+      replies: replies.map((r) => ({ speech_id: r.id, member_name: r.member_name, speech_type: r.type, url: `${SITE}/raeda/${r.id}`, inferred: r.inferred })),
       citation: citation(s),
       revision: { raw_sha256: rev?.raw_sha256 ?? null, fetched_at: rev?.fetched_at ?? null, lemma_is_version: rev?.lemma_is_version ?? null },
     },
@@ -143,7 +148,14 @@ export async function getContext(ctx: Ctx, a: { speech_id: string; mgr: number; 
 export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; nr: number }) {
   const cls = (a.class ?? "A").toUpperCase();
   const m = await matterPage(ctx.sql, a.lthing, cls, a.nr);
-  if (!m) return { error: "matter_not_found", corpus: await corpusBlock(ctx.sql) };
+  if (!m) return { error: "matter_not_found", hint: "Check lthing (session number, see list_sessions), class (A = bills/resolutions, B = other business) and nr.", corpus: await corpusBlock(ctx.sql) };
+  const [sponsors, rapporteurs, events] = await Promise.all([
+    ctx.sql<{ seq: number; abbr: string | null; member_id: number | null; name: string | null; office: string | null }[]>`
+      select s.seq, s.abbr, s.member_id, mb.name, nullif(s.office, '') as office from matter_sponsors s left join members mb on mb.id = s.member_id
+      where s.lthing = ${m.lthing} and s.cls = ${m.cls} and s.nr = ${m.nr} order by s.seq`,
+    ctx.sql<{ member_id: number; name: string }[]>`select member_id, name from matter_rapporteurs where lthing = ${m.lthing} and cls = ${m.cls} and nr = ${m.nr} order by name`,
+    ctx.sql<{ at: string; kind: string; fundur: number }[]>`select at::text, kind, fundur from sitting_events where lthing = ${m.lthing} and cls = ${m.cls} and nr = ${m.nr} order by at`,
+  ]);
   return {
     corpus: await corpusBlock(ctx.sql),
     matter: {
@@ -152,6 +164,10 @@ export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; n
       detail_fetched: m.detailFetched,
       note: m.cls === "B" ? "B-mál: titill úr ræðuskrá, engin þingskjöl eða atkvæðagreiðslur." : undefined,
     },
+    sponsors: sponsors.map((x) => ({ order: x.seq, member: x.member_id === null ? null : { id: x.member_id, name: x.name, url: `${SITE}/thingmadur/${x.member_id}` }, abbr: x.abbr, office: x.office })),
+    sponsors_note: "Flutningsmenn: the first is the lead sponsor (fyrsti flutningsmaður); a minister sponsors government bills (office set).",
+    rapporteurs: rapporteurs.map((r) => ({ id: r.member_id, name: r.name })),
+    sitting_events: events.map((e) => ({ at: e.at, kind: e.kind, fundur: e.fundur })),
     topics: m.topics, laws_amended: m.laws.map((l) => ({ year: l.year, nr: l.nr, url: `${SITE}/log/${l.year}/${l.nr}`, althingi_url: lawPageUrl(l.year, l.nr) })),
     related_matters: m.links.map((l) => ({ relation: l.kind, lthing: l.lthing, class: l.cls, nr: l.nr, title: l.title })),
     documents: m.documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, source_url: d.htmlUrl, althingi_url: d.althingiUrl })),
@@ -170,7 +186,7 @@ export async function getMember(ctx: Ctx, a: { member_id?: number; name?: string
     id = r[0]?.id;
   }
   const m = id === undefined ? null : await memberPage(ctx.sql, id);
-  if (!m) return { error: "member_not_found", corpus: await corpusBlock(ctx.sql) };
+  if (!m) return { error: "member_not_found", hint: "Try get_member with a name (fuzzy), or check the id.", corpus: await corpusBlock(ctx.sql) };
   return {
     corpus: await corpusBlock(ctx.sql),
     member: { id: m.id, name: m.name, born: m.born, url: `${SITE}/thingmadur/${m.id}`, althingi_url: m.althingiUrl, speeches_in_corpus: m.speechCount },
@@ -199,7 +215,7 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
       document_nr: v.doc_nr, document_althingi_url: v.doc_nr === null ? null : documentPageUrl(a.lthing, v.doc_nr),
       at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
     next_after_id: rows.length === Math.min(a.limit ?? 50, 200) ? rows[rows.length - 1]!.id : null,
-    ballots_note: "Hér eru samtölur; atkvæði einstakra þingmanna eru á althingi_url.",
+    ballots_note: "Counts only here; call get_vote(vote_id) for each member's ballot, or member_votes for one member's record. althingi_url has the official page.",
     derived: false,
   };
 }
@@ -308,4 +324,174 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
     caveat: "„Fyrst“ á aðeins við ræðutexta í safninu (frá 2005; sjá corpus.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.",
     derived: false,
   };
+}
+
+// ---------------------------------------------------------------- votes per member (ballots), laws, sittings
+
+const CHOICE_EN: Record<string, string> = {
+  "já": "yes", nei: "no", "greiðir ekki atkvæði": "abstains (present, not voting)", "boðaði fjarvist": "reported absence", fjarverandi: "absent",
+};
+const site = {
+  matter: (l: number, c: string, n: number) => `${SITE}/mal/${l}/${c.toLowerCase()}/${n}`,
+  member: (id: number) => `${SITE}/thingmadur/${id}`,
+  law: (y: number, n: number) => `${SITE}/log/${y}/${n}`,
+};
+
+/** One vote with every member's ballot (verbatim Icelandic choice + English gloss) and party on the vote date. */
+export async function getVote(ctx: Ctx, a: { vote_id: number }) {
+  const { sql } = ctx;
+  const [v] = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; d: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null; title: string | null }[]>`
+    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.voted_at::date::text as d, v.kind_label, v.method, v.result, v.yes, v.no, v.abstain, v.doc_nr, v.html_url, m.title
+    from votes v left join matters m on (m.lthing, m.cls, m.nr) = (v.lthing, v.cls, v.nr) where v.id = ${a.vote_id}`;
+  if (!v) return { error: "vote_not_found", hint: "Vote ids come from get_matter.votes[].id, list_votes or member_votes.", vote_id: a.vote_id };
+  const ballots = await sql<{ member_id: number; name: string | null; choice: string; party: string | null }[]>`
+    select b.member_id, m.name, b.choice, (
+      select p.name from seats st join parties p on p.id = st.party_id
+      where st.member_id = b.member_id and st.kind in ('þingmaður', 'varamaður')
+        and coalesce(${v.d}::date, current_date) between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31')
+      order by st.from_date desc nulls last limit 1) as party
+    from ballots b left join members m on m.id = b.member_id where b.vote_id = ${a.vote_id} order by b.choice, m.name`;
+  const [un] = await sql<{ n: number }[]>`select count(*)::int n from ballots_unresolved where vote_id = ${a.vote_id}`;
+  const byParty = new Map<string, Record<string, number>>();
+  for (const b of ballots) {
+    const k = b.party ?? "(óþekktur flokkur)";
+    const r = byParty.get(k) ?? {};
+    r[b.choice] = (r[b.choice] ?? 0) + 1;
+    byParty.set(k, r);
+  }
+  return {
+    vote: {
+      id: v.id, at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain,
+      matter: { lthing: v.lthing, class: v.cls, nr: v.nr, title: v.title, url: site.matter(v.lthing, v.cls, v.nr), althingi_url: matterPageUrl(v.lthing, v.cls, v.nr) },
+      document_nr: v.doc_nr, document_althingi_url: v.doc_nr === null ? null : documentPageUrl(v.lthing, v.doc_nr),
+      url: `${site.matter(v.lthing, v.cls, v.nr)}#atkvaedi`, althingi_url: votePageUrl(v.id, v.html_url),
+    },
+    ballots: ballots.map((b) => ({ member: { id: b.member_id, name: b.name, party_at_date: b.party, url: site.member(b.member_id) }, choice: b.choice, choice_en: CHOICE_EN[b.choice] ?? null })),
+    by_party: [...byParty].map(([party, counts]) => ({ party, counts })),
+    ballots_total: ballots.length, ballots_unresolved: un?.n ?? 0,
+    note: ballots.length === 0
+      ? "No per-member ballots for this vote: voice votes / presiding officer declarations have none, and very recent votes may not be ingested yet."
+      : "Choices are verbatim from Alþingi: já, nei, greiðir ekki atkvæði (present, abstains), boðaði fjarvist, fjarverandi.",
+    derived: false,
+  };
+}
+
+/** How one member voted: ballots newest first, filterable by session, matter or choice. */
+export async function memberVotes(ctx: Ctx, a: { member_id: number; lthing?: number; class?: string; nr?: number; choice?: string; before_id?: number; limit?: number }) {
+  const { sql } = ctx;
+  const lim = Math.min(Math.max(a.limit ?? 50, 1), 200);
+  const cls = (a.class ?? "A").toUpperCase();
+  const [m] = await sql<{ name: string }[]>`select name from members where id = ${a.member_id}`;
+  if (!m) return { error: "member_not_found", hint: "Resolve the member with get_member (by name) first.", member_id: a.member_id };
+  const rows = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null; choice: string; title: string | null; html_url: string | null }[]>`
+    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.kind_label, v.result, v.yes, v.no, v.abstain, b.choice, mt.title, v.html_url
+    from ballots b join votes v on v.id = b.vote_id left join matters mt on (mt.lthing, mt.cls, mt.nr) = (v.lthing, v.cls, v.nr)
+    where b.member_id = ${a.member_id}
+      ${a.lthing !== undefined ? sql`and v.lthing = ${a.lthing}` : sql``}
+      ${a.nr !== undefined ? sql`and v.cls = ${cls} and v.nr = ${a.nr}` : sql``}
+      ${a.choice ? sql`and b.choice = ${a.choice}` : sql``}
+      ${a.before_id !== undefined ? sql`and v.id < ${a.before_id}` : sql``}
+    order by v.id desc limit ${lim}`;
+  const tally = await sql<{ choice: string; n: number }[]>`
+    select b.choice, count(*)::int n from ballots b join votes v on v.id = b.vote_id where b.member_id = ${a.member_id}
+      ${a.lthing !== undefined ? sql`and v.lthing = ${a.lthing}` : sql``}
+      ${a.nr !== undefined ? sql`and v.cls = ${cls} and v.nr = ${a.nr}` : sql``}
+    group by 1 order by 2 desc`;
+  return {
+    member: { id: a.member_id, name: m.name, url: site.member(a.member_id), althingi_url: memberPageUrl(a.member_id) },
+    tally: tally.map((t) => ({ choice: t.choice, choice_en: CHOICE_EN[t.choice] ?? null, n: t.n })),
+    votes: rows.map((r) => ({
+      vote_id: r.id, at: r.at, about: r.kind_label, result: r.result, yes: r.yes, no: r.no, abstain: r.abstain,
+      choice: r.choice, choice_en: CHOICE_EN[r.choice] ?? null,
+      matter: { lthing: r.lthing, class: r.cls, nr: r.nr, title: r.title, url: site.matter(r.lthing, r.cls, r.nr) },
+      althingi_url: votePageUrl(r.id, r.html_url),
+    })),
+    next_before_id: rows.length === lim ? rows[rows.length - 1]!.id : null,
+    note: "Per-member ballots exist only for recorded (electronic or roll-call) votes in ingested sessions; see list_sessions.",
+    derived: false,
+  };
+}
+
+/** A law in the current law collection (lagasafn): metadata, amendment history, matters, and article text on request. */
+export async function getLaw(ctx: Ctx, a: { year?: number; nr?: number; title?: string; article?: string; include_text?: boolean }) {
+  const { sql } = ctx;
+  let year = a.year, nr = a.nr;
+  if ((year === undefined || nr === undefined) && a.title) {
+    const r = await sql<{ year: number; nr: number; title: string }[]>`
+      select year, nr, title from laws_current where title % ${a.title} or title ilike ${"%" + a.title + "%"}
+      order by similarity(title, ${a.title}) desc limit 8`;
+    if (r.length !== 1) return { candidates: r.map((x) => ({ ...x, url: site.law(x.year, x.nr) })), note: r.length ? "Several laws match; call again with year and nr." : "No law title matches; try fewer words." };
+    year = r[0]!.year; nr = r[0]!.nr;
+  }
+  if (year === undefined || nr === undefined) return { error: "law_not_specified", hint: "Pass year and nr (lög nr. 34/1991 = year 1991, nr 34) or a title." };
+  const l = await lawPage(sql, year, nr);
+  const arts = l.law ? await sql<{ article_id: string; heading: string | null; text: string }[]>`
+    select article_id, heading, text from law_articles where year = ${year} and nr = ${nr} and edition = ${l.law.edition}
+    order by nullif(regexp_replace(article_id, '\\D', '', 'g'), '')::int nulls last, article_id` : [];
+  const want = a.article?.replace(/\s*\.?\s*gr\.?$/i, "").trim();
+  // text budget ~20 KB per call (Claude Code caps tool output at 25k tokens); the index tells what else to ask for
+  let budget = 20_000;
+  const picked = (want ? arts.filter((x) => x.article_id === want || x.article_id === `G${want}` || x.heading?.replace(/\s+/g, "") === `${want}.gr.`) : a.include_text ? arts : [])
+    .filter((x) => (budget -= Math.min(x.text.length, 6000)) > 0 || x === arts[0]);
+  if (!l.law && !l.matters.length && !l.amendedBy.length) return { error: "law_not_found", hint: "Not in the current law collection and no matter in the corpus amends it. Check year/nr, or search by title.", year, nr };
+  return {
+    law: {
+      year, nr, id: `${nr}/${year}`, title: l.law?.title ?? null, chapter: l.law?.chapter ?? null, in_force: l.law?.inForce ?? null, edition: l.law?.edition ?? null,
+      in_current_collection: l.law !== null, url: site.law(year, nr), althingi_url: lawPageUrl(year, nr),
+      enacted_by_matter: l.law?.matter ? { lthing: l.law.matter.lthing, class: "A", nr: l.law.matter.nr, title: l.law.matter.title, url: site.matter(l.law.matter.lthing, "A", l.law.matter.nr) } : null,
+    },
+    articles_index: arts.map((x) => ({ article: x.article_id.replace(/^G/, ""), heading: x.heading })),
+    articles_truncated: budget <= 0,
+    articles: picked.map((x) => ({ article: x.article_id.replace(/^G/, ""), heading: x.heading, text: clip(x.text, 6000) })),
+    amended_by: l.amendedBy.map((x) => ({ year: x.year, nr: x.nr, title: x.title, effective: x.effective, url: site.law(x.year, x.nr) })),
+    amends: l.amends.map((x) => ({ year: x.year, nr: x.nr, title: x.title, url: site.law(x.year, x.nr) })),
+    matters_amending: l.matters.map((x) => ({ lthing: x.lthing, class: x.cls, nr: x.nr, title: x.title, status: x.status, url: site.matter(x.lthing, x.cls, x.nr) })),
+    note: "Text is the consolidated law collection (lagasafn) edition shown; it is not legal advice and may lag Stjórnartíðindi.",
+    derived: false,
+  };
+}
+
+/** One sitting (þingfundur): agenda, timeline events and the speeches in order. Find by (lthing, fundur) or by date. */
+export async function getSitting(ctx: Ctx, a: { lthing?: number; fundur?: number; date?: string }) {
+  const { sql } = ctx;
+  let key: { lthing: number; fundur: number } | undefined;
+  if (a.lthing !== undefined && a.fundur !== undefined) key = { lthing: a.lthing, fundur: a.fundur };
+  else if (a.date) {
+    const r = await sql<{ lthing: number; fundur: number }[]>`select lthing, fundur from sittings where starts::date = ${a.date} order by starts`;
+    if (r.length > 1) return { candidates: r, note: "Several sittings that day; pass lthing and fundur." };
+    key = r[0];
+  }
+  if (!key) return { error: "sitting_not_found", hint: "Pass lthing + fundur, or a date (YYYY-MM-DD) with a sitting. list_sittings lists them.", ...a };
+  const [st] = await sql<{ name: string | null; starts: string | null; ends: string | null }[]>`select name, starts::text, ends::text from sittings where lthing = ${key.lthing} and fundur = ${key.fundur}`;
+  if (!st) return { error: "sitting_not_found", hint: "Sittings come from the open data dump; list_sittings shows what is ingested.", ...key };
+  const [agenda, events, speeches] = await Promise.all([
+    sql<{ seq: number; cls: string | null; nr: number | null; title: string | null; doc_nr: number | null; off_agenda: boolean | null }[]>`
+      select seq, cls, nr, title, doc_nr, off_agenda from agenda_items where lthing = ${key.lthing} and fundur = ${key.fundur} order by seq`,
+    sql<{ at: string; kind: string; cls: string; nr: number; doc_nr: number | null }[]>`
+      select at::text, kind, cls, nr, doc_nr from sitting_events where lthing = ${key.lthing} and fundur = ${key.fundur} order by at`,
+    sql<{ id: string; started: string; member_id: number | null; member_name: string; type: string; matter_cls: string | null; matter_nr: number | null }[]>`
+      select id, started::text, member_id, coalesce(member_name, speaker_abbr, '') as member_name, type, matter_cls, matter_nr
+      from speeches where lthing = ${key.lthing} and fundur = ${key.fundur} order by started limit 500`,
+  ]);
+  const EVENT: Record<string, string> = { fundurhefst: "sitting opened", fundiSlitið: "sitting closed", "umræðuLokið": "debate closed", "umræðuOgAtkvæðagreiðsluFrestað": "debate and vote postponed", frvAfgreittSemLög: "bill passed as law" };
+  return {
+    sitting: { lthing: key.lthing, fundur: key.fundur, name: st.name, starts: st.starts, ends: st.ends, day_url: st.starts ? `${SITE}/dagur/${st.starts.slice(0, 10)}` : null },
+    agenda: agenda.map((x) => ({ seq: x.seq + 1, matter: x.cls && x.nr !== null ? { lthing: key.lthing, class: x.cls, nr: x.nr, url: site.matter(key.lthing, x.cls, x.nr) } : null, title: x.title, document_nr: x.doc_nr, off_agenda: x.off_agenda })),
+    events: events.map((e) => ({ at: e.at, kind: e.kind, kind_en: EVENT[e.kind] ?? null, matter: e.cls ? { class: e.cls, nr: e.nr } : null, document_nr: e.doc_nr })),
+    speeches: speeches.map((x) => ({ id: x.id, started: x.started, member: { id: x.member_id, name: x.member_name }, speech_type: x.type, matter: x.matter_cls ? { class: x.matter_cls, nr: x.matter_nr } : null, url: `${SITE}/raeda/${x.id}` })),
+    derived: false,
+  };
+}
+
+export async function listSittings(ctx: Ctx, a: { lthing: number; date_from?: string; date_to?: string; limit?: number }) {
+  const { sql } = ctx;
+  const rows = await sql<{ fundur: number; name: string | null; starts: string | null; ends: string | null; items: number; speeches: number }[]>`
+    select s.fundur, s.name, s.starts::text, s.ends::text,
+      (select count(*)::int from agenda_items a where a.lthing = s.lthing and a.fundur = s.fundur) as items,
+      (select count(*)::int from speeches p where p.lthing = s.lthing and p.fundur = s.fundur) as speeches
+    from sittings s where s.lthing = ${a.lthing}
+      ${a.date_from ? sql`and s.starts::date >= ${a.date_from}` : sql``}
+      ${a.date_to ? sql`and s.starts::date <= ${a.date_to}` : sql``}
+    order by s.fundur desc limit ${Math.min(a.limit ?? 50, 200)}`;
+  return { lthing: a.lthing, sittings: rows.map((r) => ({ ...r, day_url: r.starts ? `${SITE}/dagur/${r.starts.slice(0, 10)}` : null })), derived: false };
 }

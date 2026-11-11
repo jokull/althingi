@@ -321,7 +321,7 @@ describe("mcp", () => {
     expect(init.res.headers.get("cache-control")).toMatch(/^no-(store|cache)$/); // POST event-stream: never cacheable
     const { json } = await rpc("tools/list", undefined, 2);
     const names = json.result.tools.map((t: { name: string }) => t.name).sort();
-    expect(names).toEqual(["aggregate", "explain_query", "first_use", "get_context", "get_matter", "get_member", "get_speech", "list_sessions", "list_votes", "search_speeches"]);
+    expect(names).toEqual(["aggregate", "explain_query", "fetch", "first_use", "get_context", "get_law", "get_matter", "get_member", "get_sitting", "get_speech", "get_vote", "list_sessions", "list_sittings", "list_votes", "member_votes", "search", "search_speeches"]);
     expect(json.result.tools.every((t: { annotations: { readOnlyHint: boolean } }) => t.annotations.readOnlyHint)).toBe(true);
   });
 

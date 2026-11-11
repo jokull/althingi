@@ -38,7 +38,7 @@ export async function seed(name: string): Promise<Seeded | null> {
   await sql`insert into agenda_items (lthing, fundur, seq, cls, nr, title, doc_nr, off_agenda) values (157, 40, 0, 'A', 300, 'Tollalög', null, false)`;
   await sql`insert into sitting_events (lthing, fundur, at, kind, cls, nr) values (157, 40, '2025-12-01 13:30', 'fundurhefst', '', 0), (157, 40, '2025-12-01 15:00', 'umræðuLokið', 'A', 300)`;
   await sql`insert into laws (year, nr, edition, title, chapter, in_force, text) values (1991, 34, '157a', 'Lög um fjárfestingu erlendra aðila í atvinnurekstri', '7. Atvinnuvegir', 'Tóku gildi 1. júní 1991', '1. gr. Erlendum aðilum er heimilt...')`;
-  await sql`insert into law_articles (year, nr, edition, article_id, heading, text) values (1991, 34, '157a', '1', '1. gr.', 'Erlendum aðilum er heimilt að fjárfesta í atvinnurekstri hér á landi.'), (1991, 34, '157a', '2', '2. gr.', 'Önnur grein.')`;
+  await sql`insert into law_articles (year, nr, edition, article_id, heading, text) values (1991, 34, '157a', 'G1', '1. gr.', 'Erlendum aðilum er heimilt að fjárfesta í atvinnurekstri hér á landi.'), (1991, 34, '157a', 'G2', '2. gr.', 'Önnur grein.')`;
   return {
     sql, speechId, word, voteId: v!.id,
     drop: async () => { await sql.end(); await admin.unsafe(`drop database ${name} with (force)`); await admin.end(); },
