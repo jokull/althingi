@@ -87,13 +87,16 @@ export async function upsertMatters(sql: Sql, rows: MatterRow[], lemmatize: (t: 
 /**
  * Store index rows for real speeches. XML-era rows enter the work queue ('pending'); SGML-era rows are kept as an
  * honest index only ('unavailable': their text sits behind a bot challenge and is never fetched).
- * Existing rows are left untouched so text_state survives re-listing. B-mál titles only exist here, hence stub matters.
+ * Existing rows keep their text_state; the service's index fields (member id/name, type label, debate, links incl.
+ * vod) fill in or win over dump-derived values (docs/INGEST.md §2), and only rows that actually differ are written.
+ * Every entry is also recorded as a speaker sighting (the evidence speaker_aliases are learned from), and speakers
+ * with an id but no members row (non-MP ministers) get one. B-mál titles only exist here, hence stub matters.
  * Returns the number of NEW speech rows.
  */
 export async function upsertSpeechIndex(
-  sql: Sql, entries: SpeechIndexEntry[], lemmatize: (t: string) => string = () => "",
+  sql: Sql, entries: SpeechIndexEntry[], lemmatize: (t: string) => string = () => "", source = "member-list",
 ): Promise<number> {
-  const usable = entries.filter((e) => e.isSpeech && e.id && (e.xmlUrl || e.sourceUrl) && e.date && e.started);
+  const usable = uniqBy(entries.filter((e) => e.isSpeech && e.id && (e.xmlUrl || e.sourceUrl) && e.date && e.started), (e) => e.id!);
   if (!usable.length) return 0;
 
   const stubs = new Map<string, { lthing: number; cls: string; nr: number; title: string; stub: boolean; title_lemmas: string }>();
@@ -110,15 +113,45 @@ export async function upsertSpeechIndex(
     role_kind: e.roleKind, role_title: e.roleTitle, speech_date: e.date!, started: e.started, ended: e.ended,
     type: e.type, debate: e.debate, matter_cls: e.matter?.cls || null, matter_nr: e.matter?.cls ? e.matter.nr : null,
     xml_url: e.xmlUrl, source_url: e.sourceUrl, html_url: e.htmlUrl, audio_url: e.audioUrl, vod_url: e.vodUrl,
-    era: e.era, text_state: e.era === "xml" ? "pending" : "unavailable",
+    era: e.era, text_state: e.era === "xml" ? "pending" : "unavailable", index_source: "service",
   }));
+  const people = uniqBy(usable.filter((e) => e.memberId > 0 && e.memberName), (e) => String(e.memberId))
+    .map((e) => ({ id: e.memberId, name: e.memberName }));
+  const sightings = usable.filter((e) => e.memberId > 0)
+    .map((e) => ({ speech_id: e.id!, member_id: e.memberId, member_name: e.memberName || null, source }));
   let inserted = 0;
   await sql.begin(async (tx) => {
     await inChunks([...stubs.values()], (c) => tx`insert into matters ${tx(c)} on conflict (lthing, cls, nr) do nothing`);
+    await inChunks(people, (c) => tx`insert into members ${tx(c)} on conflict (id) do nothing`);
     await inChunks(rows, async (c) => {
-      const r = await tx`insert into speeches ${tx(c)} on conflict (id) do nothing returning id`;
-      inserted += r.length;
+      const r = await tx<{ ins: boolean }[]>`
+        insert into speeches ${tx(c)}
+        on conflict (id) do update set
+          member_id = case when excluded.member_id > 0 then excluded.member_id else speeches.member_id end,
+          member_name = case when excluded.member_id > 0 and excluded.member_name <> '' then excluded.member_name else speeches.member_name end,
+          role_kind = coalesce(excluded.role_kind, speeches.role_kind), role_title = coalesce(excluded.role_title, speeches.role_title),
+          type = case when excluded.type <> '' then excluded.type else speeches.type end,
+          debate = case when excluded.debate <> '' then excluded.debate else speeches.debate end,
+          ended = coalesce(speeches.ended, excluded.ended), fundur = coalesce(speeches.fundur, excluded.fundur),
+          xml_url = coalesce(speeches.xml_url, excluded.xml_url),
+          html_url = coalesce(excluded.html_url, speeches.html_url), audio_url = coalesce(excluded.audio_url, speeches.audio_url),
+          vod_url = coalesce(excluded.vod_url, speeches.vod_url)
+        where (excluded.member_id > 0 and speeches.member_id is distinct from excluded.member_id)
+           or (excluded.member_id > 0 and excluded.member_name <> '' and speeches.member_name is distinct from excluded.member_name)
+           or (excluded.vod_url is not null and speeches.vod_url is distinct from excluded.vod_url)
+           or (excluded.html_url is not null and speeches.html_url is distinct from excluded.html_url)
+           or (excluded.audio_url is not null and speeches.audio_url is distinct from excluded.audio_url)
+           or (excluded.type <> '' and speeches.type is distinct from excluded.type)
+           or (excluded.debate <> '' and speeches.debate is distinct from excluded.debate)
+           or (speeches.role_kind is null and excluded.role_kind is not null)
+           or (speeches.ended is null and excluded.ended is not null)
+        returning (xmax = 0) as ins`;
+      inserted += r.filter((x) => x.ins).length;
     });
+    await inChunks(sightings, (c) => tx`
+      insert into speaker_sightings ${tx(c)} on conflict (speech_id, source) do update set member_id = excluded.member_id,
+        member_name = excluded.member_name, seen_at = now()
+      where speaker_sightings.member_id <> excluded.member_id or speaker_sightings.member_name is distinct from excluded.member_name`);
   });
   return inserted;
 }
@@ -147,7 +180,11 @@ export async function saveSpeechText(
   sql: Sql,
   meta: SpeechMeta,
   paragraphs: Paragraph[],
-  info: { rawSha256: string; lemmaVersion: string; analyze: (text: string) => ParagraphAnalysis },
+  info: {
+    rawSha256: string; lemmaVersion: string; analyze: (text: string) => ParagraphAnalysis;
+    /** provenance (docs/INGEST.md §2): service | dump | dump-provisional; default service */
+    textSource?: string; provisional?: boolean; sourceRef?: string | null;
+  },
 ): Promise<void> {
   const analyzed = paragraphs.map((p) => ({ p, a: info.analyze(p.text) }));
   const rows = analyzed.map(({ p, a }) => ({
@@ -163,7 +200,9 @@ export async function saveSpeechText(
       update speeches set text_state = 'done', text_error = null, fetched_at = now(), word_count = ${words},
         lemma_is_version = ${info.lemmaVersion}, raw_sha256 = ${info.rawSha256},
         speaker_abbr = ${meta.speakerAbbr}, office = ${meta.office}, tegr = ${meta.tegr}, tegflm = ${meta.tegflm},
-        nefnd = ${meta.nefnd}, continued = ${meta.continued}, speaker_capacity = ${meta.speakerCapacity}
+        nefnd = ${meta.nefnd}, continued = ${meta.continued}, speaker_capacity = ${meta.speakerCapacity},
+        text_source = ${info.textSource ?? "service"}, provisional = ${info.provisional ?? false},
+        source_ref = coalesce(${info.sourceRef ?? null}, source_ref)
       where id = ${meta.id}`;
   });
 }
@@ -205,13 +244,28 @@ export async function nextPending(
     order by started desc limit ${limit}`;
 }
 
-export async function recordFetch(
-  sql: Sql, r: { url: string; status: number; bytes: number; sha256: string | null; path: string | null },
-): Promise<void> {
+export interface FetchRecord {
+  url: string; status: number; bytes: number; sha256: string | null; path: string | null;
+  etag?: string | null; last_modified?: string | null; headers?: Record<string, string> | null;
+}
+
+/** Record one fetch. A 304 keeps the stored body (sha/path/bytes) and only refreshes time, validators and headers. */
+export async function recordFetch(sql: Sql, r: FetchRecord): Promise<void> {
+  const row = {
+    url: r.url, status: r.status, bytes: r.bytes, sha256: r.sha256, path: r.path,
+    etag: r.etag ?? null, last_modified: r.last_modified ?? null, headers: r.headers ? sql.json(r.headers) : null,
+  };
+  if (r.status === 304) {
+    await sql`
+      update raw_fetch set fetched_at = now(), etag = coalesce(${row.etag}, etag), last_modified = coalesce(${row.last_modified}, last_modified),
+        headers = ${row.headers} where url = ${r.url}`;
+    return;
+  }
   await sql`
-    insert into raw_fetch ${sql(r)}
+    insert into raw_fetch ${sql(row as never)}
     on conflict (url) do update set fetched_at = now(), status = excluded.status, bytes = excluded.bytes,
-      sha256 = excluded.sha256, path = excluded.path`;
+      sha256 = excluded.sha256, path = excluded.path, etag = excluded.etag, last_modified = excluded.last_modified,
+      headers = excluded.headers`;
 }
 
 export async function getState<T = unknown>(sql: Sql, key: string): Promise<T | undefined> {
@@ -231,10 +285,50 @@ export async function tryCrawlLock(sql: Sql): Promise<boolean> {
   return r[0]!.ok;
 }
 
-export async function recordedFetch(sql: Sql, url: string): Promise<{ status: number; path: string | null; fetched_at: Date } | undefined> {
-  const r = await sql<{ status: number; path: string | null; fetched_at: Date }[]>`select status, path, fetched_at from raw_fetch where url = ${url}`;
+export interface RecordedFetch { status: number; path: string | null; fetched_at: Date; sha256: string | null; etag: string | null; last_modified: string | null }
+export async function recordedFetch(sql: Sql, url: string): Promise<RecordedFetch | undefined> {
+  const r = await sql<RecordedFetch[]>`select status, path, fetched_at, sha256, etag, last_modified from raw_fetch where url = ${url}`;
   return r[0];
 }
+
+// ---------------------------------------------------------------- locks and runs (docs/INGEST.md §5)
+
+/** Advisory lock keys. `crawl` = the one network client; dump/derive/laws never take it, so they run beside the crawler. */
+export const LOCKS = { crawl: 746100, dump: 746101, derive: 746102, laws: 746103 } as const;
+export type LockName = keyof typeof LOCKS;
+
+export async function tryLock(sql: Sql, name: LockName): Promise<boolean> {
+  const r = await sql<{ ok: boolean }[]>`select pg_try_advisory_lock(${LOCKS[name]}) as ok`;
+  return r[0]!.ok;
+}
+
+export async function startRun(sql: Sql, kind: string): Promise<number> {
+  const [r] = await sql<{ id: string }[]>`insert into ingest_runs (kind, status) values (${kind}, 'running') returning id`;
+  return Number(r!.id);
+}
+
+export async function finishRun(
+  sql: Sql, id: number, r: { status: string; requests?: number; files?: number; rows?: number; note?: string | null },
+): Promise<void> {
+  await sql`
+    update ingest_runs set finished = now(), status = ${r.status}, requests = ${r.requests ?? 0}, files = ${r.files ?? 0},
+      rows = ${r.rows ?? 0}, note = ${r.note ?? null}
+    where id = ${id}`;
+}
+
+/** Network steps refuse to start while a 403/429 pause is in force (set for 24 h by the run that saw it). */
+export async function crawlPausedUntil(sql: Sql): Promise<Date | null> {
+  const v = await getState<string>(sql, "crawl_paused_until");
+  const d = v ? new Date(v) : null;
+  return d && d.getTime() > Date.now() ? d : null;
+}
+export async function pauseCrawl(sql: Sql, hours = 24, why = ""): Promise<void> {
+  await setState(sql, "crawl_paused_until", new Date(Date.now() + hours * 3_600_000).toISOString());
+  await setState(sql, "crawl_paused_reason", why);
+}
+
+/** Abbreviations are joined after NFC normalisation, always (dump vs service can differ in normal form). */
+export const nfc = <T extends string | null | undefined>(s: T): T => (typeof s === "string" ? (s.normalize("NFC").trim() as T) : s);
 
 export async function upsertCommittees(sql: Sql, rows: CommitteeRow[]): Promise<void> {
   const data = uniqBy(rows, (r) => String(r.id)).map((r) => ({ id: r.id, name: r.name, abbr: r.abbr, abbr_long: r.abbrLong, first_lthing: r.firstLthing }));

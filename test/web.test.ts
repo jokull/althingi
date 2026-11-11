@@ -184,7 +184,7 @@ describe("omnisearch", () => {
 
   test("a person-like query with no member says what the corpus covers", async () => {
     if (!ok) return;
-    const body = await (await get(`/leit?q=${encodeURIComponent("katrín jakobsdóttir")}`)).text();
+    const body = await (await get(`/leit?q=${encodeURIComponent("sigrún hrafnkelsdóttir")}`)).text();
     expect(body).toContain("Enginn þingmaður í safninu heitir");
     expect(body).toContain("löggjafarþings");
   });
