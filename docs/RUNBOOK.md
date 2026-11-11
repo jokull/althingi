@@ -40,6 +40,17 @@ ssh -f -N -L 3051:localhost:3050 mac-mini  # look at the mini's site from the la
 - Zone solberg.is, cache rule (phase http_request_cache_settings): host althingi.solberg.is, not /mcp, not /healthz →
   cache eligible, edge + browser TTL respect origin (our `s-maxage` rules in src/web.tsx decide).
 - Rate limit (phase http_ratelimit): /leit* and /mcp*, 40 req / 10 s per IP+colo, block 10 s.
+- Agent surfaces (2026-11-11, docs/AGENTS.md), deploy notes:
+  - `/mcp` stays excluded from the cache rule (GET in a browser = connect page, `no-store`). The rule's exclusion must be
+    the exact path `/mcp`, NOT a `/mcp*` prefix, so `/mcp/server-card` (1 h `max-age`) and `/mcp.md` are cache-eligible; if it is a prefix, that is harmless (they are just uncached).
+  - Rate-limit rule: add `http.request.method ne "OPTIONS"` so CORS preflights from browser clients do not eat the budget.
+    The app limits `/mcp` POSTs to 60/min per `cf-connecting-ip` with 429 + Retry-After.
+  - New cache-eligible paths (origin sets TTLs): `*.md`, `/llms.txt`, `/llms-full.txt`, `/sitemap.xml`, `/sitemaps/*`,
+    `/openapi.json`, `/.well-known/ai-catalog.json`. Purge `/llms.txt` and `/sitemap.xml` after a session is added.
+  - The edge does not key on `Accept`: HTML URLs answer `Accept: text/markdown` with a 302 to `.md` (no inline negotiation),
+    so no cache-key change is needed. Leave Cloudflare "Markdown for Agents" off (we serve our own Markdown).
+  - Do NOT add any `/.well-known/oauth-*` route or a WAF challenge on `/mcp`: a 401/403 makes Claude/ChatGPT start OAuth.
+  - Registry publish (not done): serve `/.well-known/mcp-registry-auth` (Ed25519 pubkey), then `mcp-publisher login http --domain althingi.solberg.is` + `publish` with `server.json`. The registry fetches from its cloud: no bot challenge on that path.
 - Rollback: remove the althingi ingress line and restart via `launchctl kickstart -k gui/$(id -u)/com.jokull.cloudflared-tunnel`; delete the CNAME.
 
 ## Layered ingest (docs/INGEST.md; code in scripts/ingest.ts, src/{dump-ingest,derive,service,laws-ingest}.ts)

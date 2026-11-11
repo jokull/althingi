@@ -214,3 +214,14 @@ Nothing is fetched to check a link.
 No link (no page URL for these anywhere in the dump, raw cache or fixtures): parties, committees, sitting days /
 fundargerðir, efnisflokkar outside the current session. Stored `http://` links are upgraded to `https://` and a doubled
 path slash (`althingi.is//thingstorf/…`, as served in thingmalalisti) is collapsed.
+
+## Agent-friendly site and public MCP (2026-11-11)
+
+Research and decisions in `docs/AGENTS.md`. In short: stateless Streamable HTTP (2025-11-25, plain JSON), no auth (never
+401; no OAuth metadata), CORS `*`, 405 for GET/DELETE (browser GET = connect page), 60 req/min per IP with 429 + Retry-After;
+every tool read-only/closed-world with an outputSchema and `isError` + hint; new tools for ballots, laws and sittings, plus
+the ChatGPT `search`/`fetch` pair; https resource templates over the `.md` twins of every page (`Accept: text/markdown` 302s
+there; the edge cache does not key on Accept). llms.txt per llmstxt.org, llms-full.txt = docs expanded (not the corpus),
+robots welcomes agents (HTML `/leit` out of indexes; `/leit.json` and user-triggered agents allowed; `/mcp` no longer
+disallowed), sitemaps, MCP Server Card + ai-catalog, OpenAPI, `server.json` prepared for the registry (not published).
+This supersedes the robots and llms lines of the SEO/LLM paragraph above.

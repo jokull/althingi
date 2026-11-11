@@ -984,6 +984,8 @@ export const AboutPage = () => (
       </dl>
       <h2>Flýtilyklar</h2>
       <p><kbd>/</kbd> fer í leitarreitinn. Í tillögum færa <kbd>↑</kbd> og <kbd>↓</kbd> á milli og <kbd>Enter</kbd> opnar.</p>
+      <h2 id="gervigreind">Fyrir gervigreind</h2>
+      <p>Claude, ChatGPT, Cursor og önnur forrit geta leitað hér beint um opinn MCP-þjón á <code>{SITE}/mcp</code>, án innskráningar. <a href="/mcp">Leiðbeiningar</a> · <a href="/llms.txt">llms.txt</a>. Hver síða er líka til sem Markdown: bættu <code>.md</code> við slóðina.</p>
       <h2>Persónuvernd</h2>
       <p>Fyrirspurnir og IP-tölur eru ekki sendar til þriðja aðila.</p>
       <p class="hint">Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.</p>
