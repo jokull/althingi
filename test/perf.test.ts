@@ -42,12 +42,12 @@ describe("candidate cap", () => {
     expect(estimateCandidates(parseQuery("veiðigjald"), new Map())).toBe(0);
   });
   test("window: none under the cap; else the newest sessions whose share of the corpus fits the cap", () => {
-    expect(rankWindow(4000, sessions, 40_000)).toEqual({ from: null, to: null });
+    expect(rankWindow(4000, sessions, 40_000, false, 5000)).toEqual({ from: null, to: null });
     // 40k est × (10k/40k) = 10k ≥ cap after the first session
-    expect(rankWindow(40_000, sessions, 40_000)).toEqual({ from: "2026-01-01", to: null });
+    expect(rankWindow(40_000, sessions, 40_000, false, 5000)).toEqual({ from: "2026-01-01", to: null });
     // 12k est: one session gives 3k, two give 6k ≥ 5k
-    expect(rankWindow(12_000, sessions, 40_000)).toEqual({ from: "2025-01-01", to: null });
-    expect(rankWindow(12_000, sessions, 40_000, true)).toEqual({ from: null, to: "2024-12-31" });
+    expect(rankWindow(12_000, sessions, 40_000, false, 5000)).toEqual({ from: "2025-01-01", to: null });
+    expect(rankWindow(12_000, sessions, 40_000, true, 5000)).toEqual({ from: null, to: "2024-12-31" });
   });
 });
 

@@ -34,7 +34,7 @@ whole-table passes, and bounds the ranked set.
 Server time (SQL + render), warm cache, measured by `scripts/bench.ts` on the mini:
 
 - web pages and entity/browse search: **p50 < 20 ms, p95 < 100 ms**
-- keyword search (`/leit`, `search_speeches`): **p50 < 60 ms, p95 < 200 ms** (ranking ≤ 5,000 paragraphs at 15 µs is the floor: ~75 ms worst case before the cap; below that needs a leaner ranking vector = a reindex, out of scope)
+- keyword search (`/leit`, `search_speeches`): **p50 < 60 ms, p95 < 200 ms** warm; the first cold ranking of a word is bounded by RANK_CAP × one page read (§5 says where this landed)
 - aggregates, totals, first_use, corpus/session state: **p50 < 30 ms, p95 < 150 ms**
 - nothing over **500 ms**, ever, for a single request; no request may scan `speeches` or `paragraphs` whole.
 
@@ -97,7 +97,7 @@ loops (0.85 s), the real fix was the table.
    recheck `paragraphs.seq_vector` for those candidates only; a phrase-only query uses the sequence GIN on
    `paragraphs` directly. Materializing the CTE keeps the planner from ever evaluating `@@` as a heap filter.
 2. **Candidate cap**: before the query, the lemmas' document counts (`vocab.ndoc`, cached in-process) estimate the
-   candidate set; when it exceeds `RANK_CAP` (5,000 paragraphs) the range is narrowed to the newest sessions that fit
+   candidate set; when it exceeds `RANK_CAP` (3,000 paragraphs) the range is narrowed to the newest sessions that fit
    (from `corpus_state`'s per-session paragraph counts), and the result says so (`rankedFrom` / `ranked_within`).
    Ranking among old mentions of a very common word is lost on page 1 — that is the trade; filters (date, member)
    restore it. Near-stopwords (`forseti`, in 37 % of paragraphs) thus rank within the current session only.
@@ -218,6 +218,84 @@ state corpusBlock                                        80     84     84
 ALL                                                     167   8560  12906  errors=8 (8 s statement timeouts)
 ```
 
-### After (this branch, same bench, same conditions)
+### After (this branch, 2026-11-11 21:20, same bench, `ALTHINGI_CACHE=0`, RANK_CAP 3,000)
 
-(see the final table below)
+```
+query                                                   p50    p95    max
+web search veiðigjald                                   171    172    172   (was 332)
+web search sjávarútvegur                                440    484    484   (1314)
+web search verðbólga                                    730    756    756   (998)
+web search húsnæðislán vextir                           217    229    229   (179)
+web search loftslagsmál                                 783    791    791   (445)
+web search Landspítali biðlistar                        141    145    145   (165)
+web search phrase "hér á landi"                        1644   1679   1679   (12646)
+web search fjárlög 2026                                  61     67     67   (161)
+web search forseti (near-stopword)                      796    867    867   (timeout)
+web search hælisleitendur newest                        106    107    107   (309)
+web search veiðigjald 2017-2019 (agent)                 172    184    184   (3103)
+web search veiðigjald 2020-2024 (agent)                 117    118    118   (4136)
+web search veiðigjald party 35                          287    294    294   (199)
+web search veiðigjald member 690                         37     42     42   (42)
+web browse member 690                                     6      7      7   (202)
+web search page 2 veiðigjald                            423    429    429   (343; 0 with the ranked-list cache)
+mcp search_speeches veiðigjald 2005-2026 limit 50       714    822    822   (timeout)
+mcp search_speeches veiðigjöld sjávarútvegur limit 50    290    294    294   (422)
+mcp aggregate member sjávarútvegur                       13     14     14   (863)
+mcp aggregate words party                                77     78     78   (713)
+mcp aggregate words party kvóti                           6      6      6   (394)
+mcp aggregate words year veiðigjald                       4      4      4   (202)
+mcp aggregate speeches year                              31     31     31   (118)
+mcp aggregate speeches party veiðigjald 2005-2026         7      8      8   (170)
+mcp first_use veiðigjald                                 28     32     32   (163)
+mcp first_use kvótakerfi                                 22     24     24   (115)
+mcp get_matter 157/A/300                                  9     10     10   (92)
+mcp get_member 690                                        2      2      2   (98)
+mcp get_speech                                            4      5      5   (115)
+mcp list_sessions                                         1      1      1   (121)
+entities katrín                                          43     45     45   (50)
+entities sjálfstæðisflokkur                              30     31     31   (144)
+entities veiðigjald                                      27     27     27   (27)
+page matter / member / day / speech                     1–5    1–6    1–6   (2–12)
+state corpusStats / sessionState / corpusBlock            0      0      0   (30 / 42 / 80)
+ALL                                                      31   ~900   1679  errors=0   (was 167 / 8560 / 12906, 8 timeouts)
+```
+
+(Web-search rows are from a second run with RANK_CAP 3,000; the full table was run at 5,000 and differs only there:
+veiðigjald 297, sjávarútvegur 828, verðbólga 1187, loftslagsmál 1221, forseti 1338, page 2 761.)
+
+What the numbers say:
+
+- Everything that used to pass over `speeches` or join every candidate is now 1–80 ms: aggregates 20–100×
+  faster, corpus/session state 0 ms, the agent's date-range searches 3.1–4.1 s → 0.1–0.2 s, no timeouts.
+- Keyword search is **bounded by cold reads of the ranked candidates**: RANK_CAP × ~200 µs (one `paragraphs` heap
+  page each) when the OS cache does not hold them, ~15 µs each when it does. 3,000 is the compromise measured
+  against the exact top-10 (§3.2); words with fewer candidates (most) are ranked exactly. With the caches on
+  (production), a query is paid once per corpus version: every later page and repeat is ~0 ms (the bench turns the
+  caches off on purpose). Targets met for pages, aggregates, state, filtered and date-ranged search; **not met** for
+  the first cold ranking of a word with > 1,500 candidates (0.2–0.8 s) and for phrases of common words
+  (`"hér á landi"` 1.6 s: the phrase GIN needs a positional recheck of every candidate in the window).
+- Going below that floor is not a query-shape problem any more: it needs the ranked candidates resident in memory
+  (a larger `shared_buffers`, or fewer tenants on the box: not available), a leaner ranking vector (a reindex),
+  or warming the LRU with popular queries at deploy (`scripts/bench.ts` could do it; deferred).
+
+### Top-10 fidelity under the cap (exact ranking vs capped, mini, 2026-11-11)
+
+| word | candidates | newest 1,500 | newest 5,000 | by static score 1,500 | by static score 3,000 |
+|---|---|---|---|---|---|
+| veiðigjald | 7,190 | 8/10 | 10/10 | 8/10 | 9/10 |
+| verðbólga | 11,959 | 0/10 | 5/10 | 4/10 | 8/10 |
+| loftslagsmál | 4,812 | 3/10 | 10/10 | 3/10 | 8/10 |
+| kvótakerfi | 2,059 | 4/10 | 10/10 | 10/10 | 10/10 |
+| hælisleitandi | 1,728 | 6/10 | 10/10 | 10/10 | 10/10 |
+| sjávarútvegur | 22,675 | — | — | 3/10 | 4/10 |
+
+The static pre-score (type × debate × length, stored as `paragraph_index.q`) is what the cap uses. Big words
+(20k+ candidates) are only partially faithful under any cap: their `ranked_within.capped` flag says so.
+
+## 6. Deferred
+
+- Drop `paragraphs_fts` (310 MB) once nothing deployed reads it; `paragraphs_seq` stays (phrases).
+- Warm the LRUs at deploy with the popular queries (the MCP log has them).
+- `/leit/forslag` and entity search (27–45 ms: trigram + lateral seats aggregation) are fine but could read a
+  precomputed member summary.
+- Sitemap XML for a 45k-URL session is 0.75 s of generation; edge-cached as immutable, so left alone.

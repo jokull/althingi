@@ -103,8 +103,8 @@ export interface SearchResult {
 
 const MAX_LIMIT = 25;
 export const TOTAL_CAP = 10_000;
-/** paragraphs ranked per query at most: ~15 µs each (detoast + ts_rank_cd), so 5,000 ≈ 75 ms worst case */
-export const RANK_CAP = 5_000;
+/** paragraphs ranked per query at most: ~15 µs each warm, ~200 µs each cold (one heap page of paragraphs); 3,000 ≈ 45 ms warm / 0.6 s cold */
+export const RANK_CAP = 3_000;
 
 /** `rad20170101` — speech ids are timestamps, so a date is a pkey prefix on paragraphs (and speech_index). */
 export const idFloor = (date: string): string => `rad${date.replace(/-/g, "")}`;
