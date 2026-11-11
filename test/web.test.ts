@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
-import { type Sql, connect, migrate, upsertCommittees, upsertMatterDetail, upsertMatters, upsertMembers, upsertSeats, upsertSessions, upsertSpeechIndex } from "../src/db.ts";
+import { type Sql, connect, migrate, refreshCorpusState, upsertCommittees, upsertMatterDetail, upsertMatters, upsertMembers, upsertSeats, upsertSessions, upsertSpeechIndex } from "../src/db.ts";
 import { ingestSpeechXml } from "../src/ingest.ts";
+import { resetCorpusState } from "../src/corpus.ts";
 import { lemmaText } from "../src/lemma.ts";
 import { parseXml, descendants, kids, text as xmlText } from "../src/xml.ts";
 import { parseCommittees, parseMatterDetail, parseMatterList, parseMembers, parseSeats, parseSessions, parseSpeechList } from "../src/parse.ts";
@@ -37,6 +38,7 @@ beforeAll(async () => {
   await ingestSpeechXml(sql, speechId, fx(f));
   const [p] = await sql<{ text: string }[]>`select text from paragraphs where speech_id = ${speechId} order by length(text) desc limit 1`;
   word = p!.text.split(" ").map((w) => w.replace(/[^\p{L}]/gu, "")).find((w) => w.length > 7)!;
+  await refreshCorpusState(sql); // what the ingest post step does: the web layer reads the row, never computes it
   ok = true;
 });
 afterAll(async () => {
@@ -159,15 +161,22 @@ describe("web", () => {
     const live = await get(`/raeda/${speechId}`);
     expect(live.headers.get("cache-control")).toContain("s-maxage=300");
     expect(live.headers.get("cache-control")).not.toContain("31536000");
-    // finish the session (no pending left) and use a fresh app so the 60 s state cache is not reused
+    // finish the session (no pending left); the state is precomputed (the ingest post step runs corpus_state_refresh),
+    // so refresh it and use a fresh app so neither the 60 s app cache nor the 30 s corpus cache is reused
+    const fresh = async () => { await refreshCorpusState(sql); resetCorpusState(sql); return createApp(sql); };
     await sql`update speeches set text_state = 'error' where lthing = 148 and text_state = 'pending'`;
     // every text in, but its A-mál have no matter detail yet (a dump-ingested session): still short TTLs
     if ((await sql`select 1 from matters where lthing = 148 and cls = 'A'`).length) {
-      const textsOnly = await get(`/raeda/${speechId}`, {}, createApp(sql));
+      const textsOnly = await get(`/raeda/${speechId}`, {}, await fresh());
       expect(textsOnly.headers.get("cache-control")).toContain("s-maxage=300");
     }
     await sql`update matters set detail_fetched_at = now() where lthing = 148 and cls = 'A'`;
-    const done = await get(`/raeda/${speechId}`, {}, createApp(sql));
+    // a session that has not ENDED is never immutable, however complete its data looks
+    await sql`update sessions set ends = current_date + 1 where lthing = 148`;
+    const running = await get(`/raeda/${speechId}`, {}, await fresh());
+    expect(running.headers.get("cache-control")).toContain("s-maxage=300");
+    await sql`update sessions set ends = current_date - 1 where lthing = 148`;
+    const done = await get(`/raeda/${speechId}`, {}, await fresh());
     expect(done.headers.get("cache-control")).toContain("s-maxage=31536000");
     expect(done.headers.get("cache-control")).toContain("stale-if-error");
     const etag = done.headers.get("etag");

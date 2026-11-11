@@ -1,9 +1,16 @@
 import { matterPageUrl, speechPageUrl } from "./althingi-urls.ts";
-// Search v2 (docs/DECISIONS.md §9). One indexed query per page; snippets are computed in-process for the returned hits only.
+// Search v2 (docs/DECISIONS.md §9), query shape v3 (docs/PERFORMANCE.md §3.2). One statement per page; snippets are
+// computed in-process for the returned hits only.
 //   recall  : words -> AND of OR-groups of lemmas over paragraphs.search_vector (all candidate readings)
 //   phrase  : "quoted" -> adjacent best-guess lemmas over paragraphs.seq_vector (<->)
-//   rank    : ts_rank_cd(.., 1) x speech-type x debate-stage x matter-title match x recency
-//   shape   : results grouped by speech (best 2 paragraphs each), keyset paging, no OFFSET
+//   cand    : a MATERIALIZED CTE of (speech_id, seq) straight from the GIN, ANDed with a pkey range for dates (the id is
+//             the date) — ids only, no tsvector is ever read for a paragraph that is not ranked, and the planner can
+//             never turn `@@` into a heap filter (which detoasts the whole table: docs/PERFORMANCE.md §1)
+//   window  : a common word's candidates are capped (RANK_CAP): ranked within the newest sessions that fit
+//   rank    : ts_rank_cd(.., 1) x speech-type x debate-stage x matter-title match x recency, facts from speech_index
+//   shape   : results grouped by speech (best 2 paragraphs each), keyset paging, no OFFSET; total in the same statement
+import { Lru } from "./cache.ts";
+import { corpusState, type SessionInfo } from "./corpus.ts";
 import type { Sql } from "./db.ts";
 import { type ParsedQuery, describe, parseQuery } from "./explain.ts";
 import { type Snippet, snippets } from "./lemma.ts";
@@ -84,12 +91,69 @@ export interface SearchResult {
   totalCapped?: boolean;
   /** no words to search: the hits are the filtered speeches, newest first */
   browse?: boolean;
+  /**
+   * The ranked window when the query was too common to rank whole-corpus (docs/PERFORMANCE.md §3.2): hits and `total`
+   * cover speeches from `from` on (`to` for oldest-first); `capped` = even that window exceeded RANK_CAP paragraphs.
+   */
+  window?: { from: string | null; to: string | null; capped: boolean };
   /** the query as understood: shown to the user and returned by the MCP explain tool */
   query: { description: string; parsed: ParsedQuery };
 }
 
 const MAX_LIMIT = 25;
 export const TOTAL_CAP = 10_000;
+/** paragraphs ranked per query at most: ~15 µs each (detoast + ts_rank_cd), so 5,000 ≈ 75 ms worst case */
+export const RANK_CAP = 5_000;
+
+/** `rad20170101` — speech ids are timestamps, so a date is a pkey prefix on paragraphs (and speech_index). */
+export const idFloor = (date: string): string => `rad${date.replace(/-/g, "")}`;
+/** exclusive upper bound: the id prefix of the day after */
+export const idCeil = (date: string): string => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return `rad${d.toISOString().slice(0, 10).replace(/-/g, "")}`;
+};
+
+// paragraph counts per lemma (vocab.ndoc, refreshed nightly): only an estimate for the candidate cap
+const ndocCache = new Lru<Promise<Map<string, number>>>(2000);
+async function ndoc(sql: Sql, lemmas: string[]): Promise<Map<string, number>> {
+  const key = [...lemmas].sort().join("\u0001");
+  const hit = ndocCache.get(key);
+  if (hit) return hit;
+  const p = sql<{ word: string; ndoc: number }[]>`select word, ndoc from vocab where word = any(${lemmas})`
+    .then((rows) => new Map(rows.map((r) => [r.word, r.ndoc])));
+  ndocCache.set(key, p);
+  p.catch(() => ndocCache.delete(key));
+  return p;
+}
+
+/** Estimated candidate paragraphs: per AND-part the sum of its alternatives' counts, the minimum over parts. */
+export function estimateCandidates(p: ParsedQuery, counts: Map<string, number>): number {
+  let est = Number.POSITIVE_INFINITY;
+  for (const part of p.parts) {
+    const alts = part.kind === "word" ? [...part.lemmas, ...(part.allOf ?? []).flat()] : part.lemmas;
+    const known = alts.filter((l) => counts.has(l));
+    if (!known.length) continue; // unknown lemma (not in vocab): matches nothing or is a stopword kept out of vocab
+    const n = part.kind === "phrase" ? Math.min(...known.map((l) => counts.get(l)!)) : known.reduce((a, l) => a + counts.get(l)!, 0);
+    est = Math.min(est, n);
+  }
+  return Number.isFinite(est) ? est : 0;
+}
+
+/**
+ * The newest sessions whose share of the corpus keeps `est × share` within the cap: the search is ranked within them.
+ * `oldest` mirrors it from the other end. Returns the floor/ceiling date, or null when no window is needed.
+ */
+export function rankWindow(est: number, sessions: SessionInfo[], total: number, oldest = false, cap = RANK_CAP): { from: string | null; to: string | null } {
+  if (est <= cap || total <= 0) return { from: null, to: null };
+  const ordered = [...sessions].filter((s) => s.done > 0).sort((a, b) => (oldest ? a.lthing - b.lthing : b.lthing - a.lthing));
+  let acc = 0;
+  for (const s of ordered) {
+    acc += s.done;
+    if (est * (acc / total) >= cap) return oldest ? { from: null, to: s.last_date } : { from: s.first_date, to: null };
+  }
+  return { from: null, to: null };
+}
 const enc = (c: unknown[]) => Buffer.from(JSON.stringify(c)).toString("base64url");
 function dec(s: string): [number, string, string] {
   const c = JSON.parse(Buffer.from(s, "base64url").toString());
@@ -142,7 +206,23 @@ export function phraseTsQuery(p: ParsedQuery): string | null {
   return parts.length ? parts.join(" & ") : null;
 }
 
+// a page is immutable until the next ingest: memoized by (params, corpus_state.version); docs/PERFORMANCE.md §3.4
+const pageLru = new Lru<Promise<SearchResult>>(500);
 export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
+  const version = (await corpusState(sql)).version;
+  const key = `${version}|${JSON.stringify(p)}`;
+  let r = pageLru.get(key);
+  if (!r) {
+    r = searchUncached(sql, p);
+    pageLru.set(key, r);
+    r.catch(() => pageLru.delete(key));
+  }
+  const res = await r;
+  // callers append pages to `hits` (mcp-tools) and read timing: hand out a copy, keep the cached object pristine
+  return { ...res, hits: [...res.hits], timing: res.timing ? { ...res.timing } : undefined };
+}
+
+async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const tStart = performance.now();
   // postgres.js has no "join fragments" helper: fold a list of fragments into one
   const fold = (frags: ReturnType<Sql>[]) => frags.reduce((acc, f) => sql`${acc} ${f}`, sql``);
@@ -177,87 +257,147 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   // normalisation flag 1 (log length). Flag 0 was tried and judged a net regression (docs/EVAL-phase0.md v4: fewer relevant
   // hits, q02/q19 lost precision): long paragraphs with one passing mention then beat short substantive ones.
   const rank = rq ? sql`ts_rank_cd(${W}, p.search_vector, ${rq}, 1)` : pq ? sql`ts_rank_cd(${W}, p.seq_vector, ${pq}, 1)` : sql`1.0`;
-  const titleBoost = rq ? sql`case when m.title_vector @@ ${rq} then 1.3 else 1.0 end` : sql`1.0`;
-  // the WHERE clause, shared by the page query and the total count (a fresh fragment per use)
-  const where = () => sql`
-        ${rq ? sql`and p.search_vector @@ ${rq}` : sql``}
-        ${pq ? sql`and p.seq_vector @@ ${pq}` : sql``}
-        ${browse ? sql`and p.seq = 0` : sql``}
-        ${p.memberId !== undefined ? sql`and s.member_id = ${p.memberId}` : sql``}
-        ${p.type ? sql`and s.type = ${p.type}` : sql``}
-        ${p.lthing !== undefined ? sql`and s.lthing = ${p.lthing}` : sql``}
-        ${p.dateFrom ? sql`and s.speech_date >= ${p.dateFrom}` : sql``}
-        ${p.dateTo ? sql`and s.speech_date <= ${p.dateTo}` : sql``}
-        ${p.matterCls && p.matterNr !== undefined ? sql`and s.matter_cls = ${p.matterCls} and s.matter_nr = ${p.matterNr}` : sql``}
-        ${p.partyId !== undefined ? sql`and exists (
-            select 1 from seats st
-            where st.member_id = s.member_id and st.party_id = ${p.partyId} and st.kind in ('þingmaður', 'varamaður')
-              and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31'))` : sql``}
-        ${p.office ? sql`and s.office ilike ${p.office.replace(/[%_\\]/g, "\\$&") + "%"}` : sql``}
-        ${p.debate?.length ? sql`and s.debate = any(${p.debate})` : sql``}
-        ${p.capacity ? sql`and s.speaker_capacity = ${p.capacity}` : sql``}
-        ${prox ? sql`and p.seq_vector @@ to_tsquery('simple', ${prox})` : sql``}`;
+  const titleBoost = rq ? sql`case when f.title_vec @@ ${rq} then 1.3 else 1.0 end` : sql`1.0`;
 
+  // ---- the window: dates (and a session) become a pkey range; a common word is ranked within the newest sessions only
+  const state = await corpusState(sql);
+  const session = p.lthing !== undefined ? state.sessions.find((s) => s.lthing === p.lthing) : undefined;
+  let from = p.dateFrom, to = p.dateTo;
+  if (session?.first_date && (!from || session.first_date > from)) from = session.first_date;
+  if (session?.last_date && (!to || session.last_date < to)) to = session.last_date;
+  let window: SearchResult["window"];
+  const selective = p.memberId !== undefined || p.partyId !== undefined || (!!p.matterCls && p.matterNr !== undefined);
+  if (!browse && !selective) {
+    const lemmas = new Set<string>();
+    for (const part of parsed.parts) { part.lemmas.forEach((l) => lemmas.add(l)); part.allOf?.flat().forEach((l) => lemmas.add(l)); }
+    let est = estimateCandidates(parsed, await ndoc(sql, [...lemmas]));
+    // an explicit date range already narrows the candidates in proportion to its share of the corpus
+    if ((from || to) && state.speechesDone > 0) {
+      const inRange = state.sessions.filter((s) => s.done > 0 && (!from || !s.last_date || s.last_date >= from) && (!to || !s.first_date || s.first_date <= to))
+        .reduce((a, s) => a + s.done, 0);
+      est = est * (inRange / state.speechesDone);
+    }
+    const w = rankWindow(est, state.sessions, state.speechesDone, oldest);
+    if (w.from && (!from || w.from > from)) { from = w.from; window = { from, to: null, capped: false }; }
+    if (w.to && (!to || w.to < to)) { to = w.to; window = { from: null, to, capped: false }; }
+  }
+  const idFrom = from ? idFloor(from) : null;
+  const idTo = to ? idCeil(to) : null;
+  // speech-level filters (speech_index, indexed): applied to the candidate ids before anything is ranked
+  const siFilters = () => sql`
+        ${p.memberId !== undefined ? sql`and si.member_id = ${p.memberId}` : sql``}
+        ${p.type ? sql`and si.type = ${p.type}` : sql``}
+        ${p.lthing !== undefined ? sql`and si.lthing = ${p.lthing}` : sql``}
+        ${p.matterCls && p.matterNr !== undefined ? sql`and si.matter_cls = ${p.matterCls} and si.matter_nr = ${p.matterNr}` : sql``}
+        ${p.partyId !== undefined ? sql`and si.party_id = ${p.partyId}` : sql``}
+        ${p.debate?.length ? sql`and si.debate = any(${p.debate})` : sql``}
+        ${idFrom ? sql`and si.id >= ${idFrom}` : sql``}
+        ${idTo ? sql`and si.id < ${idTo}` : sql``}`;
+  // office / capacity live on speeches only (rare filters): one pkey lookup per candidate speech
+  const speechFilters = () => sql`
+        ${p.office ? sql`and exists (select 1 from speeches s where s.id = si.id and s.office ilike ${p.office.replace(/[%_\\]/g, "\\$&") + "%"})` : sql``}
+        ${p.capacity ? sql`and exists (select 1 from speeches s where s.id = si.id and s.speaker_capacity = ${p.capacity})` : sql``}`;
+  const needSi = p.memberId !== undefined || !!p.type || p.lthing !== undefined || (!!p.matterCls && p.matterNr !== undefined)
+    || p.partyId !== undefined || !!p.debate?.length || !!p.office || !!p.capacity;
+
+  const cursorCond = () => cur
+    ? newest
+      ? sql`and (started, speech_id) < (${cur[1]}::timestamp, ${cur[2]})`
+      : oldest
+        ? sql`and (started, speech_id) > (${cur[1]}::timestamp, ${cur[2]})`
+        : sql`and (score, started, speech_id) < (${cur[0]}::float8, ${cur[1]}::timestamp, ${cur[2]})`
+    : sql``;
+  const pageOrder = newest ? sql`order by started desc, speech_id desc` : oldest ? sql`order by started, speech_id` : sql`order by score desc, started desc, speech_id desc`;
+
+  type Row = {
+    speech_id: string; seq: number; text: string; score: number; speech_date: string; started: Date; started_txt: string;
+    member_id: number | null; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
+    lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean; html_url: string | null;
+    tok_lemma: string[] | null; tok_start: number[] | null; tok_len: number[] | null; total: number | null; n_cand: number | null;
+  };
   const tDb = performance.now();
-  const rows = await sql<
-    {
-      speech_id: string; seq: number; text: string; score: number; speech_date: string; started: Date; started_txt: string;
-      member_id: number | null; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
-      lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean; html_url: string | null;
-      tok_lemma: string[] | null; tok_start: number[] | null; tok_len: number[] | null;
-    }[]
-  >`
-    with hits as (
-      select p.speech_id, p.seq, p.text, s.speech_date::text, s.started, s.started::text as started_txt,
+  const rows = browse
+    ? await sql<Row[]>`
+      with best as (
+        select si.id as speech_id, si.started, 1.0::float8 as score from speech_index si
+        where true ${siFilters()} ${speechFilters()} ${cursorCond()}
+        ${pageOrder} limit ${limit + 1}
+      )
+      select b.speech_id, 0 as seq, coalesce(p.text, '') as text, b.score, s.speech_date::text, s.started, s.started::text as started_txt,
              s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
-             s.provisional, s.html_url,
+             1 as rn, 1 as n_par, s.provisional, s.html_url, null::text[] as tok_lemma, null::int[] as tok_start, null::smallint[] as tok_len,
+             ${p.withTotal && !p.cursor ? sql`(select count(*)::int from (select 1 from speech_index si where true ${siFilters()} ${speechFilters()} limit ${TOTAL_CAP + 1}) x)` : sql`null::int`} as total,
+             null::int as n_cand
+      from best b join speeches s on s.id = b.speech_id
+      left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
+      left join paragraphs p on p.speech_id = b.speech_id and p.seq = 0
+      ${newest ? sql`order by b.started desc, b.speech_id desc` : sql`order by b.started, b.speech_id`}`
+    : await sql<Row[]>`
+      with cand as materialized (
+        ${rq
+          // recall words: the narrow paragraph_index (ids only, GIN over para_vec); phrase/number conditions recheck
+          // the sequence vector of those candidates only
+          ? sql`select p.speech_id, p.seq from paragraph_index p
+          where para_vec(p.speech_id, p.seq) @@ ${rq}
+          ${pq || prox ? sql`and exists (select 1 from paragraphs q where q.speech_id = p.speech_id and q.seq = p.seq
+            ${pq ? sql`and q.seq_vector @@ ${pq}` : sql``}
+            ${prox ? sql`and q.seq_vector @@ to_tsquery('simple', ${prox})` : sql``})` : sql``}`
+          // phrase-only queries: the sequence GIN on paragraphs (positions are needed, so the recheck reads the row)
+          : sql`select p.speech_id, p.seq from paragraphs p
+          where p.seq_vector @@ ${pq}
+          ${prox ? sql`and p.seq_vector @@ to_tsquery('simple', ${prox})` : sql``}`}
+          ${idFrom ? sql`and p.speech_id >= ${idFrom}` : sql``}
+          ${idTo ? sql`and p.speech_id < ${idTo}` : sql``}
+          ${needSi ? sql`and p.speech_id in (select si.id from speech_index si where true ${siFilters()} ${speechFilters()})` : sql``}
+      ),
+      filtered as (
+        select c.speech_id, c.seq, si.started, si.type, si.debate, si.lthing, si.title_vec
+        from cand c join speech_index si on si.id = c.speech_id
+      ),
+      stats as (select count(distinct speech_id)::int as total, count(*)::int as n_cand from filtered),
+      capped as (select * from filtered ${byTime ? sql`` : sql`order by speech_id desc, seq limit ${RANK_CAP}`}),
+      scored as (
+        ${byTime
+          ? sql`select f.*, 1.0::float8 as score from capped f`
+          : sql`select f.*,
              (${rank}
-               * case s.type when 'ræða' then 1.0 when 'flutningsræða' then 1.0 when 'svar' then 1.0
+               * case f.type when 'ræða' then 1.0 when 'flutningsræða' then 1.0 when 'svar' then 1.0
                              when 'andsvar' then 0.8 when 'grein fyrir atkvæði' then 0.6
                              when 'um atkvæðagreiðslu' then 0.6 when 'um fundarstjórn' then 0.4 else 0.8 end
-               * case when s.debate in ('1', '2', '3') then 1.0 else 0.9 end
+               * case when f.debate in ('1', '2', '3') then 1.0 else 0.9 end
                * least(1.0, ln(1 + length(p.text) / 6.0) / ln(44.0)) -- one-liners ("Virðulegi forseti.") must not beat substantive paragraphs
                * ${titleBoost}
                * ${exactBoost.length ? exactBoost.reduce((acc, f) => sql`${acc} * ${f}`) : sql`1.0`}
-               * case when s.lthing = ${current} then 1.1 else 1.0 end)::float8 as score
-      from paragraphs p
-      join speeches s on s.id = p.speech_id
+               * case when f.lthing = ${current} then 1.1 else 1.0 end)::float8 as score
+            from capped f join paragraphs p on p.speech_id = f.speech_id and p.seq = f.seq`}
+      ),
+      ranked as (
+        select h.*, row_number() over (partition by speech_id order by score desc, seq) as rn,
+               count(*) over (partition by speech_id) as n_par
+        from scored h
+      ),
+      best as (
+        select speech_id, score, started from ranked
+        where rn = 1 ${cursorCond()}
+        ${pageOrder}
+        limit ${limit + 1}
+      )
+      select r.speech_id, r.seq, p.text, r.score, s.speech_date::text, r.started, r.started::text as started_txt,
+             s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
+             r.rn, r.n_par, s.provisional, s.html_url, t.lemma as tok_lemma, t.start as tok_start, t.len as tok_len,
+             ${p.withTotal && !p.cursor ? sql`(select total from stats)` : sql`null::int`} as total,
+             ${byTime ? sql`null::int` : sql`(select n_cand from stats)`} as n_cand
+      from ranked r join best b on b.speech_id = r.speech_id
+      join paragraphs p on p.speech_id = r.speech_id and p.seq = r.seq
+      join speeches s on s.id = r.speech_id
       left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
-      where true ${where()}
-    ),
-    ranked as (
-      select h.*, row_number() over (partition by speech_id order by score desc, seq) as rn,
-             count(*) over (partition by speech_id) as n_par
-      from hits h
-    ),
-    best as (
-      select speech_id, score, started from ranked
-      where rn = 1
-        ${cur
-          ? newest
-            ? sql`and (started, speech_id) < (${cur[1]}::timestamp, ${cur[2]})`
-            : oldest
-              ? sql`and (started, speech_id) > (${cur[1]}::timestamp, ${cur[2]})`
-              : sql`and (score, started, speech_id) < (${cur[0]}::float8, ${cur[1]}::timestamp, ${cur[2]})`
-          : sql``}
-      ${newest ? sql`order by started desc, speech_id desc` : oldest ? sql`order by started, speech_id` : sql`order by score desc, started desc, speech_id desc`}
-      limit ${limit + 1}
-    )
-    select r.*, t.lemma as tok_lemma, t.start as tok_start, t.len as tok_len
-    from ranked r join best b on b.speech_id = r.speech_id
-    left join paragraph_tokens t on t.speech_id = r.speech_id and t.seq = r.seq
-    where r.rn <= 2
-    ${newest ? sql`order by b.started desc, r.speech_id desc, r.rn` : oldest ? sql`order by b.started, r.speech_id, r.rn` : sql`order by b.score desc, b.started desc, r.speech_id desc, r.rn`}`;
+      left join paragraph_tokens t on t.speech_id = r.speech_id and t.seq = r.seq
+      where r.rn <= 2
+      ${newest ? sql`order by b.started desc, r.speech_id desc, r.rn` : oldest ? sql`order by b.started, r.speech_id, r.rn` : sql`order by b.score desc, b.started desc, r.speech_id desc, r.rn`}`;
 
   const dbMs = performance.now() - tDb;
-  let total: number | undefined;
-  if (p.withTotal && !p.cursor) {
-    const [c] = await sql<{ n: number }[]>`
-      select count(*)::int as n from (
-        select distinct p.speech_id from paragraphs p join speeches s on s.id = p.speech_id
-        where true ${where()} limit ${TOTAL_CAP + 1}) x`;
-    total = c?.n ?? 0;
-  }
+  const total = p.withTotal && !p.cursor ? (rows[0]?.total ?? 0) : undefined;
+  if (!byTime && (rows[0]?.n_cand ?? 0) > RANK_CAP) window = { from: from ?? null, to: to ?? null, capped: true };
   const cards = rq
     ? await sql<{ lthing: number; cls: string; nr: number; title: string; html_url: string | null }[]>`
         select lthing, cls, nr, title, html_url from matters m
@@ -309,5 +449,6 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
     hits: page.map(({ _startedTxt, ...h }) => h),
     ...(total !== undefined ? { total: Math.min(total, TOTAL_CAP), totalCapped: total > TOTAL_CAP } : {}),
     ...(browse ? { browse: true } : {}),
+    ...(window ? { window } : {}),
   };
 }

@@ -14,6 +14,7 @@ import { aboutMd, corpusFacts, homeJsonLd, homeMd, llmsFullTxt, llmsTxt, mcpMd, 
 import { clearWinner, findMembers, suggest } from "./suggest.ts";
 import { committeePage, composition, corpusStats, dayPage, docPage, isSpeechId, lawPage, matterExtras, matterFeed, matterPage, matterTranscript, memberPage, partiesFor, partyPage, sessionState, speechPage, topicPage } from "./queries.ts";
 import { describeIntent, interpret, type NamedId } from "./intent.ts";
+import { readCorpusState } from "./corpus.ts";
 import { fmtDateTime, mdHref } from "./pages.tsx";
 import { AgentsSection, McpPage } from "./agent-pages.tsx";
 import { KINDS, nameMatches, searchEntities, type Kind } from "./entities.ts";
@@ -153,19 +154,21 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   });
 
   app.get("/healthz", async (c) => {
+    // cheap by design (docs/PERFORMANCE.md §3.4): one fresh read of the precomputed corpus row as the DB round-trip
+    // check, plus three small indexed lookups; never a whole-table count
     const t0 = performance.now();
-    const st = await corpusStats(sql);
+    const st = await readCorpusState(sql);
     const ageH = st.lastIngest ? (Date.now() - st.lastIngest.getTime()) / 3_600_000 : null;
-    const [ing] = await sql<{ last_poll_at: Date | null; last_dump_drop: Date | null; unresolved_speakers: number; pending_texts: number; blocked_runs: number }[]>`
+    const [ing] = await sql<{ last_poll_at: Date | null; last_dump_drop: Date | null; unresolved_speakers: number; blocked_runs: number }[]>`
       select (select max(finished) from ingest_runs where kind = 'service poll' and status = 'ok') as last_poll_at,
              (select max(downloaded_at) from dump_drops) as last_dump_drop,
              (select count(*)::int from speeches where member_id is null) as unresolved_speakers,
-             (select count(*)::int from speeches where text_state = 'pending') as pending_texts,
              (select count(*)::int from ingest_runs where status in ('blocked', 'rate-limited') and started > now() - interval '24 hours') as blocked_runs`;
     return c.json({
-      ok: true, db_ms: Math.round(performance.now() - t0), speeches: st.speeches, last_ingest_age_hours: ageH === null ? null : Math.round(ageH * 10) / 10,
+      ok: true, db_ms: Math.round(performance.now() - t0), speeches: st.speechesDone, last_ingest_age_hours: ageH === null ? null : Math.round(ageH * 10) / 10,
+      corpus_state_version: st.version, corpus_state_age_minutes: st.updatedAt ? Math.round((Date.now() - st.updatedAt.getTime()) / 60_000) : null,
       last_poll_at: ing?.last_poll_at ?? null, last_dump_drop: ing?.last_dump_drop ?? null,
-      unresolved_speakers: ing?.unresolved_speakers ?? 0, pending_texts: ing?.pending_texts ?? 0, blocked_runs_24h: ing?.blocked_runs ?? 0,
+      unresolved_speakers: ing?.unresolved_speakers ?? 0, pending_texts: st.sessions.reduce((a, s) => a + s.pending, 0), blocked_runs_24h: ing?.blocked_runs ?? 0,
     });
   });
 
