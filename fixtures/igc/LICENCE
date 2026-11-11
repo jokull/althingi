@@ -1,0 +1,5 @@
+Trimmed excerpts of IGC-Parla 2026 (Icelandic Gigaword Corpus: parliamentary speeches, unannotated TEI version),
+Árni Magnússon Institute for Icelandic Studies, http://hdl.handle.net/20.500.12537/393.
+Licence: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/.
+Changes: 1999/IGC-Parla_1999-03-02-75.xml keeps 6 of 47 <u> (u1, u4, u5, u15–u17); IGC-Parla-2026.xml keeps the
+title/publication statements and the five <person> entries those utterances need. Built by scratch script mkfixture.py.

@@ -6,7 +6,7 @@ import { glossaryMd } from "./markdown.ts";
 
 export const MCP_URL = `${SITE}/mcp`;
 export const SERVER_NAME = "is.solberg.althingi/althingi"; // registry namespace via HTTP verification of althingi.solberg.is
-export const ATTRIBUTION = "Gögn / data: Alþingi (https://www.althingi.is), opin XML-þjónusta og gagnasafn þess. Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.";
+export const ATTRIBUTION = "Gögn / data: Alþingi (https://www.althingi.is), opin XML-þjónusta og gagnasafn þess. Ræðutexti 1991–2004 (þar sem hann er til): Íslenska risamálheildin, þingræðumálheild (IGC-Parla 2026), Stofnun Árna Magnússonar í íslenskum fræðum, CC BY 4.0, http://hdl.handle.net/20.500.12537/393 (klippt úr TEI-skrám, málsgreinaskipt). Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.";
 export const RATE = "60 MCP requests a minute per client IP (HTTP 429 + Retry-After when exceeded); the edge also blocks bursts above 40 requests / 10 s on /mcp and /leit.";
 
 /** Copy-paste connect instructions. Verified against each vendor's docs on 2026-11-11 (docs/AGENTS.md). */

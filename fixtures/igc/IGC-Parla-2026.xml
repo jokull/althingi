@@ -1,0 +1,187 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<teiCorpus xmlns="http://www.tei-c.org/ns/1.0" xml:lang="is" xml:id="IGC-Parla">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title type="main" xml:lang="is">Íslenska risamálheildin: þingræðumálheild, IGC-Parla.2026 [IGC-Parla]</title>
+        <title type="main" xml:lang="en">Icelandic Gigaword Corpus: Parliamentary corpus, IGC-Parla.2026 [IGC-Parla]</title>
+        <title type="sub" xml:lang="is">Ræður frá Alþingi Íslendinga, 1909-01-01 - 2025-12-31.</title>
+        <title type="sub" xml:lang="en">Speeches in the national parliament of Iceland, 1909-01-01 - 2025-12-31.</title>
+        <meeting n="24" ana="#parla.term #LV.24">24. kjörtímabil</meeting>
+        <meeting n="25" ana="#parla.term #LV.25">25. kjörtímabil</meeting>
+        <respStmt>
+          <persName>Starkaður Barkarson</persName>
+          <resp xml:lang="is">Söfnun og úrvinnsla texta. TEI-kóðun.</resp>
+          <resp xml:lang="en">Collection and processing of texts. TEI encoding.</resp>
+        </respStmt>
+        <respStmt>
+          <persName>Hinrik Hafsteinsson</persName>
+          <resp xml:lang="is">Söfnun og úrvinnsla texta. TEI-kóðun.</resp>
+          <resp xml:lang="en">Collection and processing of texts. TEI encoding.</resp>
+        </respStmt>
+        <funder>
+          <orgName xml:lang="is">Ministry of Education, Science and Culture (Mennta- og menningamálaráðuneytið)</orgName>
+        </funder>
+      </titleStmt>
+      <publicationStmt>
+        <publisher>
+          <orgName xml:lang="is">Stofnun Árna Magnússonar í íslenskum fræðum</orgName>
+          <orgName xml:lang="en">Árni Magnússon Institute for Icelandic Studies</orgName>
+          <ref target="https://www.arnastofnun.is/">www.arnastofnun.is</ref>
+        </publisher>
+        <idno type="handle">http://hdl.handle.net/20.500.12537/393</idno>
+        <availability status="free">
+          <licence>http://creativecommons.org/licenses/by/4.0/</licence>
+          <p xml:lang="is">Þessi texti er gefinn út með <ref target="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</ref>.</p>
+          <p xml:lang="en">This work is licensed under the<ref target="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</ref>.</p>
+        </availability>
+        <date when="2026-09-01">2026-09-01</date>
+      </publicationStmt>
+    </fileDesc>
+    <profileDesc>
+      <particDesc>
+        <listPerson>
+          <person xml:id="GudmundurStefansson">
+            <persName>
+              <forename>Guðmundur</forename>
+              <forename>Árni</forename>
+              <surname>Stefánsson</surname>
+            </persName>
+            <sex value="M"/>
+            <birth when="1955-10-31"/>
+            <affiliation role="member" ref="#party.A" from="1991-10-08" to="1994-02-02" ana="#LV.15"/>
+            <affiliation role="replacement" ref="#LV" from="1991-10-08" to="1991-10-30" ana="#LV.15 #const.Reyknesinga"/>
+            <affiliation role="member" ref="#LV" from="1993-06-14" to="1993-09-30" ana="#LV.15 #const.Reyknesinga"/>
+            <affiliation role="minister" ref="#GOV_LV" from="1993-06-14" to="1993-09-30" ana="#mstr.heilbrigdi #GOV_LV.33">
+              <roleName xml:lang="is">Heilbirigðisráðherra</roleName>
+              <roleName xml:lang="en">Minister of Health</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="1993-06-14" to="1994-10-01" ana="#GOV_LV.33"/>
+            <affiliation role="member" ref="#party.A" from="1994-02-16" to="1996-09-30" ana="#LV.16"/>
+            <affiliation role="minister" ref="#GOV_LV" from="1994-06-24" to="1994-10-01" ana="#mstr.felagsmal #GOV_LV.33">
+              <roleName xml:lang="is">Félagsmálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Social Affairs</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#party.JA" from="1996-10-01" to="1999-02-19" ana="#LV.16"/>
+            <affiliation role="member" ref="#party.Sf" from="1999-02-19" to="2003-05-10" ana="#LV.17"/>
+            <affiliation role="member" ref="#party.Sf" from="2003-05-10" to="2005-09-01" ana="#LV.18"/>
+            <idno type="URL">http://althingi.is/altext/cv/is/?nfaerslunr=7</idno>
+          </person>
+          <person xml:id="JohannaSigurdardottir">
+            <persName>
+              <forename>Jóhanna</forename>
+              <surname>Sigurðardóttir</surname>
+            </persName>
+            <sex value="F"/>
+            <birth when="1942-10-04"/>
+            <affiliation role="member" ref="#party.A" from="1978-06-25" to="1979-12-12" ana="#LV.11"/>
+            <affiliation role="member" ref="#LV" from="1978-06-25" to="1979-10-09" ana="#LV.11 #const.Reykvikinga"/>
+            <affiliation role="member" ref="#party.A" from="1979-12-12" to="1983-04-22" ana="#LV.12"/>
+            <affiliation role="member" ref="#party.A" from="1983-04-23" to="1987-10-09" ana="#LV.13"/>
+            <affiliation role="member" ref="#party.A" from="1987-10-10" to="1991-05-12" ana="#LV.14"/>
+            <affiliation role="minister" ref="#GOV_LV" from="1987-10-10" to="1988-09-27" ana="#mstr.felagsmal #GOV_LV.30">
+              <roleName xml:lang="is">Félagsmálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Social Affairs</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="1987-10-10" to="1988-09-27" ana="#GOV_LV.30"/>
+            <affiliation role="minister" ref="#GOV_LV" from="1988-09-28" to="1988-10-09" ana="#mstr.felagsmal #GOV_LV.31">
+              <roleName xml:lang="is">Félagsmálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Social Affairs</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="1988-09-28" to="1988-10-09" ana="#GOV_LV.31"/>
+            <affiliation role="member" ref="#party.A" from="1991-05-13" to="1994-10-01" ana="#LV.15"/>
+            <affiliation role="member" ref="#party.U" from="1994-10-01" to="1995-04-08" ana="#LV.15"/>
+            <affiliation role="member" ref="#party.Þ" from="1995-04-08" to="1996-09-30" ana="#LV.16"/>
+            <affiliation role="member" ref="#party.JA" from="1996-10-01" to="1999-02-19" ana="#LV.16"/>
+            <affiliation role="member" ref="#party.Sf" from="1999-02-19" to="2003-05-10" ana="#LV.17"/>
+            <affiliation role="member" ref="#party.Sf" from="2003-05-10" to="2007-05-11" ana="#LV.18"/>
+            <affiliation role="member" ref="#party.Sf" from="2007-05-12" to="2008-09-30" ana="#LV.19"/>
+            <affiliation role="minister" ref="#GOV_LV" from="2008-01-01" to="2008-09-30" ana="#mstr.tryggingamal #mstr.felagsmal #GOV_LV.39">
+              <roleName xml:lang="is">Trygginga- og félagsmálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Inscurance and Social Affairs</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="2008-01-01" to="2008-09-30" ana="#GOV_LV.39"/>
+            <affiliation role="member" ref="#party.Sf" from="2008-10-01" to="2013-04-27" ana="#LV.20"/>
+            <affiliation role="minister" ref="#GOV_LV" from="2009-02-01" to="2009-04-25" ana="#mstr.forsaeti #GOV_LV.40">
+              <roleName xml:lang="is">Forsætisráðherra</roleName>
+              <roleName xml:lang="en">Prime Minister</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="2009-02-01" to="2009-04-25" ana="#GOV_LV.40"/>
+            <idno type="URL">http://althingi.is/altext/cv/is/?nfaerslunr=287</idno>
+          </person>
+          <person xml:id="OgmundurJonasson">
+            <persName>
+              <forename>Ögmundur</forename>
+              <surname>Jónasson</surname>
+            </persName>
+            <sex value="M"/>
+            <birth when="1948-07-17"/>
+            <affiliation role="member" ref="#party.Ab" from="1995-04-08" to="1998-10-01" ana="#LV.16"/>
+            <affiliation role="member" ref="#LV" from="1995-04-08" to="1995-10-02" ana="#LV.16 #const.Reykvikinga"/>
+            <affiliation role="member" ref="#party.Óh" from="1998-10-01" to="1999-05-08" ana="#LV.16"/>
+            <affiliation role="member" ref="#party.Vg" from="1999-05-08" to="2003-05-10" ana="#LV.17"/>
+            <affiliation role="member" ref="#party.Vg" from="2003-05-10" to="2007-05-11" ana="#LV.18"/>
+            <affiliation role="member" ref="#party.Vg" from="2007-05-12" to="2008-09-30" ana="#LV.19"/>
+            <affiliation role="member" ref="#party.Vg" from="2008-10-01" to="2012-09-10" ana="#LV.20"/>
+            <affiliation role="minister" ref="#GOV_LV" from="2009-02-01" to="2009-04-25" ana="#mstr.heilbrigdi #GOV_LV.40">
+              <roleName xml:lang="is">Heilbirigðisráðherra</roleName>
+              <roleName xml:lang="en">Minister of Health</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="2009-02-01" to="2009-04-25" ana="#GOV_LV.40"/>
+            <affiliation role="minister" ref="#GOV_LV" from="2010-09-02" to="2010-12-31" ana="#mstr.sveitastjorn #mstr.samgongur #GOV_LV.41">
+              <roleName xml:lang="is">Sveitastjórna- og samgöngumálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Municipal Affairs and Transport</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="2010-09-02" to="2011-09-30" ana="#GOV_LV.41"/>
+            <affiliation role="minister" ref="#GOV_LV" from="2011-01-01" to="2011-09-30" ana="#mstr.innanrikismal #GOV_LV.41">
+              <roleName xml:lang="is">Innanríkiráðherra</roleName>
+              <roleName xml:lang="en">Minister of the Interior</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#party.Vg" from="2012-09-11" to="2016-10-28" ana="#LV.21"/>
+            <idno type="URL">http://althingi.is/altext/cv/is/?nfaerslunr=630</idno>
+          </person>
+          <person xml:id="PallPetursson">
+            <persName>
+              <forename>Páll</forename>
+              <surname>Pétursson</surname>
+            </persName>
+            <sex value="M"/>
+            <birth when="1937-03-17"/>
+            <affiliation role="member" ref="#party.F" from="1974-06-30" to="1978-05-06" ana="#LV.10"/>
+            <affiliation role="member" ref="#LV" from="1974-06-30" to="1974-10-28" ana="#LV.10 #const.Nordurland_vestra"/>
+            <affiliation role="member" ref="#party.F" from="1978-10-10" to="1979-05-23" ana="#LV.11"/>
+            <affiliation role="member" ref="#party.F" from="1979-10-10" to="1983-04-22" ana="#LV.12"/>
+            <affiliation role="member" ref="#party.F" from="1983-04-23" to="1987-10-09" ana="#LV.13"/>
+            <affiliation role="member" ref="#party.F" from="1987-10-10" to="1991-05-12" ana="#LV.14"/>
+            <affiliation role="member" ref="#party.F" from="1991-05-13" to="1995-02-06" ana="#LV.15"/>
+            <affiliation role="member" ref="#party.F" from="1995-02-20" to="1999-03-06" ana="#LV.16"/>
+            <affiliation role="minister" ref="#GOV_LV" from="1995-05-16" to="1995-10-02" ana="#mstr.felagsmal #GOV_LV.34">
+              <roleName xml:lang="is">Félagsmálaráðherra</roleName>
+              <roleName xml:lang="en">Minister of Social Affairs</roleName>
+            </affiliation>
+            <affiliation role="member" ref="#GOV_LV" from="1995-05-16" to="1995-10-02" ana="#GOV_LV.34"/>
+            <affiliation role="member" ref="#party.F" from="1999-03-25" to="2003-05-10" ana="#LV.17"/>
+            <idno type="URL">http://althingi.is/altext/cv/is/?nfaerslunr=467</idno>
+          </person>
+          <person xml:id="PeturBlondal1944">
+            <persName>
+              <forename>Pétur</forename>
+              <forename>H.</forename>
+              <surname>Blöndal</surname>
+            </persName>
+            <sex value="M"/>
+            <birth when="1944-06-24"/>
+            <affiliation role="member" ref="#party.S" from="1995-04-08" to="1996-09-30" ana="#LV.16"/>
+            <affiliation role="member" ref="#LV" from="1995-04-08" to="1995-10-02" ana="#LV.16 #const.Reykvikinga"/>
+            <affiliation role="member" ref="#party.S" from="1996-10-01" to="2003-05-10" ana="#LV.17"/>
+            <affiliation role="member" ref="#party.S" from="2003-05-10" to="2007-05-11" ana="#LV.18"/>
+            <affiliation role="member" ref="#party.S" from="2007-05-12" to="2008-09-30" ana="#LV.19"/>
+            <affiliation role="member" ref="#party.S" from="2008-10-01" to="2013-04-27" ana="#LV.20"/>
+            <affiliation role="member" ref="#party.S" from="2013-04-27" to="2015-06-26" ana="#LV.21"/>
+            <idno type="URL">http://althingi.is/altext/cv/is/?nfaerslunr=477</idno>
+          </person>
+        </listPerson>
+      </particDesc>
+    </profileDesc>
+  </teiHeader>
+</teiCorpus>
