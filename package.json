@@ -1,0 +1,25 @@
+{
+  "name": "althingi-search",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/mcp": "^0.3.5",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "domhandler": "^6.0.1",
+    "domutils": "^4.0.2",
+    "hono": "^4.13.17",
+    "htmlparser2": "^12.0.0",
+    "htmx.org": "^2.0.11",
+    "lemma-is": "0.12.0",
+    "postgres": "^4.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}

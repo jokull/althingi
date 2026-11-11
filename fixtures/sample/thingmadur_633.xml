@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<þingmaður id='633'>
+<nafn>Þórunn Sveinbjarnardóttir</nafn>
+<fæðingardagur>1965-11-22</fæðingardagur>
+<facebook>https://facebook.com/thorunnsveinb</facebook>
+<twitter>https://twitter.com/Sveinbjarnar65</twitter>
+<netfang>
+	<nafn>thorunn.sveinbjarnardottir</nafn>
+	<lén>althingi.is</lén>
+</netfang>
+<símanúmer>
+<farsími>842-2822</farsími>
+<lögheimilissími>551-7922</lögheimilissími>
+</símanúmer>
+<núverandiþingseta>
+<kjördæmi skammstöfun='SV' kjördæmisnúmer='11'>Suðvesturkjördæmi</kjördæmi>
+<þingflokkur skammstöfun='Sf'>Samfylkingin</þingflokkur>
+</núverandiþingseta>
+<núverandiembætti>
+<embætti skammstöfun='fors.'>
+							<embættisheiti>forseti</embættisheiti>
+</embætti></núverandiembætti>
+<xml>
+<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=633</lífshlaup>
+<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=633</hagsmunir>
+<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=633</þingseta>
+<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=633</nefndaseta>
+<ræðulisti>https://www.althingi.is/altext/xml/thingmenn/thingmadur/raedur/?nr=633</ræðulisti>
+</xml>
+<html>
+<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=633</lífshlaup>
+<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=633</hagsmunir>
+<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=633</þingstörf>
+</html>
+</þingmaður>

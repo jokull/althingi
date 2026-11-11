@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<þingmaður id='633'>
+<nafn>Þórunn Sveinbjarnardóttir</nafn>
+<xml>
+<lífshlaup>http://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=633</lífshlaup>
+<hagsmunir>http://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=633</hagsmunir>
+<þingseta>http://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=633</þingseta>
+<nefndaseta>http://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=633</nefndaseta>
+</xml>
+<html>
+<lífshlaup>http://www.althingi.is/altext/cv/?nfaerslunr=633</lífshlaup>
+<hagsmunir>http://www.althingi.is/altext/hagsmunir/?faerslunr=633</hagsmunir>
+<þingstörf>http://www.althingi.is/vefur/thmstorf.html?nfaerslunr=633</þingstörf>
+</html>
+
+<þingsetur>
+<þingseta>
+<þing>120</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>varamaður</tegund>
+<þingflokkur id='39'>Samtök um kvennalista</þingflokkur>
+<kjördæmi id='22'><![CDATA[Reykjavík]]></kjördæmi>
+<kjördæmanúmer>19</kjördæmanúmer>
+<þingsalssæti>22</þingsalssæti>
+<tímabil>
+<inn>16.04.1996</inn><út>30.04.1996</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>121</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>varamaður</tegund>
+<þingflokkur id='39'>Samtök um kvennalista</þingflokkur>
+<kjördæmi id='22'><![CDATA[Reykjavík]]></kjördæmi>
+<kjördæmanúmer>19</kjördæmanúmer>
+<þingsalssæti>46</þingsalssæti>
+<tímabil>
+<inn>04.11.1996</inn><út>18.11.1996</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>124</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>52</þingsalssæti>
+<tímabil>
+<inn>08.05.1999</inn><út>01.10.1999</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>125</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>55</þingsalssæti>
+<tímabil>
+<inn>01.10.1999</inn><út>02.10.2000</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>126</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>53</þingsalssæti>
+<tímabil>
+<inn>02.10.2000</inn><út>15.05.2001</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>126</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>53</þingsalssæti>
+<tímabil>
+<inn>20.05.2001</inn><út>30.09.2001</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>127</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>19</þingsalssæti>
+<tímabil>
+<inn>01.10.2001</inn><út>01.10.2002</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>128</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='21'><![CDATA[Reykjanes]]></kjördæmi>
+<kjördæmanúmer>12</kjördæmanúmer>
+<þingsalssæti>10</þingsalssæti>
+<tímabil>
+<inn>01.10.2002</inn><út>10.05.2003</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>129</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>54</þingsalssæti>
+<tímabil>
+<inn>10.05.2003</inn><út>30.09.2003</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>130</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>9</þingsalssæti>
+<tímabil>
+<inn>01.10.2003</inn><út>28.10.2003</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>130</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>9</þingsalssæti>
+<tímabil>
+<inn>01.04.2004</inn><út>14.05.2004</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>130</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>9</þingsalssæti>
+<tímabil>
+<inn>28.05.2004</inn><út>01.10.2004</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>131</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>48</þingsalssæti>
+<tímabil>
+<inn>01.10.2004</inn><út>11.05.2005</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>131</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>2</þingsalssæti>
+<tímabil>
+<inn>11.05.2005</inn><út>01.09.2005</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>131</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>4</kjördæmanúmer>
+<þingsalssæti>2</þingsalssæti>
+<tímabil>
+<inn>01.09.2005</inn><út>28.09.2005</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>131</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>4</kjördæmanúmer>
+<þingsalssæti>48</þingsalssæti>
+<tímabil>
+<inn>28.09.2005</inn><út>30.09.2005</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>132</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>4</kjördæmanúmer>
+<þingsalssæti>29</þingsalssæti>
+<tímabil>
+<inn>01.10.2005</inn><út>30.09.2006</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>133</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='47'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>4</kjördæmanúmer>
+<þingsalssæti>14</þingsalssæti>
+<tímabil>
+<inn>01.10.2006</inn><út>11.05.2007</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>134</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>12.05.2007</inn><út>24.05.2007</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>134</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>24.05.2007</inn><út>30.09.2007</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>135</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>01.10.2007</inn><út>10.12.2007</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>135</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>10.12.2007</inn><út>15.12.2007</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>135</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>15.12.2007</inn><út>30.09.2008</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>136</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>67</þingsalssæti>
+<tímabil>
+<inn>01.10.2008</inn><út>01.02.2009</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>136</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>57</þingsalssæti>
+<tímabil>
+<inn>01.02.2009</inn><út>25.04.2009</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>137</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>53</þingsalssæti>
+<tímabil>
+<inn>25.04.2009</inn><út>30.09.2009</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>138</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>8</þingsalssæti>
+<tímabil>
+<inn>01.10.2009</inn><út>30.09.2010</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>139</þing>
+<skammstöfun>ÞSveinb</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='50'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>7</kjördæmanúmer>
+<þingsalssæti>44</þingsalssæti>
+<tímabil>
+<inn>01.10.2010</inn><út>05.09.2011</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>152</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>25.09.2021</inn><út>01.12.2021</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>152</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>01.12.2021</inn><út>17.02.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>152</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>18.02.2022</inn><út>24.02.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>152</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>25.02.2022</inn><út>12.09.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>13.09.2022</inn><út>13.09.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>13.09.2022</inn><út>16.10.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>17.10.2022</inn><út>23.10.2022</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>24.10.2022</inn><út>05.03.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>06.03.2023</inn><út>12.03.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>153</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>13.03.2023</inn><út>11.09.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>12.09.2023</inn><út>22.10.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>23.10.2023</inn><út>29.10.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>30.10.2023</inn><út>30.11.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>01.12.2023</inn><út>07.12.2023</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>08.12.2023</inn><út>04.02.2024</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>með varamann</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>05.02.2024</inn><út>11.02.2024</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>154</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>12.02.2024</inn><út>09.09.2024</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>155</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>8</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>10.09.2024</inn><út>29.11.2024</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>156</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>11</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>30.11.2024</inn><út>20.12.2024</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>156</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>11</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>21.12.2024</inn><út>03.02.2025</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>156</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>11</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>04.02.2025</inn><út>08.09.2025</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>157</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>11</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>09.09.2025</inn><út>07.09.2026</út></tímabil>
+</þingseta>
+
+<þingseta>
+<þing>158</þing>
+<skammstöfun>ÞSv</skammstöfun>
+<tegund>þingmaður</tegund>
+<þingflokkur id='38'>Samfylkingin</þingflokkur>
+<kjördæmi id='52'><![CDATA[Suðvesturkjördæmi]]></kjördæmi>
+<kjördæmanúmer>11</kjördæmanúmer>
+<þingsalssæti>31</þingsalssæti>
+<tímabil>
+<inn>08.09.2026</inn><út></út></tímabil>
+</þingseta>
+
+</þingsetur>
+</þingmaður>

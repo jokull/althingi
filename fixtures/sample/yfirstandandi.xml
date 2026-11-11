@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<löggjafarþing>
+	<þing númer='158'>
+		<þingsetning>08.09.2026</þingsetning>
+		<yfirlit>
+			<þingmálalisti>http://www.althingi.is/altext/xml/thingmalalisti/?lthing=158</þingmálalisti>
+			<þingskjalalisti>http://www.althingi.is/altext/xml/thingskjol/?lthing=158</þingskjalalisti>
+			<atkvæðagreiðslur>http://www.althingi.is/altext/xml/atkvaedagreidslur/?lthing=158</atkvæðagreiðslur>
+			<þingmannalisti>http://www.althingi.is/altext/xml/thingmenn/?lthing=158</þingmannalisti>
+			<ræðulisti>http://www.althingi.is/altext/xml/raedulisti/?lthing=158</ræðulisti>
+			<nefndir>http://www.althingi.is/altext/xml/nefndir/?lthing=158</nefndir>
+			<erindi>http://www.althingi.is/altext/xml/erindi/?lthing=158</erindi>
+			<sendendurerinda>http://www.althingi.is/altext/xml/erindi/sendandi/?lthing=158</sendendurerinda>
+		</yfirlit>
+	</þing>
+</löggjafarþing>

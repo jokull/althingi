@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?dctm xml_app="Raeduskjal"?>
+<ræða id="r2005-03-02T12:00:40" skst="SP" tegr="R" tegflm="F" frhr="0" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_raedur.xsd" xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <umsýsla fundur="81" tími="2005-03-02T12:00:40" lgþ="131">
+    <mál nr="600" málstegund="tk" málsflokkur="B">
+      <málsheiti>Tilkynning um dagskrá</málsheiti>
+    </mál>
+  </umsýsla>
+  <ræðutexti>
+    <mgr>Klukkan 15.30 fer fram umræða utan dagskrár um stuðning Íslands við þjálfun írakskra öryggissveita. Málshefjandi er hv. þm. Steingrímur J. Sigfússon. Hæstv. utanríkisráðherra Davíð Oddsson verður til andsvara.</mgr>
+    <mgr>Forseti vill tilkynna að atkvæðagreiðslur verða um klukkan 4.</mgr>
+  </ræðutexti>
+</ræða>

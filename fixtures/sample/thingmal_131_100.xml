@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<þingmál>
+<mál málsnúmer='100' þingnúmer='131'>
+<málsheiti>menntunarmál geðsjúkra</málsheiti>
+<efnisgreining></efnisgreining>
+<málstegund málstegund='m'>
+<heiti>Fyrirspurn</heiti>
+<heiti2>fyrirspurn</heiti2>
+</málstegund>
+<fyrirspurntil>menntamálaráðherra</fyrirspurntil><staðamáls>Fyrirspurninni var svarað munnlega.</staðamáls><slóð>
+<html>http://www.althingi.is/dba-bin/ferill.pl?ltg=131&amp;mnr=100</html>
+<xml>http://www.althingi.is/altext/xml/thingmalalisti/thingmal/?lthing=131&amp;malnr=100</xml>
+<rss>http://www.althingi.is/rss/frettir.rss?feed=ferill&amp;malnr=100&amp;lthing=131</rss>
+</slóð>
+</mál>
+<tengdMál>
+</tengdMál>
+<efnisflokkar>
+	<yfirflokkur id='5'>
+		<heiti>Mennta- og menningarmál</heiti>
+		<efnisflokkur id='20'>
+			<heiti>Menntamál</heiti>
+			<lýsing>þ.m.t. endurmenntun, fræðslumál, kennsla, námslán, námsmenn, rannsóknir, skólar, vísindi</lýsing>
+			<slóðir>
+				<html>http://www.althingi.is/thingstorf/listar-yfir-mal-a-yfirstandandi-thingi/thingmal-eftir-efnisflokkum/?efnisflokkur=20</html>
+				<xml>http://www.althingi.is/altext/xml/efnisflokkar/efnisflokkur/?efnisflokkur=20</xml>
+			</slóðir>
+		</efnisflokkur>
+	</yfirflokkur>
+</efnisflokkar>
+<þingskjöl>
+<þingskjal skjalsnúmer='100' málsnúmer='100' þingnúmer='131'>
+<útbýting>2004-10-06 15:56</útbýting>
+<skjalategund>fsp. til munnl. svars</skjalategund>
+
+<slóð>
+<html>http://www.althingi.is/altext/131/s/0100.html</html>
+<pdf>http://www.althingi.is/altext/pdf/131/s/0100.pdf</pdf>
+<xml>http://www.althingi.is/altext/xml/thingskjol/thingskjal/?lthing=131&amp;skjalnr=100</xml>
+</slóð>
+</þingskjal>
+</þingskjöl><atkvæðagreiðslur></atkvæðagreiðslur><umsagnabeiðnir frestur=''></umsagnabeiðnir><erindaskrá></erindaskrá><ræður><ræða fundarnúmer='65' þingnúmer='131'  þingmaður='653'>
+<nafn id='653'>Björgvin G. Sigurðsson</nafn>
+<ræðahófst>2005-02-02T14:38:40</ræðahófst>
+<ræðulauk>2005-02-02T14:41:44</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T143840.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T143840.html</html></slóðir><tegundræðu>flutningsræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='632'>
+<ráðherra>menntamálaráðherra</ráðherra><nafn id='632'>Þorgerður Katrín Gunnarsdóttir</nafn>
+<ræðahófst>2005-02-02T14:41:46</ræðahófst>
+<ræðulauk>2005-02-02T14:46:30</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T144146.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T144146.html</html></slóðir><tegundræðu>svar</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='634'>
+<nafn id='634'>Þuríður Backman</nafn>
+<ræðahófst>2005-02-02T14:46:39</ræðahófst>
+<ræðulauk>2005-02-02T14:47:50</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T144639.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T144639.html</html></slóðir><tegundræðu>ræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='48'>
+<nafn id='48'>Ásta R. Jóhannesdóttir</nafn>
+<ræðahófst>2005-02-02T14:47:54</ræðahófst>
+<ræðulauk>2005-02-02T14:49:06</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T144754.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T144754.html</html></slóðir><tegundræðu>ræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='221'>
+<nafn id='221'>Ásta Möller</nafn>
+<ræðahófst>2005-02-02T14:49:10</ræðahófst>
+<ræðulauk>2005-02-02T14:50:07</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T144910.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T144910.html</html></slóðir><tegundræðu>ræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='653'>
+<nafn id='653'>Björgvin G. Sigurðsson</nafn>
+<ræðahófst>2005-02-02T14:50:10</ræðahófst>
+<ræðulauk>2005-02-02T14:52:21</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T145010.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T145010.html</html></slóðir><tegundræðu>ræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+<ræða fundarnúmer='65' þingnúmer='131'  þingmaður='632'>
+<ráðherra>menntamálaráðherra</ráðherra><nafn id='632'>Þorgerður Katrín Gunnarsdóttir</nafn>
+<ræðahófst>2005-02-02T14:52:23</ræðahófst>
+<ræðulauk>2005-02-02T14:53:24</ræðulauk>
+<slóðir><xml>http://www.althingi.is/xml/131/raedur/rad20050202T145223.xml</xml><html>http://www.althingi.is/altext/raeda/131/rad20050202T145223.html</html></slóðir><tegundræðu>svar</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+</ræður>
+</þingmál>

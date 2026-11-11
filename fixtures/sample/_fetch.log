@@ -1,0 +1,54 @@
+200	110186	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/?lthing=157	thingmenn_157.xml
+200	89005	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/?lthing=131	thingmenn_131.xml
+200	78279	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/?lthing=123	thingmenn_123.xml
+200	80940	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/?lthing=100	thingmenn_100.xml
+200	46736	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/?lthing=60	thingmenn_60.xml
+200	1590	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=633	thingmadur_633.xml
+200	923	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=7	thingmadur_7.xml
+200	1810767	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmenn/thingmadur/raedur/?nr=7	thingmadur_raedur_7.xml
+200	544811	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/?lthing=131	thingmalalisti_131.xml
+200	405179	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/?lthing=123	thingmalalisti_123.xml
+200	606186	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/thingmal/?lthing=157&malnr=1	thingmal_157_1.xml
+200	78581	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/thingmal/?lthing=157&malnr=300	thingmal_157_300.xml
+200	5148	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/thingmal/?lthing=131&malnr=100	thingmal_131_100.xml
+200	890	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/bmal/?lthing=123&malnr=309	bmal_123_309.xml
+200	1060	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingmalalisti/bmal/?lthing=157&malnr=10	bmal_157_10.xml
+200	623814	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingskjol/?lthing=157	thingskjol_157.xml
+200	585508	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/thingskjol/?lthing=131	thingskjol_131.xml
+200	140359	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/atkvaedagreidslur/?lthing=157&malnr=1	atkv_157_1.xml
+200	12932	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/atkvaedagreidslur/atkvaedagreidsla/?numer=47851	atkv_numer_47851.xml
+200	15738	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/atkvaedagreidslur/?dagur=20100309	atkv_dagur_20100309.xml
+200	7830	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/nefndir/?lthing=157	nefndir_157.xml
+200	6080	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/nefndir/?lthing=100	nefndir_100.xml
+200	925	text/xml; charset=utf-8	https://www.althingi.is/altext/xml/loggjafarthing/yfirstandandi/	yfirstandandi.xml
+403	2000		https://www.althingi.is/altext/128/11/r05133052.sgml	speech_p20021105_r05133052_sgml.sgml
+403	2000		https://www.althingi.is/altext/128/11/r05133636.sgml	speech_p20021105_r05133636_sgml.sgml
+403	2000		https://www.althingi.is/altext/128/11/r05135341.sgml	speech_p20021105_r05135341_sgml.sgml
+403	2000		https://www.althingi.is/altext/128/11/r05171339.sgml	speech_p20021105_r05171339_sgml.sgml
+403	2000		https://www.althingi.is/altext/123/03/r02133209.sgml	speech_d19990302_r02133209_sgml.sgml
+403	2000		https://www.althingi.is/altext/123/03/r02133527.sgml	speech_d19990302_r02133527_sgml.sgml
+403	2000		https://www.althingi.is/altext/123/03/r02143549.sgml	speech_d19990302_r02143549_sgml.sgml
+403	2000		https://www.althingi.is/altext/123/03/r02163619.sgml	speech_d19990302_r02163619_sgml.sgml
+200	907	text/xml; charset=utf-8	https://www.althingi.is/xml/131/raedur/rad20050302T120040.xml	speech_p20050302_rad20050302T120040_xml.xml
+200	3756	text/xml; charset=utf-8	https://www.althingi.is/xml/131/raedur/rad20050302T120159.xml	speech_p20050302_rad20050302T120159_xml.xml
+200	3807	text/xml; charset=utf-8	https://www.althingi.is/xml/131/raedur/rad20050302T120509.xml	speech_p20050302_rad20050302T120509_xml.xml
+200	2018	text/xml; charset=utf-8	https://www.althingi.is/xml/131/raedur/rad20050302T160024.xml	speech_p20050302_rad20050302T160024_xml.xml
+200	4429	text/xml; charset=utf-8	https://www.althingi.is/xml/131/raedur/rad20050302T130105.xml	speech_p20050302_rad20050302T130105_xml.xml
+200	920	text/xml; charset=utf-8	https://www.althingi.is/xml/138/raedur/rad20100309T133141.xml	speech_p20100309_rad20100309T133141_xml.xml
+200	1582	text/xml; charset=utf-8	https://www.althingi.is/xml/138/raedur/rad20100309T133336.xml	speech_p20100309_rad20100309T133336_xml.xml
+200	1219	text/xml; charset=utf-8	https://www.althingi.is/xml/138/raedur/rad20100309T140647.xml	speech_p20100309_rad20100309T140647_xml.xml
+200	6684	text/xml; charset=utf-8	https://www.althingi.is/xml/138/raedur/rad20100309T140739.xml	speech_p20100309_rad20100309T140739_xml.xml
+200	32742	text/xml; charset=utf-8	https://www.althingi.is/xml/138/raedur/rad20100309T144735.xml	speech_p20100309_rad20100309T144735_xml.xml
+200	2974	text/xml; charset=utf-8	https://www.althingi.is/xml/148/raedur/rad20180306T133436.xml	speech_d20180306_rad20180306T133436_xml.xml
+200	7724	text/xml; charset=utf-8	https://www.althingi.is/xml/148/raedur/rad20180306T163325.xml	speech_d20180306_rad20180306T163325_xml.xml
+200	1337	text/xml; charset=utf-8	https://www.althingi.is/xml/148/raedur/rad20180306T183317.xml	speech_d20180306_rad20180306T183317_xml.xml
+200	1436	text/xml; charset=utf-8	https://www.althingi.is/xml/148/raedur/rad20180306T185818.xml	speech_d20180306_rad20180306T185818_xml.xml
+200	7722	text/xml; charset=utf-8	https://www.althingi.is/xml/148/raedur/rad20180306T172551.xml	speech_d20180306_rad20180306T172551_xml.xml
+200	789	text/xml; charset=utf-8	https://www.althingi.is/xml/157/raedur/rad20251021T133058.xml	speech_d_rad20251021T133058_xml.xml
+200	2253	text/xml; charset=utf-8	https://www.althingi.is/xml/157/raedur/rad20251021T141933.xml	speech_d_rad20251021T141933_xml.xml
+200	3885	text/xml; charset=utf-8	https://www.althingi.is/xml/157/raedur/rad20251021T143227.xml	speech_d_rad20251021T143227_xml.xml
+200	12554	text/xml; charset=utf-8	https://www.althingi.is/xml/157/raedur/rad20251021T174808.xml	speech_d_rad20251021T174808_xml.xml
+200	8891348	application/zip	https://www.althingi.is/lagasafn/zip/nuna/allt.zip	lagasafn_allt.zip
+200	0		https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=633	thingseta_633.xml
+200	0		https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=7	thingseta_7.xml
+200	0		https://www.althingi.is/altext/xml/thingskjol/thingskjal/?lthing=157&skjalnr=1	thingskjal_157_1.xml

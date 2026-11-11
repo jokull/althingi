@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bmál>
+<mál málsnúmer='309' þingnúmer='123' málsflokkur='B'>
+<málsheiti>afturköllun þingmála</málsheiti>
+<málstegund málstegund='tk'>
+<heiti>tilkynningar forseta</heiti></málstegund>
+<slóð>
+<html>https://www.althingi.is/thingstorf/thingmalalistar-eftir-thingum/bferill/?ltg=123&amp;mnr=309</html>
+<xml>http://www.althingi.is/altext/xml/thingmalalisti/bmal/?lthing=123&amp;malnr=309</xml>
+</slóð>
+</mál>
+
+<atkvæðagreiðslur></atkvæðagreiðslur><ræður><ræða fundarnúmer='75' þingnúmer='123'  þingmaður='7'>
+<forsetiAlþingis></forsetiAlþingis><nafn id='7'>Guðmundur Árni Stefánsson</nafn>
+<ræðahófst>1999-03-02T13:32:09</ræðahófst>
+<ræðulauk>1999-03-02T13:32:16</ræðulauk>
+<slóðir></slóðir><tegundræðu>ræða</tegundræðu>
+<umræða>*</umræða>
+</ræða>
+
+</ræður>
+</bmál>

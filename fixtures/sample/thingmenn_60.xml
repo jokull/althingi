@@ -1,0 +1,887 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<þingmannalisti><!-- tilgreina má þingnúmer ?lthing=139 -->
+<!-- eða dagsetningu t.d. ?dagur=14.2.2013 -->
+
+	<þingmaður id='32'>
+		<nafn>Áki Jakobsson</nafn>
+		<fæðingardagur>1911-07-01</fæðingardagur>
+		<skammstöfun>ÁkJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=32</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=32</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=32</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=32</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=32</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=32</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=32</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=32</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='43'>
+		<nafn>Ásgeir Ásgeirsson</nafn>
+		<fæðingardagur>1894-05-13</fæðingardagur>
+		<skammstöfun>ÁÁ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=43</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=43</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=43</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=43</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=43</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=43</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=43</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=43</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='59'>
+		<nafn>Bernharð Stefánsson</nafn>
+		<fæðingardagur>1889-01-08</fæðingardagur>
+		<skammstöfun>BSt</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=59</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=59</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=59</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=59</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=59</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=59</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=59</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=59</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='63'>
+		<nafn>Bjarni Ásgeirsson</nafn>
+		<fæðingardagur>1891-08-01</fæðingardagur>
+		<skammstöfun>BÁ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=63</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=63</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=63</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=63</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=63</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=63</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=63</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=63</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='64'>
+		<nafn>Bjarni Benediktsson</nafn>
+		<fæðingardagur>1908-04-30</fæðingardagur>
+		<skammstöfun>BBen</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=64</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=64</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=64</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=64</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=64</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=64</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=64</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=64</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='65'>
+		<nafn>Bjarni Bjarnason</nafn>
+		<fæðingardagur>1889-10-23</fæðingardagur>
+		<skammstöfun>BjB</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=65</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=65</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=65</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=65</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=65</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=65</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=65</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=65</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='77'>
+		<nafn>Björn Fr. Björnsson</nafn>
+		<fæðingardagur>1909-09-18</fæðingardagur>
+		<skammstöfun>BFB</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=77</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=77</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=77</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=77</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=77</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=77</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=77</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=77</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='100'>
+		<nafn>Brynjólfur Bjarnason</nafn>
+		<fæðingardagur>1898-05-26</fæðingardagur>
+		<skammstöfun>BrB</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=100</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=100</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=100</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=100</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=100</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=100</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=100</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=100</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='121'>
+		<nafn>Einar Árnason</nafn>
+		<fæðingardagur>1875-11-27</fæðingardagur>
+		<skammstöfun>EÁrna</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=121</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=121</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=121</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=121</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=121</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=121</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=121</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=121</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='130'>
+		<nafn>Einar Olgeirsson</nafn>
+		<fæðingardagur>1902-08-14</fæðingardagur>
+		<skammstöfun>EOl</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=130</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=130</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=130</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=130</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=130</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=130</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=130</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=130</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='136'>
+		<nafn>Eiríkur Einarsson</nafn>
+		<fæðingardagur>1885-03-02</fæðingardagur>
+		<skammstöfun>EE</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=136</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=136</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=136</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=136</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=136</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=136</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=136</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=136</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='142'>
+		<nafn>Emil Jónsson</nafn>
+		<fæðingardagur>1902-10-27</fæðingardagur>
+		<skammstöfun>EmJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=142</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=142</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=142</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=142</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=142</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=142</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=142</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=142</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='148'>
+		<nafn>Eysteinn Jónsson</nafn>
+		<fæðingardagur>1906-11-13</fæðingardagur>
+		<skammstöfun>EystJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=148</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=148</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=148</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=148</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=148</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=148</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=148</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=148</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='151'>
+		<nafn>Finnur Jónsson</nafn>
+		<fæðingardagur>1894-09-28</fæðingardagur>
+		<skammstöfun>FJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=151</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=151</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=151</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=151</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=151</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=151</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=151</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=151</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='160'>
+		<nafn>Garðar Þorsteinsson</nafn>
+		<fæðingardagur>1898-10-29</fæðingardagur>
+		<skammstöfun>GÞ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=160</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=160</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=160</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=160</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=160</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=160</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=160</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=160</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='167'>
+		<nafn>Gísli Guðmundsson</nafn>
+		<fæðingardagur>1903-12-02</fæðingardagur>
+		<skammstöfun>GíslG</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=167</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=167</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=167</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=167</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=167</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=167</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=167</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=167</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='168'>
+		<nafn>Gísli Jónsson</nafn>
+		<fæðingardagur>1889-08-17</fæðingardagur>
+		<skammstöfun>GíslJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=168</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=168</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=168</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=168</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=168</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=168</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=168</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=168</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='170'>
+		<nafn>Gísli Sveinsson</nafn>
+		<fæðingardagur>1880-12-07</fæðingardagur>
+		<skammstöfun>GSv</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=170</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=170</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=170</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=170</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=170</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=170</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=170</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=170</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='212'>
+		<nafn>Gunnar Thoroddsen</nafn>
+		<fæðingardagur>1910-12-29</fæðingardagur>
+		<skammstöfun>GTh</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=212</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=212</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=212</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=212</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=212</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=212</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=212</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=212</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='237'>
+		<nafn>Haraldur Guðmundsson</nafn>
+		<fæðingardagur>1892-07-26</fæðingardagur>
+		<skammstöfun>HG</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=237</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=237</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=237</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=237</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=237</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=237</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=237</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=237</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='244'>
+		<nafn>Helgi Jónasson</nafn>
+		<fæðingardagur>1894-04-19</fæðingardagur>
+		<skammstöfun>HelgJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=244</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=244</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=244</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=244</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=244</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=244</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=244</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=244</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='249'>
+		<nafn>Hermann Jónasson</nafn>
+		<fæðingardagur>1896-12-25</fæðingardagur>
+		<skammstöfun>HermJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=249</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=249</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=249</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=249</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=249</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=249</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=249</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=249</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='269'>
+		<nafn>Ingólfur Jónsson</nafn>
+		<fæðingardagur>1909-05-15</fæðingardagur>
+		<skammstöfun>IngJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=269</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=269</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=269</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=269</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=269</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=269</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=269</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=269</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='271'>
+		<nafn>Ingvar Pálmason</nafn>
+		<fæðingardagur>1873-07-26</fæðingardagur>
+		<skammstöfun>IngP</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=271</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=271</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=271</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=271</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=271</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=271</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=271</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=271</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='273'>
+		<nafn>Ísleifur Högnason</nafn>
+		<fæðingardagur>1895-11-30</fæðingardagur>
+		<skammstöfun>ÍslH</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=273</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=273</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=273</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=273</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=273</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=273</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=273</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=273</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='276'>
+		<nafn>Jakob Möller</nafn>
+		<fæðingardagur>1880-07-12</fæðingardagur>
+		<skammstöfun>JakM</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=276</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=276</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=276</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=276</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=276</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=276</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=276</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=276</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='285'>
+		<nafn>Jóhann Þ. Jósefsson</nafn>
+		<fæðingardagur>1886-06-17</fæðingardagur>
+		<skammstöfun>JJós</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=285</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=285</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=285</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=285</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=285</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=285</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=285</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=285</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='330'>
+		<nafn>Jón Pálmason</nafn>
+		<fæðingardagur>1888-11-28</fæðingardagur>
+		<skammstöfun>JPálm</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=330</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=330</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=330</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=330</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=330</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=330</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=330</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=330</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='351'>
+		<nafn>Jónas Jónsson frá Hriflu</nafn>
+		<fæðingardagur>1885-05-01</fæðingardagur>
+		<skammstöfun>JJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=351</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=351</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=351</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=351</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=351</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=351</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=351</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=351</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='363'>
+		<nafn>Jörundur Brynjólfsson</nafn>
+		<fæðingardagur>1884-02-21</fæðingardagur>
+		<skammstöfun>JörB</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=363</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=363</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=363</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=363</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=363</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=363</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=363</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=363</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='417'>
+		<nafn>Magnús Jónsson</nafn>
+		<fæðingardagur>1887-11-26</fæðingardagur>
+		<skammstöfun>MJ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=417</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=417</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=417</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=417</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=417</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=417</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=417</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=417</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='452'>
+		<nafn>Ólafur Thors</nafn>
+		<fæðingardagur>1892-01-19</fæðingardagur>
+		<skammstöfun>ÓTh</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=452</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=452</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=452</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=452</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=452</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=452</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=452</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=452</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='458'>
+		<nafn>Páll Hallgrímsson</nafn>
+		<fæðingardagur>1912-02-06</fæðingardagur>
+		<skammstöfun>PHall</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=458</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=458</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=458</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=458</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=458</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=458</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=458</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=458</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='459'>
+		<nafn>Páll Hermannsson</nafn>
+		<fæðingardagur>1880-04-29</fæðingardagur>
+		<skammstöfun>PHerm</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=459</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=459</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=459</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=459</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=459</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=459</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=459</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=459</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='470'>
+		<nafn>Páll Zóphóníasson</nafn>
+		<fæðingardagur>1886-11-18</fæðingardagur>
+		<skammstöfun>PZ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=470</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=470</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=470</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=470</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=470</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=470</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=470</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=470</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='472'>
+		<nafn>Páll Þorsteinsson</nafn>
+		<fæðingardagur>1909-10-22</fæðingardagur>
+		<skammstöfun>PÞ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=472</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=472</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=472</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=472</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=472</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=472</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=472</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=472</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='473'>
+		<nafn>Pálmi Hannesson</nafn>
+		<fæðingardagur>1898-01-03</fæðingardagur>
+		<skammstöfun>PHann</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=473</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=473</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=473</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=473</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=473</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=473</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=473</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=473</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='483'>
+		<nafn>Pétur Ottesen</nafn>
+		<fæðingardagur>1888-08-02</fæðingardagur>
+		<skammstöfun>PO</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=483</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=483</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=483</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=483</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=483</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=483</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=483</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=483</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='497'>
+		<nafn>Sigfús Sigurhjartarson</nafn>
+		<fæðingardagur>1902-02-06</fæðingardagur>
+		<skammstöfun>SigfS</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=497</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=497</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=497</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=497</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=497</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=497</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=497</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=497</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='504'>
+		<nafn>Sigurður Bjarnason</nafn>
+		<fæðingardagur>1915-12-18</fæðingardagur>
+		<skammstöfun>SB</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=504</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=504</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=504</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=504</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=504</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=504</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=504</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=504</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='511'>
+		<nafn>Sigurður E. Hlíðar</nafn>
+		<fæðingardagur>1885-04-04</fæðingardagur>
+		<skammstöfun>SEH</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=511</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=511</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=511</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=511</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=511</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=511</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=511</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=511</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='516'>
+		<nafn>Sigurður Kristjánsson</nafn>
+		<fæðingardagur>1885-04-14</fæðingardagur>
+		<skammstöfun>SK</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=516</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=516</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=516</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=516</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=516</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=516</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=516</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=516</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='523'>
+		<nafn>Sigurður Þórðarson</nafn>
+		<fæðingardagur>1888-07-19</fæðingardagur>
+		<skammstöfun>SÞ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=523</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=523</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=523</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=523</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=523</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=523</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=523</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=523</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='527'>
+		<nafn>Sigurjón Á. Ólafsson</nafn>
+		<fæðingardagur>1884-10-29</fæðingardagur>
+		<skammstöfun>SÁÓ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=527</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=527</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=527</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=527</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=527</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=527</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=527</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=527</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='532'>
+		<nafn>Skúli Guðmundsson</nafn>
+		<fæðingardagur>1900-10-10</fæðingardagur>
+		<skammstöfun>SkG</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=532</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=532</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=532</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=532</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=532</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=532</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=532</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=532</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='547'>
+		<nafn>Stefán Jóh. Stefánsson</nafn>
+		<fæðingardagur>1894-07-20</fæðingardagur>
+		<skammstöfun>StJSt</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=547</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=547</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=547</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=547</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=547</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=547</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=547</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=547</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='553'>
+		<nafn>Steingrímur Aðalsteinsson</nafn>
+		<fæðingardagur>1903-01-13</fæðingardagur>
+		<skammstöfun>StgrA</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=553</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=553</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=553</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=553</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=553</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=553</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=553</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=553</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='565'>
+		<nafn>Sveinbjörn Högnason</nafn>
+		<fæðingardagur>1898-04-06</fæðingardagur>
+		<skammstöfun>SvbH</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=565</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=565</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=565</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=565</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=565</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=565</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=565</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=565</þingstörf>
+		</html>
+	</þingmaður>
+
+	<þingmaður id='608'>
+		<nafn>Þorsteinn Þorsteinsson</nafn>
+		<fæðingardagur>1884-12-23</fæðingardagur>
+		<skammstöfun>ÞÞ</skammstöfun>
+		<xml>
+			<nánar>https://www.althingi.is/altext/xml/thingmenn/thingmadur/?nr=608</nánar>
+			<lífshlaup>https://www.althingi.is/altext/xml/thingmenn/thingmadur/lifshlaup/?nr=608</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/xml/thingmenn/thingmadur/hagsmunir/?nr=608</hagsmunir>
+			<þingseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/thingseta/?nr=608</þingseta>
+			<nefndaseta>https://www.althingi.is/altext/xml/thingmenn/thingmadur/nefndaseta/?nr=608</nefndaseta>
+		</xml>
+		<html>
+			<lífshlaup>https://www.althingi.is/altext/cv/?nfaerslunr=608</lífshlaup>
+			<hagsmunir>https://www.althingi.is/altext/hagsmunir/?faerslunr=608</hagsmunir>
+			<þingstörf>https://www.althingi.is/vefur/thmstorf.html?nfaerslunr=608</þingstörf>
+		</html>
+	</þingmaður>
+
+</þingmannalisti>
