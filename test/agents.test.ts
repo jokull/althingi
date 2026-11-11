@@ -45,7 +45,7 @@ describe("mcp transport without auth", () => {
       expect(json.result.capabilities).toHaveProperty("prompts");
     }
     const list = await rpc("tools/list");
-    expect(list.json.result.tools.length).toBe(17);
+    expect(list.json.result.tools.length).toBe(18);
     const r = await call("list_sessions", {});
     expect(r.structuredContent.sessions.length).toBeGreaterThan(0);
   });
@@ -142,6 +142,53 @@ describe("mcp tools for agents", () => {
     expect(Array.isArray(sp.speech.replies)).toBe(true);
   });
 
+  test("aggregate: member/party buckets carry id, name and url apart; group_by matter; topic_timeline per year with outcomes", async () => {
+    if (!s) return;
+    const mem = (await call("aggregate", { metric: "speeches", group_by: "member" })).structuredContent.buckets[0];
+    expect(mem).toMatchObject({ key: String(mem.id), name: expect.any(String), url: `https://althingi.solberg.is/thingmadur/${mem.id}` });
+    expect(mem.key).not.toContain(":");
+    const party = (await call("aggregate", { metric: "speeches", group_by: "party" })).structuredContent.buckets[0];
+    expect(party).toHaveProperty("name");
+    expect(party).toHaveProperty("id");
+    const mat = (await call("aggregate", { metric: "speeches", group_by: "matter", q: s.word })).structuredContent.buckets;
+    expect(mat.length).toBeGreaterThan(0);
+    const withMatter = mat.find((b: any) => b.matter);
+    if (withMatter) expect(withMatter.key).toBe(`${withMatter.matter.lthing}/${withMatter.matter.class}/${withMatter.matter.nr}`);
+    const tl = (await call("topic_timeline", { q: s.word })).structuredContent;
+    expect(tl.years).toEqual([expect.objectContaining({ year: 2018, speeches: 1 })]);
+    for (const y of tl.years) for (const m of y.top_matters) expect(tl.matters.map((x: any) => x.key)).toContain(m.matter);
+    expect(tl.corpus).toContain("session 131");
+    expect((await call("topic_timeline", { q: "og" })).isError).toBe(true);
+  });
+
+  test("get_matter: status falls back to sitting events, results to counts, and the final vote carries a per-party tally", async () => {
+    if (!s) return;
+    const m0 = (await call("get_matter", { lthing: 157, nr: 300 })).structuredContent;
+    expect(m0.matter.status_source).toBe("althingi");
+    // strip the source status and results and make the seeded vote the whole-bill vote: everything is then derived
+    const saved = await s.sql<{ id: number; result: string | null; kind_code: string | null; yes: number | null; no: number | null }[]>`
+      select id, result, kind_code, yes, no from votes where lthing = 157 and cls = 'A' and nr = 300`;
+    const [st] = await s.sql<{ status_text: string }[]>`select status_text from matters where lthing = 157 and cls = 'A' and nr = 300`;
+    await s.sql`update matters set status_text = null where lthing = 157 and cls = 'A' and nr = 300`;
+    await s.sql`update votes set result = null, method_code = 'S', kind_code = case when id = ${s.voteId} then 'lg' else 'gr' end, yes = 30, no = 20 where lthing = 157 and cls = 'A' and nr = 300`;
+    try {
+      const m = (await call("get_matter", { lthing: 157, nr: 300 })).structuredContent;
+      expect(m.matter).toMatchObject({ status: "Samþykkt sem lög frá Alþingi.", status_source: "final_vote" });
+      const fin = m.votes.filter((x: any) => x.is_final);
+      expect(fin).toHaveLength(1);
+      expect(fin[0]).toMatchObject({ id: s.voteId, result: "samþykkt", result_derived: true, type_code: "lg" });
+      expect(fin[0].by_party.reduce((n: number, p: any) => n + Object.values(p.counts as Record<string, number>).reduce((a, b) => a + b, 0), 0)).toBe(3);
+      expect(m.final_vote_id).toBe(s.voteId);
+      expect(m.votes.filter((x: any) => x.by_party).length).toBe(1);
+      await s.sql`insert into sitting_events (lthing, fundur, at, kind, cls, nr) values (157, 40, '2025-12-01 18:00', 'frvAfgreittSemLög', 'A', 300)`;
+      expect((await call("get_matter", { lthing: 157, nr: 300 })).structuredContent.matter.status_source).toBe("sitting_event");
+    } finally {
+      await s.sql`delete from sitting_events where kind = 'frvAfgreittSemLög' and lthing = 157 and nr = 300`;
+      await s.sql`update matters set status_text = ${st!.status_text} where lthing = 157 and cls = 'A' and nr = 300`;
+      for (const r of saved) await s.sql`update votes set result = ${r.result}, kind_code = ${r.kind_code}, yes = ${r.yes}, no = ${r.no}, method_code = null where id = ${r.id}`;
+    }
+  });
+
   test("get_law by number, by title, one article; unknown law is an actionable error", async () => {
     if (!s) return;
     const l = (await call("get_law", { year: 1991, nr: 34, article: "1" })).structuredContent;
@@ -211,8 +258,9 @@ describe("tool results follow MCP 2025-11-25 structured output", () => {
     ["list_votes", { lthing: 157, nr: 300 }], ["get_vote", { vote_id: x.voteId }], ["member_votes", { member_id: 633 }],
     ["get_law", { year: 1991, nr: 34, include_text: true }], ["get_law", { title: "lög" }],
     ["get_sitting", { lthing: 157, fundur: 40 }], ["list_sittings", { lthing: 157 }],
-    ...(["year", "member", "party", "speech_type", "lthing"] as const).map((g): [string, object] => ["aggregate", { metric: "speeches", group_by: g }]),
+    ...(["year", "member", "party", "speech_type", "lthing", "matter"] as const).map((g): [string, object] => ["aggregate", { metric: "speeches", group_by: g }]),
     ["aggregate", { metric: "words", group_by: "year", q: x.word }],
+    ["topic_timeline", { q: x.word }], ["topic_timeline", { q: x.word, date_from: "2018-01-01", date_to: "2018-12-31", top_matters: 1 }],
     ["first_use", { q: x.word }], ["explain_query", { q: x.word }], ["list_sessions", {}],
     ["search", { query: x.word }], ["fetch", { id: `/raeda/${x.speechId}` }],
   ];

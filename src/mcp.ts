@@ -213,15 +213,34 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("aggregate", {
     title: "Count speeches or words",
-    description: "Group counts: by year, member, party (on the speech date), speech type or session; optionally only speeches matching a query. Counts speeches (with at least one matching paragraph) or words. Top 50 buckets.",
+    description: "Group counts: by year, member, party (on the speech date), speech type, session or matter (þingmál); optionally only speeches matching a query. Counts speeches (with at least one matching paragraph) or words. Top 50 buckets. Member/party buckets carry id, name and url; matter buckets carry {lthing, class, nr, title, url} for get_matter. For a topic over time use topic_timeline.",
     inputSchema: {
-      metric: z.enum(["speeches", "words"]), group_by: z.enum(["year", "member", "party", "speech_type", "lthing"]),
+      metric: z.enum(["speeches", "words"]), group_by: z.enum(["year", "member", "party", "speech_type", "lthing", "matter"]),
       q: z.string().max(200).optional(), date_from: iso.optional(), date_to: iso.optional(), lthing: z.number().int().optional(),
       speech_type: z.string().optional(), member_id: z.number().int().optional(), substantive_only: z.boolean().optional().describe("Skip points of order and the presiding officer"),
     },
-    outputSchema: z.looseObject({ corpus, metric: z.string(), group_by: z.string(), buckets: z.array(z.looseObject({ key: z.string(), value: z.number() })), caveats: z.array(z.string()) }),
+    outputSchema: z.looseObject({ corpus, metric: z.string(), group_by: z.string(), buckets: z.array(z.looseObject({ key: z.string().describe("The group value; for member/party the id (name in `name`), for matter 'lthing/class/nr'"), value: z.number(), id: z.number().nullable().optional(), name: z.string().nullable().optional(), url: z.string().nullable().optional(), matter: matterRef.nullable().optional() })), caveats: z.array(z.string()) }),
     annotations: ro,
   }, (a) => run("aggregate", a, () => T.aggregate(ctx, a)));
+
+  s.registerTool("topic_timeline", {
+    title: "How a topic moved through parliament, year by year",
+    description: "One call for 'how has the debate on X evolved': per year, the speeches matching q and the top matters (þingmál) they were given under, with each matter's status and final vote (result, counts, per-party tally). Same q rules as search_speeches: e.g. 'fishing fees' -> q='veiðigjald'. Then open a matter with get_matter, its debate with search_speeches(q, lthing, matter='a/<nr>'), its ballots with get_vote(final_vote.id). The whole corpus at 3 matters a year is about 50 KB: narrow with date_from/date_to or top_matters.",
+    inputSchema: {
+      q: z.string().min(1).max(200).describe("Icelandic keywords, e.g. 'veiðigjald'"), date_from: iso.optional(), date_to: iso.optional(),
+      lthing: z.number().int().optional(), member_id: z.number().int().optional().describe("Only this speaker"),
+      top_matters: z.number().int().min(1).max(5).optional().describe("Matters per year (default 3)"),
+    },
+    outputSchema: z.looseObject({
+      corpus, query: z.looseObject({ text: z.string(), interpreted_as: z.string() }),
+      years: z.array(z.looseObject({ year: z.number(), speeches: z.number(), top_matters: z.array(z.looseObject({ matter: z.string().describe("Key into matters[]: lthing/class/nr"), title: z.string().nullable(), speeches: z.number() })) })),
+      matters: z.array(z.looseObject({
+        key: z.string(), lthing: z.number(), class: z.string(), nr: z.number(), title: z.string().nullable(), url, status: z.string().nullable(), status_source: z.string().nullable(),
+        final_vote: z.looseObject({ id: z.number(), at: z.string().nullable(), result: z.string().nullable(), yes: z.number().nullable(), no: z.number().nullable(), abstain: z.number().nullable(), by_party: byParty }).nullable(),
+      })),
+    }),
+    annotations: ro,
+  }, (a) => run("topic_timeline", a, () => T.topicTimeline(ctx, a)));
 
   s.registerTool("first_use", {
     title: "First use of a word or phrase",

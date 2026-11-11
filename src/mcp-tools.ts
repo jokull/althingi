@@ -8,7 +8,7 @@ import { parseQuery, describe } from "./explain.ts";
 import { lawPage, matterPage, memberPage, partiesFor, speechPage } from "./queries.ts";
 import { phraseTsQuery, recallTsQuery, search } from "./search.ts";
 import { fmtTime, citation, SITE } from "./pages.tsx";
-import { FINAL_CODES, RESULT_EN, finalVoteIndex, matterStatus, partyTallies, voteResult } from "./outcomes.ts";
+import { FINAL_CODES, RESULT_EN, finalVoteIndex, matterOutcomes, matterStatus, partyTallies, voteResult } from "./outcomes.ts";
 
 export interface Ctx { sql: Sql; currentLthing: number }
 
@@ -274,29 +274,15 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
 }
 
 export interface AggArgs {
-  metric: "speeches" | "words"; group_by: "year" | "member" | "party" | "speech_type" | "lthing";
+  metric: "speeches" | "words"; group_by: "year" | "member" | "party" | "speech_type" | "lthing" | "matter";
   q?: string; date_from?: string; date_to?: string; lthing?: number; speech_type?: string; member_id?: number; substantive_only?: boolean;
 }
 
-export async function aggregate(ctx: Ctx, a: AggArgs) {
-  const { sql } = ctx;
-  const parsed = a.q ? parseQuery(a.q) : null;
+/** The speech filters shared by aggregate and topic_timeline; with a query, speeches with at least one matching paragraph. */
+function speechWhere(sql: Sql, a: Omit<AggArgs, "metric" | "group_by">, parsed: ReturnType<typeof parseQuery> | null) {
   const rq = parsed ? recallTsQuery(parsed) : null;
   const pq = parsed ? phraseTsQuery(parsed) : null;
-  const key = {
-    year: sql`extract(year from s.speech_date)::int::text`, member: sql`s.member_id::text || ': ' || s.member_name`,
-    party: sql`coalesce(pt.name, '(óþekktur flokkur)')`, speech_type: sql`s.type`, lthing: sql`s.lthing::text`,
-  }[a.group_by];
-  const value = a.metric === "words" ? sql`coalesce(sum(s.word_count), 0)::int` : sql`count(*)::int`;
-  const rows = await sql<{ key: string; n: number }[]>`
-    select ${key} as key, ${value} as n
-    from speeches s
-    ${a.group_by === "party" ? sql`left join lateral (
-        select p.name from seats st join parties p on p.id = st.party_id
-        where st.member_id = s.member_id and st.kind in ('þingmaður', 'varamaður')
-          and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31')
-        order by st.from_date desc nulls last limit 1) pt on true` : sql``}
-    where s.text_state = 'done'
+  return sql`s.text_state = 'done'
       ${a.date_from ? sql`and s.speech_date >= ${a.date_from}` : sql``}
       ${a.date_to ? sql`and s.speech_date <= ${a.date_to}` : sql``}
       ${a.lthing !== undefined ? sql`and s.lthing = ${a.lthing}` : sql``}
@@ -305,18 +291,107 @@ export async function aggregate(ctx: Ctx, a: AggArgs) {
       ${a.substantive_only ? sql`and s.type in ('ræða', 'flutningsræða', 'andsvar', 'svar') and coalesce(s.role_kind, '') <> 'forseti'` : sql``}
       ${rq || pq ? sql`and exists (select 1 from paragraphs p where p.speech_id = s.id
           ${rq ? sql`and p.search_vector @@ to_tsquery('simple', ${rq})` : sql``}
-          ${pq ? sql`and p.seq_vector @@ to_tsquery('simple', ${pq})` : sql``})` : sql``}
-    group by 1 order by ${a.group_by === "year" || a.group_by === "lthing" ? sql`1` : sql`2 desc, 1`} limit 50`;
+          ${pq ? sql`and p.seq_vector @@ to_tsquery('simple', ${pq})` : sql``})` : sql``}`;
+}
+
+const matterKey = (l: number, c: string, n: number) => `${l}/${c}/${n}`;
+
+export async function aggregate(ctx: Ctx, a: AggArgs) {
+  const { sql } = ctx;
+  const parsed = a.q ? parseQuery(a.q) : null;
+  // key = the grouping value as a string; member/party/matter buckets also carry their ids, name/title and a url
+  const sel = {
+    year: sql`extract(year from s.speech_date)::int::text as key, null::int as id, null::text as name, null::text as cls, null::int as nr`,
+    member: sql`coalesce(s.member_id::text, s.speaker_abbr, '?') as key, s.member_id as id, min(coalesce(s.member_name, s.speaker_abbr)) as name, null::text as cls, null::int as nr`,
+    party: sql`coalesce(pt.id::text, '?') as key, pt.id, coalesce(pt.name, '(óþekktur flokkur)') as name, null::text as cls, null::int as nr`,
+    speech_type: sql`s.type as key, null::int as id, null::text as name, null::text as cls, null::int as nr`,
+    lthing: sql`s.lthing::text as key, s.lthing as id, null::text as name, null::text as cls, null::int as nr`,
+    matter: sql`coalesce(s.lthing || '/' || s.matter_cls || '/' || s.matter_nr, '(ekkert mál)') as key, s.lthing as id, min(m.title) as name, s.matter_cls as cls, s.matter_nr as nr`,
+  }[a.group_by];
+  const group = {
+    year: sql`1`, member: sql`1, 2`, party: sql`1, 2, 3`, speech_type: sql`1`, lthing: sql`1, 2`, matter: sql`1, 2, 4, 5`,
+  }[a.group_by];
+  const value = a.metric === "words" ? sql`coalesce(sum(s.word_count), 0)::int` : sql`count(*)::int`;
+  const rows = await sql<{ key: string; id: number | null; name: string | null; cls: string | null; nr: number | null; n: number }[]>`
+    select ${sel}, ${value} as n
+    from speeches s
+    ${a.group_by === "party" ? sql`left join lateral (
+        select p.id, p.name from seats st join parties p on p.id = st.party_id
+        where st.member_id = s.member_id and st.kind in ('þingmaður', 'varamaður')
+          and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31')
+        order by st.from_date desc nulls last limit 1) pt on true` : sql``}
+    ${a.group_by === "matter" ? sql`left join matters m on (m.lthing, m.cls, m.nr) = (s.lthing, s.matter_cls, s.matter_nr)` : sql``}
+    where ${speechWhere(sql, a, parsed)}
+    group by ${group} order by ${a.group_by === "year" || a.group_by === "lthing" ? sql`1` : sql`n desc, 1`} limit 50`;
+  const bucket = (r: (typeof rows)[number]) => {
+    const b = { key: r.key, value: r.n };
+    if (a.group_by === "member") return { ...b, id: r.id, name: r.name, url: r.id === null ? null : site.member(r.id) };
+    if (a.group_by === "party") return { ...b, id: r.id, name: r.name, url: r.id === null ? null : `${SITE}/flokkur/${r.id}` };
+    if (a.group_by === "matter") return r.cls && r.nr !== null
+      ? { ...b, matter: { lthing: r.id!, class: r.cls, nr: r.nr, title: r.name, url: site.matter(r.id!, r.cls, r.nr) } }
+      : { ...b, matter: null };
+    return b;
+  };
   return {
     corpus: await corpusBlock(sql),
     metric: a.metric, group_by: a.group_by,
     query: a.q ? { text: a.q, interpreted_as: describe(parsed!), counts: "speeches with at least one matching paragraph" } : null,
-    buckets: rows.map((r) => ({ key: r.key, value: r.n })),
+    buckets: rows.map(bucket),
     caveats: [
       `Tölur eiga við ræðutexta frá ${TEXT_ERA.is} sem er kominn í safnið (sjá corpus).`,
       ...(a.group_by === "party" ? ["Flokkur er fundinn með þingsetu á ræðudegi."] : []),
+      ...(a.group_by === "matter" ? ["Mál = þingmálið sem ræðan var flutt undir; get_matter(lthing, class, nr) gefur afdrif þess, topic_timeline tekur saman eftir árum."] : []),
       ...(a.substantive_only ? [] : ["Telur allar ræðutegundir (líka andsvör og fundarstjórn); notaðu substantive_only til að sleppa fundarstjórn forseta."]),
     ],
+    derived: false,
+  };
+}
+
+/**
+ * How a topic moved through parliament: per year, the speeches matching `q` and the matters most of them were given
+ * under, with each matter's status and final vote (per-party tally). One scan for the counts, then three queries for
+ * the outcomes of at most years × top_matters matters (src/outcomes.ts).
+ */
+export async function topicTimeline(ctx: Ctx, a: { q: string; date_from?: string; date_to?: string; lthing?: number; member_id?: number; top_matters?: number }) {
+  const { sql } = ctx;
+  const parsed = parseQuery(a.q);
+  if (!recallTsQuery(parsed) && !phraseTsQuery(parsed)) return { error: "nothing_searchable", hint: "q needs at least one Icelandic content word (stopwords and bare numbers are dropped); check it with explain_query.", why: whyEmpty(a.q, parsed, false), corpus: await corpusBlock(sql) };
+  const top = Math.min(Math.max(a.top_matters ?? 3, 1), 5);
+  const rows = await sql<{ y: number; total: number; lthing: number | null; cls: string | null; nr: number | null; n: number | null; title: string | null; type_label: string | null }[]>`
+    with hits as (
+      select extract(year from s.speech_date)::int as y, s.lthing, s.matter_cls as cls, s.matter_nr as nr, count(*)::int as n
+      from speeches s where ${speechWhere(sql, a, parsed)}
+      group by 1, 2, 3, 4
+    ), years as (select y, sum(n)::int as total from hits group by y),
+    ranked as (select *, row_number() over (partition by y order by n desc, lthing, nr) as rk from hits where cls is not null and nr is not null)
+    select yr.y, yr.total, r.lthing, r.cls, r.nr, r.n, m.title, m.type_label
+    from years yr left join ranked r on r.y = yr.y and r.rk <= ${top}
+    left join matters m on (m.lthing, m.cls, m.nr) = (r.lthing, r.cls, r.nr)
+    order by yr.y, r.n desc nulls last, r.lthing, r.nr`;
+  const keys = new Map<string, { lthing: number; cls: string; nr: number; title: string | null; type: string | null }>();
+  for (const r of rows) if (r.lthing !== null && r.cls && r.nr !== null) keys.set(matterKey(r.lthing, r.cls, r.nr), { lthing: r.lthing, cls: r.cls, nr: r.nr, title: r.title, type: r.type_label });
+  const outcomes = await matterOutcomes(sql, [...keys.values()]);
+  const years = new Map<number, { year: number; speeches: number; top_matters: { matter: string; title: string | null; speeches: number }[] }>();
+  for (const r of rows) {
+    const y = years.get(r.y) ?? { year: r.y, speeches: r.total, top_matters: [] };
+    if (r.lthing !== null && r.cls && r.nr !== null) y.top_matters.push({ matter: matterKey(r.lthing, r.cls, r.nr), title: r.title, speeches: r.n ?? 0 });
+    years.set(r.y, y);
+  }
+  return {
+    corpus: await corpusBlock(sql),
+    query: { text: a.q, interpreted_as: describe(parsed), counts: "speeches with at least one matching paragraph" },
+    years: [...years.values()],
+    matters: [...keys].map(([k, m]) => {
+      const o = outcomes.get(k);
+      const f = o?.final_vote ?? null;
+      return {
+        key: k, lthing: m.lthing, class: m.cls, nr: m.nr, title: m.title, type: m.type, url: site.matter(m.lthing, m.cls, m.nr),
+        status: o?.status ?? null, status_source: o?.status_source ?? null,
+        // compact: get_matter / get_vote(final_vote.id) have the labels, the method and every ballot
+        final_vote: f ? { id: f.id, at: f.at, result: f.result, ...(f.result_derived ? { result_derived: true } : {}), yes: f.yes, no: f.no, abstain: f.abstain, by_party: f.by_party } : null,
+      };
+    }),
+    note: `Per year: speeches matching q and the ${top} matters (þingmál) most of them were given under; a session spans two calendar years, so one matter can appear in both. matters[] has each one's status (status_source: althingi, or derived from a sitting event / the final vote) and final vote (the last vote on the bill or resolution as a whole) with a per-party tally. For the debate itself: search_speeches(q, lthing, matter='a/<nr>'); for every ballot: get_vote(final_vote.id).`,
     derived: false,
   };
 }
