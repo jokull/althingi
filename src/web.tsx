@@ -55,7 +55,17 @@ export function createApp(sql: Sql) {
     const t0 = performance.now();
     const st = await corpusStats(sql);
     const ageH = st.lastIngest ? (Date.now() - st.lastIngest.getTime()) / 3_600_000 : null;
-    return c.json({ ok: true, db_ms: Math.round(performance.now() - t0), speeches: st.speeches, last_ingest_age_hours: ageH === null ? null : Math.round(ageH * 10) / 10 });
+    const [ing] = await sql<{ last_poll_at: Date | null; last_dump_drop: Date | null; unresolved_speakers: number; pending_texts: number; blocked_runs: number }[]>`
+      select (select max(finished) from ingest_runs where kind = 'service poll' and status = 'ok') as last_poll_at,
+             (select max(downloaded_at) from dump_drops) as last_dump_drop,
+             (select count(*)::int from speeches where member_id is null) as unresolved_speakers,
+             (select count(*)::int from speeches where text_state = 'pending') as pending_texts,
+             (select count(*)::int from ingest_runs where status in ('blocked', 'rate-limited') and started > now() - interval '24 hours') as blocked_runs`;
+    return c.json({
+      ok: true, db_ms: Math.round(performance.now() - t0), speeches: st.speeches, last_ingest_age_hours: ageH === null ? null : Math.round(ageH * 10) / 10,
+      last_poll_at: ing?.last_poll_at ?? null, last_dump_drop: ing?.last_dump_drop ?? null,
+      unresolved_speakers: ing?.unresolved_speakers ?? 0, pending_texts: ing?.pending_texts ?? 0, blocked_runs_24h: ing?.blocked_runs ?? 0,
+    });
   });
 
   app.get("/", async (c) => {

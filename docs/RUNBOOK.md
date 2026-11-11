@@ -41,3 +41,26 @@ ssh -f -N -L 3051:localhost:3050 mac-mini  # look at the mini's site from the la
   cache eligible, edge + browser TTL respect origin (our `s-maxage` rules in src/web.tsx decide).
 - Rate limit (phase http_ratelimit): /leit* and /mcp*, 40 req / 10 s per IP+colo, block 10 s.
 - Rollback: remove the althingi ingress line and restart via `launchctl kickstart -k gui/$(id -u)/com.jokull.cloudflared-tunnel`; delete the CNAME.
+
+## Layered ingest (docs/INGEST.md; code in scripts/ingest.ts, src/{dump-ingest,derive,service,laws-ingest}.ts)
+
+| Step | Network | Lock | Command |
+|---|---|---|---|
+| Dump drop (manual, ≈ monthly) | 0 | `dump` | `ops/ingest.sh dump-drop ~/althingi/xml-dump/<date>` (= `ingest.ts dump drop --drop PATH`: hash → speeches → misc → sittings → derive → post) |
+| Derive | 0 | `derive` | `bun scripts/ingest.ts derive [--replay-raw]` (`--replay-raw` re-reads cached matter details / speech lists for member ids, 0 requests) |
+| Laws | 0 with `--zip`, else 1 conditional GET | `laws` | `bun scripts/ingest.ts laws [--zip PATH]` |
+| Service | XML, 5 s | `crawl` | `bun scripts/ingest.ts service lists\|members\|matters [--weekly\|--touched]\|texts [--provisional]\|poll\|index\|days` |
+| Status | 0 | — | `bun scripts/ingest.ts status` |
+
+- Dump, derive and laws never take the crawl lock: they may run while the crawler runs. Every run writes an `ingest_runs` row.
+- Re-running any dump step over an unchanged drop writes nothing (per-file sha in `dump_files`; equal speech sha = no-op).
+  `PARSER_REV` in `src/dump-ingest.ts` forces a reparse of one directory type without a new drop.
+- A 403/429 exits 4/5, sets `ingest_state.crawl_paused_until` (+24 h), and `ops/ingest.sh` alerts. Network steps refuse
+  (exit 6) while paused. To resume after looking: `psql "$DATABASE_URL" -c "delete from ingest_state where key like 'crawl_paused%'"`.
+- `ALTHINGI_OFFLINE=1` makes the fetcher refuse every request (use on the laptop).
+- Schedules (templates in `ops/`, not installed by deploy): `com.jokull.althingi-ingest-poll` (Mon–Fri 09:00–23:30 every
+  30 min), `-nightly` (03:10), `-weekly` (Sun 02:00). Logs: `~/althingi/logs/ingest-<kind>.log`. Install only after the
+  backfill chain has finished (service steps skip with "lock held" while it runs, so early install is harmless but noisy):
+  `cp ops/com.jokull.althingi-ingest-*.plist ~/Library/LaunchAgents/ && for k in poll nightly weekly; do launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jokull.althingi-ingest-$k.plist; done`
+- `/healthz` reports `last_poll_at`, `last_dump_drop`, `unresolved_speakers`, `pending_texts`, `blocked_runs_24h`.
+- Session pages become immutable only when no text is pending AND ≥ 95 % of the session's A-mál have matter detail.

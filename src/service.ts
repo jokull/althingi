@@ -250,9 +250,12 @@ export async function poll(c: ServiceClient, o: ServiceOpts = {}): Promise<numbe
   let rows = 0;
   const sp = await c.get(`${BASE}/raedulisti/?dagur=${dayParam(day)}`, `days/raedulisti_${dayParam(day)}.xml`, { maxAgeMs: 0, conditional: true });
   if (sp && !sp.unchanged) rows += await upsertSpeechIndex(c.sql, parseSpeechList(sp.body), lemmaText, "day-list");
-  const vo = await c.get(`${BASE}/atkvaedagreidslur/?dagur=${dayParam(day)}`, `days/atkvaedagreidslur_${dayParam(day)}.xml`, { maxAgeMs: 0, conditional: true });
+  // the votes list only when the speech list moved: an idle poll costs one request
+  const vo = sp && !sp.unchanged
+    ? await c.get(`${BASE}/atkvaedagreidslur/?dagur=${dayParam(day)}`, `days/atkvaedagreidslur_${dayParam(day)}.xml`, { maxAgeMs: 0, conditional: true })
+    : null;
   if (vo && !vo.unchanged) rows += await upsertVoteList(c.sql, parseVoteList(vo.body));
-  log(`poll ${day}: speech list ${sp ? (sp.unchanged ? "unchanged" : "changed") : "absent"}, votes ${vo ? (vo.unchanged ? "unchanged" : "changed") : "absent"}`);
+  log(`poll ${day}: speech list ${sp ? (sp.unchanged ? "unchanged" : "changed") : "absent"}, votes ${vo ? (vo.unchanged ? "unchanged" : "changed") : "not asked"}`);
   if (sp && !sp.unchanged) rows += await texts(c, { ...o, "from-date": day, "to-date": day });
   return rows;
 }

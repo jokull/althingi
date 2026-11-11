@@ -339,3 +339,15 @@ Ask (email, Icelandic, referencing their pointer to `xmlfiles.zip`):
   `derive`. Legacy rows (`index_source` NULL) count as service rows; no backfill update of 250k rows.
 - `tegr` decode adds `B` = "ber af sér sakir" (6 rows in 157 joined to the service label), so nothing is `óþekkt (B)`.
 - lidaskjol `umr` → `speeches.debate` strips the trailing `f` (`1f` → `1`); the raw value stays in `sitting_items.debate`.
+- **Session "complete" rule (§6.4)**: implemented as pending = 0 AND A-mál detail coverage ≥ 95 % — without the "or older
+  than the last drop" clause, because every backfill session 131–156 is older than the drop and would turn immutable
+  (one-year edge cache) before its matter pages are filled, which is what the rule exists to prevent.
+- **Ballots 157 = 74,709**, not 76,947: the dump repeats 2,301 identical `<atkv>` rows inside the same vote block; the
+  table holds distinct (vote, member). One 157 vote's lid file has no `<mál>`; its matter comes from the voted document.
+- Dump file quirks handled: `raedur/` holds a few misplaced lidaskjol files (`20250915T150039.xml` etc., skipped) and a
+  ` rad20250911T110053.xml` twin of `rad20250911T110053.xml` with different bytes (the regular name wins).
+- `service poll` fetches `atkvaedagreidslur/?dagur=` only when the day's speech list changed (an idle poll = 1 request).
+  `raedulisti/?dagur=` uses `YYYYMMDD` like the confirmed votes endpoint: UNVERIFIED for raedulisti until the first poll.
+- `service days` (new) backfills `vod_url` from day lists: one request per sitting day lacking vod links.
+- The sitting-day gate is Mon–Fri in `ops/ingest.sh` (no `dagskra/thingfundur` pre-check yet).
+

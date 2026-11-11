@@ -56,7 +56,9 @@ describe("web", () => {
     expect(home.status).toBe(200);
     expect(await home.text()).toContain("Leit í ræðum Alþingis");
     const h = await (await get("/healthz")).json() as { ok: boolean; speeches: number };
-    expect(h).toMatchObject({ ok: true, speeches: 1 });
+    expect(h).toMatchObject({ ok: true, speeches: 1, unresolved_speakers: 0, last_dump_drop: null, blocked_runs_24h: 0 });
+    expect(h).toHaveProperty("pending_texts");
+    expect(h).toHaveProperty("last_poll_at");
     expect((await get("/um")).status).toBe(200);
     const css = await get("/app.css");
     expect(css.headers.get("content-type")).toContain("text/css");
@@ -159,6 +161,12 @@ describe("web", () => {
     expect(live.headers.get("cache-control")).not.toContain("31536000");
     // finish the session (no pending left) and use a fresh app so the 60 s state cache is not reused
     await sql`update speeches set text_state = 'error' where lthing = 148 and text_state = 'pending'`;
+    // every text in, but its A-mál have no matter detail yet (a dump-ingested session): still short TTLs
+    if ((await sql`select 1 from matters where lthing = 148 and cls = 'A'`).length) {
+      const textsOnly = await get(`/raeda/${speechId}`, {}, createApp(sql));
+      expect(textsOnly.headers.get("cache-control")).toContain("s-maxage=300");
+    }
+    await sql`update matters set detail_fetched_at = now() where lthing = 148 and cls = 'A'`;
     const done = await get(`/raeda/${speechId}`, {}, createApp(sql));
     expect(done.headers.get("cache-control")).toContain("s-maxage=31536000");
     expect(done.headers.get("cache-control")).toContain("stale-if-error");

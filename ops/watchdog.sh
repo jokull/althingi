@@ -23,6 +23,11 @@ elif [ "$pending" -gt 0 ] && [ -n "$age" ] && [ "$age" -gt 1500 ]; then
   alert crawler "crawler stalled: $pending speeches pending, last fetch $((age/60)) min ago. tail: $(tail -c 300 "$HOME/althingi/logs/chain157.log" | tr '\n' ' ')"
 else clear crawler; fi
 
+# layered ingest (ops/ingest.sh): a blocked/rate-limited run, or the crawler paused after one
+blocked=$(q "select count(*) from ingest_runs where status in ('blocked','rate-limited') and started > now() - interval '24 hours'" || echo 0)
+paused=$(q "select value #>> '{}' from ingest_state where key = 'crawl_paused_until' and (value #>> '{}')::timestamptz > now()" || echo "")
+if [ "${blocked:-0}" -gt 0 ] || [ -n "$paused" ]; then alert ingest "ingest blocked/rate-limited in the last 24 h; crawler paused until ${paused:-?}"; else clear ingest; fi
+
 code=$(curl -s -o /dev/null -m 10 -w '%{http_code}' http://127.0.0.1:3050/healthz || echo 000)
 if [ "$code" != "200" ]; then alert web "web /healthz returned $code"; else clear web; fi
 

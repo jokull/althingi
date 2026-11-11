@@ -229,8 +229,9 @@ export async function lawPage(sql: Sql, year: number, nr: number): Promise<LawPa
 
 /**
  * Which session counts as "current" for routing and boosts: the latest one WE HAVE DATA FOR (bare references like
- * "300. mál" must land on a page that exists). `complete` = sessions with no pending speech text: only those are safe
- * to cache as immutable. A session that is still being backfilled stays on short TTLs, whatever its number.
+ * "300. mál" must land on a page that exists). `complete` = sessions with no pending speech text AND matter detail for
+ * ≥ 95 % of their A-mál (a dump-ingested session has every text at once, long before its matter pages are filled):
+ * only those are safe to cache as immutable. A session still being backfilled stays on short TTLs, whatever its number.
  */
 export async function sessionState(sql: Sql): Promise<{ lthing: number; first: number; starts: string | null; complete: Set<number> }> {
   const sessions = await sql<{ lthing: number; pending: number; done: number }[]>`
@@ -240,7 +241,11 @@ export async function sessionState(sql: Sql): Promise<{ lthing: number; first: n
   const lthing = withData.length ? Math.max(...withData) : 0;
   const [st] = await sql<{ starts: string | null }[]>`select starts::text from sessions where lthing = ${lthing}`;
   const first = withData.length ? Math.min(...withData) : 0;
-  return { lthing, first, starts: st?.starts ?? null, complete: new Set(sessions.filter((x) => x.pending === 0 && x.done > 0).map((x) => x.lthing)) };
+  const cover = new Map((await sql<{ lthing: number; a: number; fetched: number }[]>`
+    select lthing, count(*)::int a, count(detail_fetched_at)::int fetched from matters where cls = 'A' group by lthing`)
+    .map((r) => [r.lthing, r.a === 0 ? 1 : r.fetched / r.a]));
+  const complete = sessions.filter((x) => x.pending === 0 && x.done > 0 && (cover.get(x.lthing) ?? 1) >= 0.95).map((x) => x.lthing);
+  return { lthing, first, starts: st?.starts ?? null, complete: new Set(complete) };
 }
 
 /** The seats at the END of a session (members on leave count; their stand-ins do not): who "sits" for each party. */
