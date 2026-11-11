@@ -182,3 +182,14 @@ corpus (A/B: two local restores, one reindexed with the candidate; `scripts/ab-s
 verdict, decision and rejected directions written to `~/Code/lemma-is/EXPERIMENTS.md`. Fixes are batched; a release is
 cut only for a confident batch. Balance rules over special cases (curated lists for the long tail), and prefer fixing on
 the althingi side (query weighting, parts weight) when the problem lives there.
+
+## Speech text backfill reads Alþingi's bulk export (2026-11-11)
+
+Alþingi staff pointed us to `butar.althingi.is/altext/althingistidindi/xmlfiles.zip` (1.9 GB unpacked, sessions 130–158:
+`raedur/`, `raedur_bradabirgda/`, `lidaskjol/`, `fundir/`, `dagskra/`, `utbyting/`, `fjarvist(ir)/`). The link sits behind a
+Cloudflare challenge for scripted clients; it was downloaded by a person in a browser, never by a solver. Speech files are
+byte-identical to the XML service's (`cmp` on 3 fixtures from 138, 148, 157). The crawler's `text` step reads
+`$XML_MIRROR/<lthing>/raedur/<rad…>.xml` first (mini: `~/althingi/xml-mirror`, `raedur/` only, 250,776 files) and falls back
+to the service for anything newer. Speech lists, members, seats, matters still come from the service. Backfill of 131–156
+drops from ~240k requests (~14 days at 5 s) to a few thousand. Not used: `raedur_bradabirgda/` (provisional texts).
+Unexplored, possibly useful later: `lidaskjol/` (per-item sitting records, speech order and votes), `utbyting/` (document distribution).

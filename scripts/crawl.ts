@@ -69,6 +69,25 @@ async function cached(url: string, relPath: string, ageMs = maxAgeMs): Promise<s
   return r.body;
 }
 
+/**
+ * XML_MIRROR: an unpacked copy of Alþingi's bulk export (butar.althingi.is/altext/althingistidindi/xmlfiles.zip,
+ * pointed to by Alþingi staff, 2026-11-11), laid out `<lthing>/raedur/radYYYYMMDDTHHMMSS.xml`. Files are byte-identical
+ * to the XML service's speech files, so a hit replaces one request. Only final texts (`raedur/`), never
+ * `raedur_bradabirgda/` (provisional).
+ */
+const MIRROR = process.env.XML_MIRROR;
+let mirrorHits = 0;
+function fromMirror(xmlUrl: string): string | null {
+  if (!MIRROR) return null;
+  const m = /^\/xml\/(\d+)\/raedur\/(rad\d{8}T\d{6}\.xml)$/.exec(new URL(xmlUrl).pathname);
+  const p = m && join(MIRROR, m[1]!, "raedur", m[2]!);
+  if (!p || !existsSync(p)) return null;
+  const body = readFileSync(p, "utf8");
+  if (!body.includes("<ræða")) return null; // not a speech file: fall back to the service
+  if (++mirrorHits % 1000 === 0) log(`text: ${mirrorHits} read from the local mirror`);
+  return body;
+}
+
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 async function memberIds(): Promise<number[]> {
@@ -128,9 +147,8 @@ async function text() {
     for (const sp of batch) {
       if (stopping || done + failed >= limit) break;
       try {
-        // speech files never change once published: cache forever
-        const xml = await cached(sp.xml_url, `speeches/${sp.lthing}/${sp.id}.xml`, Number.POSITIVE_INFINITY);
-        if (xml === null) { await markSpeechError(sql, sp.id, "404"); failed++; continue; }
+        // speech files never change once published: cache forever. A local copy of Alþingi's own bulk export wins.
+        const xml = fromMirror(sp.xml_url) ?? await cached(sp.xml_url, `speeches/${sp.lthing}/${sp.id}.xml`, Number.POSITIVE_INFINITY);        if (xml === null) { await markSpeechError(sql, sp.id, "404"); failed++; continue; }
         await ingestSpeechXml(sql, sp.id, xml);
         done++;
       } catch (e) {
