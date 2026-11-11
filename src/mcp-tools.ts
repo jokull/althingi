@@ -262,16 +262,18 @@ export async function explainQuery(ctx: Ctx, a: { q: string }) {
 }
 
 export async function listSessions(ctx: Ctx) {
-  const rows = await ctx.sql<{ lthing: number; period: string; starts: string | null; ends: string | null; done: number; pending: number; unavailable: number }[]>`
-    select s.lthing, s.period, s.starts::text, s.ends::text,
-           coalesce(c.done, 0)::int as done, coalesce(c.pending, 0)::int as pending, coalesce(c.unavailable, 0)::int as unavailable
-    from sessions s left join (
-      select lthing, count(*) filter (where text_state = 'done') done, count(*) filter (where text_state = 'pending') pending,
-             count(*) filter (where text_state = 'unavailable') unavailable from speeches group by lthing) c using (lthing)
-    where s.lthing >= 100 order by s.lthing desc`;
+  // per-session counts come from the precomputed corpus_state row (no group-by over speeches on the request path);
+  // sessions with no speech rows at all (no record) are listed from the sessions table
+  const state = await corpusState(ctx.sql);
+  const known = new Map(state.sessions.map((s) => [s.lthing, s]));
+  const rows = await ctx.sql<{ lthing: number; period: string; starts: string | null; ends: string | null }[]>`
+    select lthing, period, starts::text, ends::text from sessions where lthing >= 100 order by lthing desc`;
   return {
     corpus: await corpusBlock(ctx.sql),
-    sessions: rows.map((r) => ({ lthing: r.lthing, period: r.period, starts: r.starts, ends: r.ends, speeches_with_text: r.done, speeches_pending: r.pending, speeches_index_only: r.unavailable, text_complete: r.done > 0 && r.pending === 0 })),
+    sessions: rows.map((r) => {
+      const c = known.get(r.lthing);
+      return { lthing: r.lthing, period: r.period, starts: r.starts, ends: r.ends, speeches_with_text: c?.done ?? 0, speeches_pending: c?.pending ?? 0, speeches_index_only: c?.unavailable ?? 0, text_complete: (c?.done ?? 0) > 0 && (c?.pending ?? 0) === 0 };
+    }),
     derived: false,
   };
 }

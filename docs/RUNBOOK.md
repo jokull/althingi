@@ -25,8 +25,14 @@ ssh -f -N -L 3051:localhost:3050 mac-mini  # look at the mini's site from the la
 - One crawler at a time, ever (the 5 s budget is global to the IP). `crawl.ts` takes a Postgres advisory lock; the laptop and the mini have *different* databases, so the lock does not protect across machines — only run the crawler on the mini.
 - Crawl XML endpoints only. `src/fetcher.ts` refuses everything else (HTML/sgml/pdf sit behind a bot challenge; not circumvented). 403/HTML body = stop.
 - Migrations that rewrite `paragraphs` (0002, 0005) need no crawler running; then `scripts/reindex.ts`.
-- Pages of a session still being ingested must stay on short TTLs (`sessionState` in `src/queries.ts`); only complete sessions are immutable.
+- Pages of a session still being ingested must stay on short TTLs (`sessionState` in `src/queries.ts`); only complete sessions are immutable. "Complete" is computed by `corpus_state_refresh()` in the ingest `post` step (never on the request path) and requires the session to have ENDED (`sessions.ends < today`).
 - Party is always a seat on the date (`partyAt` / `partiesFor`), never by session; seat kind `með varamann` = on leave.
+- Nothing on the request path may scan `speeches` or `paragraphs` whole, and `tsvector @@ q` may only be an index condition (docs/PERFORMANCE.md). Counts and corpus facts come from `corpus_state`; candidate sets and aggregates from `paragraph_index` / `speech_index` (sql/0008), which `saveSpeechText`, `upsertSeats`, reindex and `post` keep current. After a dump drop or anything that writes `paragraphs` outside those paths: `bun scripts/ingest.ts backfill-index`.
+
+## Performance (docs/PERFORMANCE.md)
+- Bench on the mini, serially, from a copy of the tree (not `~/Code/althingi`): `set -a; . ~/althingi/.env; set +a; bun scripts/bench.ts --rounds 3` (prints p50/p95/max per query; `ALTHINGI_CACHE=1` includes the in-process LRU).
+- First deploy of sql/0008 on a populated database: `migrate()` creates the tables and indexes (seconds, concurrently), then run `bun scripts/ingest.ts backfill-index` once (≈ 1 min for 255k speeches; the GINs fill incrementally). Already done on the mini (2026-11-11): the migration is a no-op there.
+- `post --quick` runs at the end of every poll (speech_index for the current session + corpus_state); the nightly/weekly `post` also refreshes the vocab MV.
 
 ## Backups (scripts ready, not yet scheduled)
 `ops/backup.sh` (nightly pg_dump), `ops/restore-test.sh` (monthly), `ops/alert.sh` (Telegram via openclaw; needs `ALERT_TELEGRAM_TARGET` in `~/althingi/.env`).

@@ -8,6 +8,7 @@
 // still produces a number. A query that errors counts as the timeout. Round 0 warms the cache and is not counted.
 import { parseArgs } from "node:util";
 import postgres from "postgres";
+process.env.ALTHINGI_CACHE ??= "0"; // measure the queries, not the in-process LRU (ALTHINGI_CACHE=1 to include it)
 import { searchEntities } from "../src/entities.ts";
 import * as T from "../src/mcp-tools.ts";
 import { corpusStats, dayPage, matterExtras, matterPage, memberPage, sessionState, speechPage } from "../src/queries.ts";

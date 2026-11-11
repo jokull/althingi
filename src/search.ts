@@ -9,6 +9,7 @@ import { matterPageUrl, speechPageUrl } from "./althingi-urls.ts";
 //   window  : a common word's candidates are capped (RANK_CAP): ranked within the newest sessions that fit
 //   rank    : ts_rank_cd(.., 1) x speech-type x debate-stage x matter-title match x recency, facts from speech_index
 //   shape   : results grouped by speech (best 2 paragraphs each), keyset paging, no OFFSET; total in the same statement
+import { isStopword } from "lemma-is";
 import { Lru } from "./cache.ts";
 import { corpusState, type SessionInfo } from "./corpus.ts";
 import type { Sql } from "./db.ts";
@@ -127,13 +128,19 @@ async function ndoc(sql: Sql, lemmas: string[]): Promise<Map<string, number>> {
   return p;
 }
 
-/** Estimated candidate paragraphs: per AND-part the sum of its alternatives' counts, the minimum over parts. */
-export function estimateCandidates(p: ParsedQuery, counts: Map<string, number>): number {
+/**
+ * Estimated candidate paragraphs: per AND-part the sum of its alternatives' counts, the minimum over parts. Phrase
+ * lemmas that are stopwords are skipped: vocab counts come from search_vector (stopwords dropped), while the phrase
+ * index keeps them, so "á" reads as rare in vocab and is in nearly every paragraph of seq_vector. A phrase made only
+ * of stopwords is treated as matching everything.
+ */
+export function estimateCandidates(p: ParsedQuery, counts: Map<string, number>, total = Number.MAX_SAFE_INTEGER): number {
   let est = Number.POSITIVE_INFINITY;
   for (const part of p.parts) {
-    const alts = part.kind === "word" ? [...part.lemmas, ...(part.allOf ?? []).flat()] : part.lemmas;
+    const alts = part.kind === "word" ? [...part.lemmas, ...(part.allOf ?? []).flat()] : part.lemmas.filter((l) => !isStopword(l));
+    if (part.kind === "phrase" && !alts.length) { est = Math.min(est, total); continue; }
     const known = alts.filter((l) => counts.has(l));
-    if (!known.length) continue; // unknown lemma (not in vocab): matches nothing or is a stopword kept out of vocab
+    if (!known.length) continue; // unknown lemma (not in vocab): matches nothing
     const n = part.kind === "phrase" ? Math.min(...known.map((l) => counts.get(l)!)) : known.reduce((a, l) => a + counts.get(l)!, 0);
     est = Math.min(est, n);
   }
@@ -208,12 +215,16 @@ export function phraseTsQuery(p: ParsedQuery): string | null {
 
 // a page is immutable until the next ingest: memoized by (params, corpus_state.version); docs/PERFORMANCE.md §3.4
 const pageLru = new Lru<Promise<SearchResult>>(500);
+/** one speech in the ranked list of a query: its best score, time, best (≤ 2) paragraphs, and the list-wide totals */
+interface RankRow { speech_id: string; score: number; started: string; seqs: number[]; scores: number[]; n_par: number; total: number; n_cand: number }
+// the ranked list per (query, filters, sort, corpus version): paging and repeats read it, never the database
+const rankedLru = new Lru<Promise<RankRow[]>>(300);
 export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const version = (await corpusState(sql)).version;
   const key = `${version}|${JSON.stringify(p)}`;
   let r = pageLru.get(key);
   if (!r) {
-    r = searchUncached(sql, p);
+    r = searchUncached(sql, p, version);
     pageLru.set(key, r);
     r.catch(() => pageLru.delete(key));
   }
@@ -222,7 +233,7 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   return { ...res, hits: [...res.hits], timing: res.timing ? { ...res.timing } : undefined };
 }
 
-async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> {
+async function searchUncached(sql: Sql, p: SearchParams, version: number): Promise<SearchResult> {
   const tStart = performance.now();
   // postgres.js has no "join fragments" helper: fold a list of fragments into one
   const fold = (frags: ReturnType<Sql>[]) => frags.reduce((acc, f) => sql`${acc} ${f}`, sql``);
@@ -270,7 +281,7 @@ async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> 
   if (!browse && !selective) {
     const lemmas = new Set<string>();
     for (const part of parsed.parts) { part.lemmas.forEach((l) => lemmas.add(l)); part.allOf?.flat().forEach((l) => lemmas.add(l)); }
-    let est = estimateCandidates(parsed, await ndoc(sql, [...lemmas]));
+    let est = estimateCandidates(parsed, await ndoc(sql, [...lemmas]), state.speechesDone * 4); // ~4 paragraphs per speech
     // an explicit date range already narrows the candidates in proportion to its share of the corpus
     if ((from || to) && state.speechesDone > 0) {
       const inRange = state.sessions.filter((s) => s.done > 0 && (!from || !s.last_date || s.last_date >= from) && (!to || !s.first_date || s.first_date <= to))
@@ -310,20 +321,21 @@ async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> 
   const pageOrder = newest ? sql`order by started desc, speech_id desc` : oldest ? sql`order by started, speech_id` : sql`order by score desc, started desc, speech_id desc`;
 
   type Row = {
-    speech_id: string; seq: number; text: string; score: number; speech_date: string; started: Date; started_txt: string;
+    speech_id: string; seq: number; text: string; score: number; speech_date: string; started_txt: string;
     member_id: number | null; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
     lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean; html_url: string | null;
     tok_lemma: string[] | null; tok_start: number[] | null; tok_len: number[] | null; total: number | null; n_cand: number | null;
   };
   const tDb = performance.now();
-  const rows = browse
-    ? await sql<Row[]>`
+  let rows: Row[];
+  if (browse) {
+    rows = await sql<Row[]>`
       with best as (
         select si.id as speech_id, si.started, 1.0::float8 as score from speech_index si
         where true ${siFilters()} ${speechFilters()} ${cursorCond()}
         ${pageOrder} limit ${limit + 1}
       )
-      select b.speech_id, 0 as seq, coalesce(p.text, '') as text, b.score, s.speech_date::text, s.started, s.started::text as started_txt,
+      select b.speech_id, 0 as seq, coalesce(p.text, '') as text, b.score, s.speech_date::text, s.started::text as started_txt,
              s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
              1 as rn, 1 as n_par, s.provisional, s.html_url, null::text[] as tok_lemma, null::int[] as tok_start, null::smallint[] as tok_len,
              ${p.withTotal && !p.cursor ? sql`(select count(*)::int from (select 1 from speech_index si where true ${siFilters()} ${speechFilters()} limit ${TOTAL_CAP + 1}) x)` : sql`null::int`} as total,
@@ -331,19 +343,25 @@ async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> 
       from best b join speeches s on s.id = b.speech_id
       left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
       left join paragraphs p on p.speech_id = b.speech_id and p.seq = 0
-      ${newest ? sql`order by b.started desc, b.speech_id desc` : sql`order by b.started, b.speech_id`}`
-    : await sql<Row[]>`
+      ${newest ? sql`order by b.started desc, b.speech_id desc` : sql`order by b.started, b.speech_id`}`;
+  } else {
+    // A: the ranked speech list for this query + filters (every candidate up to RANK_CAP, scored once), memoized per
+    // corpus version; B: text, facts and tokens for the page's rows only. Pages 2..n and repeats never rank again.
+    const rankKey = `${version}|${JSON.stringify({ ...p, cursor: undefined, limit: undefined, withTotal: undefined, currentLthing: current })}`;
+    let ranked = rankedLru.get(rankKey);
+    if (!ranked) {
+      ranked = sql<RankRow[]>`
       with cand as materialized (
         ${rq
           // recall words: the narrow paragraph_index (ids only, GIN over para_vec); phrase/number conditions recheck
           // the sequence vector of those candidates only
-          ? sql`select p.speech_id, p.seq from paragraph_index p
+          ? sql`select p.speech_id, p.seq, p.q from paragraph_index p
           where para_vec(p.speech_id, p.seq) @@ ${rq}
           ${pq || prox ? sql`and exists (select 1 from paragraphs q where q.speech_id = p.speech_id and q.seq = p.seq
             ${pq ? sql`and q.seq_vector @@ ${pq}` : sql``}
             ${prox ? sql`and q.seq_vector @@ to_tsquery('simple', ${prox})` : sql``})` : sql``}`
           // phrase-only queries: the sequence GIN on paragraphs (positions are needed, so the recheck reads the row)
-          : sql`select p.speech_id, p.seq from paragraphs p
+          : sql`select p.speech_id, p.seq, null::real as q from paragraphs p
           where p.seq_vector @@ ${pq}
           ${prox ? sql`and p.seq_vector @@ to_tsquery('simple', ${prox})` : sql``}`}
           ${idFrom ? sql`and p.speech_id >= ${idFrom}` : sql``}
@@ -351,11 +369,12 @@ async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> 
           ${needSi ? sql`and p.speech_id in (select si.id from speech_index si where true ${siFilters()} ${speechFilters()})` : sql``}
       ),
       filtered as (
-        select c.speech_id, c.seq, si.started, si.type, si.debate, si.lthing, si.title_vec
+        select c.speech_id, c.seq, c.q, si.started, si.type, si.debate, si.lthing, si.title_vec
         from cand c join speech_index si on si.id = c.speech_id
       ),
       stats as (select count(distinct speech_id)::int as total, count(*)::int as n_cand from filtered),
-      capped as (select * from filtered ${byTime ? sql`` : sql`order by speech_id desc, seq limit ${RANK_CAP}`}),
+      -- the cap keeps the most substantive candidates (static score), newest first among equals
+      capped as (select * from filtered ${byTime ? sql`` : sql`order by q desc nulls last, speech_id desc, seq limit ${RANK_CAP}`}),
       scored as (
         ${byTime
           ? sql`select f.*, 1.0::float8 as score from capped f`
@@ -375,26 +394,43 @@ async function searchUncached(sql: Sql, p: SearchParams): Promise<SearchResult> 
         select h.*, row_number() over (partition by speech_id order by score desc, seq) as rn,
                count(*) over (partition by speech_id) as n_par
         from scored h
-      ),
-      best as (
-        select speech_id, score, started from ranked
-        where rn = 1 ${cursorCond()}
-        ${pageOrder}
-        limit ${limit + 1}
       )
-      select r.speech_id, r.seq, p.text, r.score, s.speech_date::text, r.started, r.started::text as started_txt,
+      select speech_id, max(score)::float8 as score, max(started)::text as started,
+             (array_agg(seq order by rn))[1:2] as seqs, (array_agg(score order by rn))[1:2] as scores, max(n_par)::int as n_par,
+             (select total from stats) as total, (select n_cand from stats) as n_cand
+      from ranked where rn <= 2 group by speech_id
+      ${newest ? sql`order by 3 desc, 1 desc` : oldest ? sql`order by 3, 1` : sql`order by 2 desc, 3 desc, 1 desc`}`
+        .then((r) => r.map((x) => ({ ...x, score: Number(x.score) })));
+      rankedLru.set(rankKey, ranked);
+      ranked.catch(() => rankedLru.delete(rankKey));
+    }
+    const list = await ranked;
+    // keyset position in the cached list (the cursor is what the previous page returned for its last speech)
+    const after = (x: RankRow) => !cur ? true
+      : newest ? x.started < cur[1] || (x.started === cur[1] && x.speech_id < cur[2])
+      : oldest ? x.started > cur[1] || (x.started === cur[1] && x.speech_id > cur[2])
+      : x.score < cur[0] || (x.score === cur[0] && (x.started < cur[1] || (x.started === cur[1] && x.speech_id < cur[2])));
+    const start = cur ? list.findIndex(after) : 0;
+    const slice = start < 0 ? [] : list.slice(start, start + limit + 1);
+    const keys = slice.flatMap((x) => x.seqs.map((seq) => ({ speech_id: x.speech_id, seq })));
+    const page = keys.length ? await sql<Omit<Row, "score" | "rn" | "n_par" | "total" | "n_cand">[]>`
+      select p.speech_id, p.seq, p.text, s.speech_date::text, s.started::text as started_txt,
              s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
-             r.rn, r.n_par, s.provisional, s.html_url, t.lemma as tok_lemma, t.start as tok_start, t.len as tok_len,
-             ${p.withTotal && !p.cursor ? sql`(select total from stats)` : sql`null::int`} as total,
-             ${byTime ? sql`null::int` : sql`(select n_cand from stats)`} as n_cand
-      from ranked r join best b on b.speech_id = r.speech_id
-      join paragraphs p on p.speech_id = r.speech_id and p.seq = r.seq
-      join speeches s on s.id = r.speech_id
+             s.provisional, s.html_url, t.lemma as tok_lemma, t.start as tok_start, t.len as tok_len
+      from unnest(${keys.map((k) => k.speech_id)}::text[], ${keys.map((k) => k.seq)}::int[]) as k(sid, sq)
+      join paragraphs p on p.speech_id = k.sid and p.seq = k.sq
+      join speeches s on s.id = k.sid
       left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
-      left join paragraph_tokens t on t.speech_id = r.speech_id and t.seq = r.seq
-      where r.rn <= 2
-      ${newest ? sql`order by b.started desc, r.speech_id desc, r.rn` : oldest ? sql`order by b.started, r.speech_id, r.rn` : sql`order by b.score desc, b.started desc, r.speech_id desc, r.rn`}`;
-
+      left join paragraph_tokens t on t.speech_id = p.speech_id and t.seq = p.seq` : [];
+    const byKey = new Map(page.map((r) => [`${r.speech_id}\u0001${r.seq}`, r]));
+    rows = [];
+    for (const x of slice) {
+      x.seqs.forEach((seq, i) => {
+        const r = byKey.get(`${x.speech_id}\u0001${seq}`);
+        if (r) rows.push({ ...r, score: Number(x.scores[i] ?? x.score), rn: i + 1, n_par: x.n_par, total: list[0]?.total ?? 0, n_cand: list[0]?.n_cand ?? 0 });
+      });
+    }
+  }
   const dbMs = performance.now() - tDb;
   const total = p.withTotal && !p.cursor ? (rows[0]?.total ?? 0) : undefined;
   if (!byTime && (rows[0]?.n_cand ?? 0) > RANK_CAP) window = { from: from ?? null, to: to ?? null, capped: true };

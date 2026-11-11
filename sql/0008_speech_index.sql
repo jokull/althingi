@@ -25,8 +25,10 @@ $$;
 create table if not exists paragraph_index (
   speech_id text not null,
   seq       int  not null,
+  q         real,                        -- static part of the search score: speech type × debate stage × length factor
   primary key (speech_id, seq)
 );
+alter table paragraph_index add column if not exists q real;
 create index concurrently if not exists paragraph_index_fts on paragraph_index using gin (para_vec(speech_id, seq));
 
 -- One row per speech with text: the facts every hot path needs (no join to the 300 MB speeches table, party already
@@ -63,8 +65,14 @@ create or replace function speech_index_refresh(ids text[]) returns int language
 declare n int;
 begin
   delete from paragraph_index where speech_id = any(ids);
-  insert into paragraph_index (speech_id, seq)
-    select p.speech_id, p.seq from paragraphs p join speeches s on s.id = p.speech_id
+  insert into paragraph_index (speech_id, seq, q)
+    select p.speech_id, p.seq,
+           -- the query-independent factors of src/search.ts's score, so a capped search ranks the most substantive candidates
+           (case s.type when 'ræða' then 1.0 when 'flutningsræða' then 1.0 when 'svar' then 1.0 when 'andsvar' then 0.8
+                        when 'grein fyrir atkvæði' then 0.6 when 'um atkvæðagreiðslu' then 0.6 when 'um fundarstjórn' then 0.4 else 0.8 end
+            * case when s.debate in ('1', '2', '3') then 1.0 else 0.9 end
+            * least(1.0, ln(1 + length(p.text) / 6.0) / ln(44.0)))::real
+    from paragraphs p join speeches s on s.id = p.speech_id
     where p.speech_id = any(ids) and s.text_state = 'done';
   delete from speech_index where id = any(ids);
   insert into speech_index (id, lthing, speech_date, started, year, member_id, member_name, party_id, type, debate, substantive,
@@ -159,6 +167,9 @@ begin
   returning version into v;
   return v;
 end $$;
+
+-- get_speech lists the replies to a speech: without this it is an index scan over all of speeches (50 ms)
+create index concurrently if not exists speeches_reply_to on speeches (reply_to_id) where reply_to_id is not null;
 
 -- the row must exist from the first request on (the web layer reads it, never computes it)
 select corpus_state_refresh();

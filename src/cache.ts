@@ -1,6 +1,9 @@
 // Small in-process caches (docs/PERFORMANCE.md §3.4). Results are immutable until the next ingest, so every key carries
 // the corpus_state version: a version bump on ingest invalidates everything at once, no TTL arithmetic.
 
+/** ALTHINGI_CACHE=0 disables every LRU (benchmarks measure the queries, not the cache). Read per call: order-free. */
+const disabled = () => process.env.ALTHINGI_CACHE === "0";
+
 /** Bounded LRU: oldest-inserted entries fall out first; a hit moves the entry to the back. */
 export class Lru<V> {
   private m = new Map<string, V>();
@@ -11,6 +14,7 @@ export class Lru<V> {
     return v;
   }
   set(k: string, v: V): V {
+    if (disabled()) return v;
     if (this.m.has(k)) this.m.delete(k);
     this.m.set(k, v);
     if (this.m.size > this.max) this.m.delete(this.m.keys().next().value!);
