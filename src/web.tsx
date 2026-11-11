@@ -8,12 +8,14 @@ import type { Child } from "hono/jsx";
 import type { Sql } from "./db.ts";
 import { route } from "./route.ts";
 import { search, type SearchParams } from "./search.ts";
-import { handleMcp } from "./mcp.ts";
+import { buildServer, handleMcp, VERSION } from "./mcp.ts";
+import { renderMd } from "./md-routes.ts";
+import { aboutMd, corpusFacts, homeJsonLd, homeMd, llmsFullTxt, llmsTxt, mcpMd, openApi, serverCard } from "./agent-docs.ts";
 import { clearWinner, findMembers, suggest } from "./suggest.ts";
 import { committeePage, composition, corpusStats, dayPage, docPage, isSpeechId, lawPage, matterExtras, matterFeed, matterPage, matterTranscript, memberPage, partiesFor, partyPage, sessionState, speechPage, topicPage } from "./queries.ts";
 import { describeIntent, interpret, type NamedId } from "./intent.ts";
-import { fmtDateTime } from "./pages.tsx";
-import { McpPage } from "./agent-pages.tsx";
+import { fmtDateTime, mdHref } from "./pages.tsx";
+import { AgentsSection, McpPage } from "./agent-pages.tsx";
 import { KINDS, nameMatches, searchEntities, type Kind } from "./entities.ts";
 import { CommitteePageView, DocPageView, TopicPageView, TranscriptView, Suggest, SITE, AboutPage, DayPageView, HomePage, LawPageView, MatterPageView, MemberPageView, NotFound, PartyPageView, Rows, SearchPage, SpeechPageView, type SearchView } from "./pages.tsx";
 
@@ -28,6 +30,26 @@ const HTMX = asset("../node_modules/htmx.org/dist/htmx.min.js");
 const html = (c: Context, node: Child, status: 200 | 404 = 200) =>
   c.html("<!DOCTYPE html>" + String(node), status);
 const num = (s: string | undefined): number | undefined => (s !== undefined && /^\d{1,9}$/.test(s) ? Number(s) : undefined);
+// Everyone is welcome to read and cite the pages; search result pages stay out of crawl indexes (infinite URL space),
+// except for user-triggered agents, which fetch on a person's behalf. robots.txt does not govern MCP clients.
+export const ROBOTS = `# Alþingi · leit: the public record of the Icelandic parliament. AI agents and search engines are welcome.
+# Guide for agents: https://althingi.solberg.is/llms.txt · MCP server (no sign-in): https://althingi.solberg.is/mcp
+# Search, AI-input and user agents (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User, …) all fall under *.
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes
+Allow: /
+Allow: /leit.json
+Disallow: /leit
+
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+Allow: /
+
+Sitemap: https://althingi.solberg.is/sitemap.xml
+`;
+
 const iso = (s: string | undefined): string | undefined => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
 
 export interface AppOpts { mcpRate?: RateOpts }
@@ -54,7 +76,79 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
 
   app.get("/app.css", (c) => c.body(CSS, 200, { "Content-Type": "text/css; charset=utf-8", "Cache-Control": "public, max-age=86400" }));
   app.get("/htmx.min.js", (c) => c.body(HTMX, 200, { "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "public, max-age=86400" }));
-  app.get("/robots.txt", (c) => c.text("User-agent: *\nAllow: /\nDisallow: /leit\nDisallow: /mcp\n\nSitemap: https://althingi.solberg.is/sitemap.xml\n"));
+  app.get("/robots.txt", (c) => c.text(ROBOTS, 200, { "Cache-Control": "public, max-age=3600" }));
+
+  // ---- agent surfaces: CORS-open read endpoints, Markdown twins, llms.txt, discovery files (docs/AGENTS.md)
+  const PUBLIC_CORS = cors({ origin: "*", allowMethods: ["GET", "HEAD", "OPTIONS"], allowHeaders: ["Content-Type", "If-None-Match"], exposeHeaders: ["ETag", "Link"], maxAge: 86400 });
+  const isPublic = (p: string) => /\.(md|json|txt|xml)$/.test(p) || p === "/mcp/server-card" || p.startsWith("/.well-known/");
+  app.use("*", (c, next) => (isPublic(new URL(c.req.url).pathname) ? PUBLIC_CORS(c, next) : next()));
+  const MD = { "Content-Type": "text/markdown; charset=utf-8" };
+  const tools = () => Object.entries((buildServer(sql, 0) as unknown as { _registeredTools: Record<string, { title?: string; description?: string }> })._registeredTools)
+    .map(([name, t]) => ({ name, title: t.title, description: t.description }));
+
+  // HTML pages advertise their agent twins in a Link header too (llms.txt, MCP card, Markdown alternate)
+  app.use("*", async (c, next) => {
+    const path = new URL(c.req.url).pathname;
+    const alt = c.req.method === "GET" ? mdHref(path) : null;
+    // Accept: text/markdown (preferred over HTML) -> the .md twin. A redirect, not inline negotiation: the edge cache
+    // does not key on Accept, so one URL must always carry one representation.
+    const acc = c.req.header("accept") ?? "";
+    if (alt && acc.includes("text/markdown") && (!acc.includes("text/html") || acc.indexOf("text/markdown") < acc.indexOf("text/html"))) {
+      return c.redirect(`${alt}${new URL(c.req.url).search}`, 302);
+    }
+    await next();
+    if (c.res.headers.get("content-type")?.startsWith("text/html")) {
+      c.res.headers.append("Link", `</llms.txt>; rel="help"; type="text/markdown", </mcp/server-card>; rel="service-meta"; type="application/mcp-server-card+json", </openapi.json>; rel="service-desc"${alt ? `, <${alt}>; rel="alternate"; type="text/markdown"` : ""}`);
+      if (alt) c.res.headers.append("Vary", "Accept");
+    }
+  });
+  app.get("/llms.txt", async (c) => c.body(await llmsTxt(sql), 200, { ...MD, "Cache-Control": LIVE }));
+  app.get("/llms-full.txt", async (c) => c.body(await llmsFullTxt(sql, tools()), 200, { ...MD, "Cache-Control": LIVE }));
+  app.get("/index.md", async (c) => c.body(homeMd(await corpusFacts(sql)), 200, { ...MD, "Cache-Control": LIVE }));
+  app.get("/um.md", (c) => c.body(aboutMd(), 200, { ...MD, "Cache-Control": LIVE }));
+  app.get("/mcp.md", (c) => c.body(mcpMd(), 200, { ...MD, "Cache-Control": LIVE }));
+  // MCP Server Card (SEP-2127, Extensions Track): at <mcp url>/server-card, indexed by /.well-known/ai-catalog.json
+  app.get("/mcp/server-card", (c) => c.body(JSON.stringify(serverCard(VERSION), null, 2), 200, { "Content-Type": "application/mcp-server-card+json", "Cache-Control": "public, max-age=3600" }));
+  app.get("/.well-known/ai-catalog.json", (c) => c.body(JSON.stringify({
+    specVersion: "1.0",
+    entries: [{ identifier: "urn:air:althingi.solberg.is:mcp:althingi", type: "application/mcp-server-card+json", url: `${SITE}/mcp/server-card` }],
+  }, null, 2), 200, { "Content-Type": "application/ai-catalog+json", "Cache-Control": "public, max-age=3600" }));
+  app.get("/openapi.json", (c) => c.json(openApi(VERSION), 200, { "Cache-Control": "public, max-age=3600" }));
+  // the Markdown twin of every entity page (resolved in md-routes.ts, shared with the MCP resources and `fetch`)
+  app.get("*", async (c, next) => {
+    const path = new URL(c.req.url).pathname;
+    if (!path.endsWith(".md")) return next();
+    const d = await renderMd(sql, path, (await current()).lthing);
+    if (!d) return c.body(`# Fannst ekki\n\nEkkert á ${SITE}${path}. Sjá ${SITE}/llms.txt fyrir slóðir.\n`, 404, MD);
+    const lthing = Number(path.match(/^\/(?:mal|thingskjal)\/(\d+)\//)?.[1] ?? NaN);
+    if (Number.isFinite(lthing)) await cacheFor(c, lthing); else c.header("Cache-Control", LIVE);
+    return c.body(d.markdown, 200, { ...MD, Link: `<${SITE}${d.path}>; rel="canonical"` });
+  });
+
+  // sitemaps: an index, one file per session with text (matters + speeches), members, laws, and the static pages
+  const XMLH = { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": LIVE };
+  const urlset = (urls: { loc: string; lastmod?: string | null }[]) =>
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${SITE}${u.loc}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}</url>`).join("\n")}\n</urlset>\n`;
+  app.get("/sitemap.xml", async (c) => {
+    const ls = await sql<{ lthing: number; last: string | null }[]>`select lthing, max(fetched_at)::date::text as last from speeches where text_state = 'done' group by 1 order by 1 desc`;
+    const maps = ["static", "members", "laws", ...ls.map((l) => String(l.lthing))];
+    return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${maps.map((m) => `<sitemap><loc>${SITE}/sitemaps/${m}.xml</loc>${ls.find((l) => String(l.lthing) === m)?.last ? `<lastmod>${ls.find((l) => String(l.lthing) === m)!.last}</lastmod>` : ""}</sitemap>`).join("\n")}\n</sitemapindex>\n`, 200, XMLH);
+  });
+  app.get("/sitemaps/:name{[a-z0-9]+\\.xml}", async (c) => {
+    const name = c.req.param("name").replace(/\.xml$/, "");
+    if (name === "static") return c.body(urlset(["/", "/um", "/mcp", "/llms.txt"].map((loc) => ({ loc }))), 200, XMLH);
+    if (name === "members") return c.body(urlset((await sql<{ id: number }[]>`select id from members where exists (select 1 from seats s where s.member_id = members.id) order by id`).map((m) => ({ loc: `/thingmadur/${m.id}` }))), 200, XMLH);
+    if (name === "laws") return c.body(urlset((await sql<{ year: number; nr: number }[]>`select year, nr from laws_current order by year, nr`).map((l) => ({ loc: `/log/${l.year}/${l.nr}` }))), 200, XMLH);
+    const lthing = num(name);
+    if (lthing === undefined) return c.text("fannst ekki", 404);
+    const [ms, sp] = await Promise.all([
+      sql<{ cls: string; nr: number; d: string | null }[]>`select cls, nr, detail_fetched_at::date::text d from matters where lthing = ${lthing} order by cls, nr`,
+      sql<{ id: string; d: string | null }[]>`select id, fetched_at::date::text d from speeches where lthing = ${lthing} and text_state = 'done' order by started limit 45000`,
+    ]);
+    if (!ms.length && !sp.length) return c.text("fannst ekki", 404);
+    await cacheFor(c, lthing);
+    return c.body(urlset([...ms.map((m) => ({ loc: `/mal/${lthing}/${m.cls.toLowerCase()}/${m.nr}`, lastmod: m.d })), ...sp.map((x) => ({ loc: `/raeda/${x.id}`, lastmod: x.d }))]), 200, { "Content-Type": XMLH["Content-Type"] });
+  });
 
   app.get("/healthz", async (c) => {
     const t0 = performance.now();
@@ -76,7 +170,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   app.get("/", async (c) => {
     c.header("Cache-Control", LIVE);
     const st = await current();
-    return html(c, <HomePage stats={await corpusStats(sql)} lthing={st.seatLthing} parties={st.parties} />);
+    return html(c, <HomePage stats={await corpusStats(sql)} lthing={st.seatLthing} parties={st.parties} agents={<AgentsSection />} jsonld={homeJsonLd(await corpusFacts(sql))} />);
   });
 
   app.get("/um", (c) => { c.header("Cache-Control", IMMUTABLE); return html(c, <AboutPage />); });
@@ -399,7 +493,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   // no server-initiated SSE stream, so any other GET is 405 (spec: "MUST either return text/event-stream or 405").
   const mcpCors = cors({
     origin: "*", allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Accept", "Mcp-Session-Id", "MCP-Protocol-Version", "Last-Event-ID", "Authorization"],
+    allowHeaders: ["Content-Type", "Accept", "Mcp-Session-Id", "MCP-Protocol-Version", "Last-Event-ID", "Mcp-Method", "Mcp-Name", "Authorization"],
     exposeHeaders: ["Mcp-Session-Id", "MCP-Protocol-Version", "Retry-After"], maxAge: 86400,
   });
   app.use("/mcp", mcpCors);
@@ -411,6 +505,10 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed: this server is stateless and offers no SSE stream. POST JSON-RPC to /mcp." }, id: null }, 405, { Allow: "POST, OPTIONS" });
     }
     if (c.req.method !== "POST") return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server, no sessions to delete)." }, id: null }, 405, { Allow: "POST, OPTIONS" });
+    // Origin (spec: MUST validate, 403 if invalid). DNS rebinding targets local servers; for a public read-only server
+    // any web origin is fine, so only malformed values are refused.
+    const origin = c.req.header("origin");
+    if (origin && origin !== "null" && !/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(origin)) return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid Origin header" }, id: null }, 403);
     const wait = limited(clientKey((n) => c.req.header(n)));
     if (wait !== null) {
       return c.json({ jsonrpc: "2.0", error: { code: -32000, message: `Rate limited: at most 60 requests a minute per client. Retry after ${wait} s.`, data: { retry_after_seconds: wait } }, id: null },

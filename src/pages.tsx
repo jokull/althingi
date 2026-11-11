@@ -86,7 +86,7 @@ const Party = ({ name }: { name: string | null | undefined }) => (name ? <span c
 
 // ---------------------------------------------------------------- layout
 
-interface LayoutProps { title: string; desc?: string; canonical?: string; q?: string; jsonld?: object; wide?: boolean; children?: Child }
+interface LayoutProps { title: string; desc?: string; canonical?: string; q?: string; jsonld?: object; wide?: boolean; children?: Child; md?: string }
 
 /** Typeahead keys (↑ ↓ Enter Esc), "/" to focus search, copy buttons. Delegated, so it survives hx-boost swaps. */
 const UI_JS = `(()=>{if(window.__ui)return;window.__ui=1;var D=document;
@@ -112,7 +112,11 @@ D.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest(
  navigator.clipboard.writeText(txt).then(function(){var l=c.textContent;c.textContent='Afritað';c.setAttribute('data-done','');setTimeout(function(){c.textContent=l;c.removeAttribute('data-done')},1600)})});
 })();`;
 
-export const Layout = ({ title, desc, canonical, q, jsonld, wide, children }: LayoutProps) => (
+/** The Markdown twin of a page path, when it has one (see md-routes.ts). */
+export const mdHref = (path: string): string | null =>
+  path === "/" ? "/index.md" : /^\/(raeda|mal|thingmadur|log|dagur|flokkur|thingskjal)\/[^.]+$/.test(path) && !path.endsWith("/umraeda") || path === "/um" || path === "/mcp" ? `${path}.md` : null;
+
+export const Layout = ({ title, desc, canonical, q, jsonld, wide, children, md }: LayoutProps) => (
   <html lang="is">
     <head>
       <meta charset="utf-8" />
@@ -123,6 +127,12 @@ export const Layout = ({ title, desc, canonical, q, jsonld, wide, children }: La
       <title>{title}</title>
       {desc && <meta name="description" content={desc} />}
       {canonical && <link rel="canonical" href={`${SITE}${canonical}`} />}
+      {(md ?? (canonical ? mdHref(canonical) : null)) && <link rel="alternate" type="text/markdown" href={md ?? mdHref(canonical!)!} />}
+      {/* agent discovery: llms.txt, MCP connect docs, server card, OpenAPI (RFC 8631 link relations) */}
+      <link rel="help" type="text/markdown" href="/llms.txt" title="llms.txt" />
+      <link rel="service-doc" href="/mcp" title="MCP: https://althingi.solberg.is/mcp" />
+      <link rel="service-meta" type="application/mcp-server-card+json" href="/mcp/server-card" />
+      <link rel="service-desc" type="application/openapi+json" href="/openapi.json" />
       <link rel="stylesheet" href={`/app.css?v=${CSS_V}`} />
       <script src="/htmx.min.js" defer></script>
       <script>{raw(UI_JS)}</script>
@@ -149,7 +159,7 @@ export const Layout = ({ title, desc, canonical, q, jsonld, wide, children }: La
       <main id="main" class={wide ? "page wide" : "page"}>{children}</main>
       <footer class="foot">
         <div>
-          <p>Ræður frá 2005 (XML-öld). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/um#ordskyringar">Orðskýringar</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a></p>
+          <p>Ræður frá 2005 (XML-öld). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/um#ordskyringar">Orðskýringar</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a> · <a href="/mcp">Fyrir gervigreind (MCP)</a></p>
           <p>Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.</p>
         </div>
       </footer>
@@ -923,10 +933,10 @@ const Hemicycle = ({ parties }: { parties: { id: number; name: string; seats: nu
 const SPECTRUM = ["Sósíalistaflokkur Íslands", "Vinstrihreyfingin - grænt framboð", "Samfylkingin", "Píratar", "Flokkur fólksins", "Framsóknarflokkur", "Viðreisn", "Sjálfstæðisflokkur", "Miðflokkurinn"];
 const spectrum = (name: string) => { const i = SPECTRUM.indexOf(name); return i < 0 ? 99 : i; };
 
-export const HomePage = ({ stats, lthing, parties }: { stats: { speeches: number; from: string | null; to: string | null }; lthing?: number; parties?: { id: number; name: string; seats: number }[] }) => {
+export const HomePage = ({ stats, lthing, parties, agents, jsonld }: { stats: { speeches: number; from: string | null; to: string | null }; lthing?: number; parties?: { id: number; name: string; seats: number }[]; agents?: Child; jsonld?: object }) => {
   const seated = [...(parties ?? [])].sort((a, b) => spectrum(a.name) - spectrum(b.name));
   return (
-    <Layout title="Leit í ræðum Alþingis" desc="Hröð leit í ræðum Alþingis sem finnur allar beygingarmyndir orða." canonical="/">
+    <Layout title="Leit í ræðum Alþingis" desc="Hröð leit í ræðum Alþingis sem finnur allar beygingarmyndir orða." canonical="/" jsonld={jsonld}>
       <section class="hero">
         <h1>Leit í ræðum Alþingis</h1>
         <p class="lede">Finnur allar beygingarmyndir orðs: „hestinum“ finnur „hestur“. Leitaðu líka að þingmönnum, flokkum, málum og lögum.</p>
@@ -953,6 +963,7 @@ export const HomePage = ({ stats, lthing, parties }: { stats: { speeches: number
           </div>
         </section>
       )}
+      {agents}
     </Layout>
   );
 };

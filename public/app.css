@@ -350,3 +350,9 @@ tbody tr:hover td{background:color-mix(in oklab,var(--sunk) 55%,transparent)}
 @media (max-width:640px){.day-g .srow{grid-template-columns:auto minmax(0,1fr)}}
 
 .hit-when{color:var(--mut)}.hit-when a{color:inherit}.hit-matter{font-weight:500}
+/* agents: front-page section and the MCP connect page */
+.agents{margin:40px 0 0;padding-top:20px;border-top:1px solid var(--line);max-width:640px}
+.agents h2{margin:0 0 8px;font-size:.9375rem;color:var(--ink)}
+.agents p{margin:0 0 10px;color:var(--ink-2);font-size:.875rem}
+.agents .hint code,.doc code{font:.8125rem/1.4 var(--mono);overflow-wrap:anywhere}
+pre.code{margin:8px 0;padding:10px 12px;background:var(--sunk);border-radius:9px;font:.8125rem/1.5 var(--mono);color:var(--ink-2);overflow-x:auto;white-space:pre}

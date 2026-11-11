@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "is.solberg.althingi/althingi",
+  "title": "Alþingi",
+  "description": "Search Icelandic parliament speeches, matters, votes, members and laws. Public, read-only.",
+  "version": "0.2.0",
+  "websiteUrl": "https://althingi.solberg.is",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://althingi.solberg.is/mcp"
+    }
+  ]
+}
