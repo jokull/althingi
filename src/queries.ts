@@ -16,7 +16,8 @@ export interface SpeechPage {
   prevId: string | null; nextId: string | null;
 }
 
-const ID_RE = /^rad\d{8}T\d{6}$/;
+/** XML era `rad20250911T103151`; SGML era `sgml123_03_r02133209` (DECISIONS §8: sgml<lthing>_<dir>_<stem>). */
+const ID_RE = /^(rad\d{8}T\d{6}|sgml\d+_\w+_r\w+)$/;
 export const isSpeechId = (s: string): boolean => ID_RE.test(s);
 
 /** Party a member sat for on `date` (þingmaður/varamaður seats only; "með varamann" = on leave). */

@@ -35,7 +35,8 @@ Not a BÍN-style restriction: the text is the public parliamentary record; the l
   `ana` = `#chair|#regular|#guest` + `#issue.<lthing>_<nr>_M` (matter; the title is in the root taxonomy, 31,901 issues),
   `source` = althingi.is speech URL. **No start/end time, speech type or debate round** — the time is only in the URL stem.
 - Inline: `<vocal type="interruption"><desc>Gripið fram í…</desc>`, `<kinesic type="ringing">`, `<note>`, `<incident>`.
-- 1991–2004 (sessions 115–130): 118,027 `<u>` in 1,913 files, 88,432 distinct `source` URLs. **Every `<u>` has a source.**
+- Sessions 115–130: 118,027 `<u>` in 1,732 files (the 1991–2004 year directories also hold sessions 113/114 and 131),
+  95,046 distinct `source` URLs (59,611 of ours + 35,435 IGC-only). **Every `<u>` has a source.**
   A record where another speaker cut in is split into consecutive `<u>` sharing one `source` (7,076 groups, 30,057 `<u>`).
 
 ## 3. Join rule (deterministic; anything else stays unlinked)
@@ -95,8 +96,8 @@ artefacts (the SGML era is born-digital).
   therefore covers ≈ 63 % of the era's records. They *could* become rows: id from the source URL (`sgml<l>_<dir>_<stem>`),
   member from `nfaerslunr`, date + time from the file and stem, sitting from the file name, matter from `#issue`
   (35,673 of them); missing: end time, speech type, debate round. The clean fix is 146 per-member list requests
-  (`thingmadur/raedur/?nr=`) — deferred under the no-althingi.is constraint; the id list is `unknown_members.json` in
-  the session scratchpad and is reproducible from the corpus.
+  (`thingmadur/raedur/?nr=`) — deferred under the no-althingi.is constraint; the ids, names and IGC speech counts are
+  in `docs/igc-missing-members.json`.
 - Pre-1991 (two-chamber era, sessions ≤ 113): IGC has 1909–1990 with per-chamber files and `source` URLs of other
   shapes (`/altext/112/r1/1856.html`, `/altext/raeda/?lthing=107&rnr=1882`); the paper says speeches before 1991 carry
   a date only, no timestamp. We have no index rows before 115, so nothing to stitch onto; a pre-1991 corpus would be a
@@ -116,3 +117,8 @@ artefacts (the SGML era is born-digital).
    1991–2004 úr Risamálheildinni (IGC-Parla, CC BY 4.0), 98,9 % ræðna sem skráðar eru." Speech pages should show
    `text_source` for IGC rows as they do for provisional ones (`queries.ts` already returns it).
 5. `sessionState()` counts only `era='xml'`; sessions 115–130 stay "not complete" for caching purposes, which is fine.
+6. **MCP (off limits in this change, for the agent editing `src/mcp.ts`)**: `get_speech` and `get_context` validate
+   `speech_id` with `/^rad\d{8}T\d{6}$/`; they must accept `sgml\d+_\w+_r\w+` too (use `isSpeechId` from `queries.ts`,
+   which the web `/raeda/:id` route and the `.md` twin now use — verified by `test/web.test.ts`: an IGC-filled 1999 speech
+   renders, has a Markdown twin and is a `/leit.json` hit). Until then `search_speeches` returns 1991–2004 hits whose ids
+   `get_speech` rejects.
