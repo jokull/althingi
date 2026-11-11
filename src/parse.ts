@@ -212,6 +212,8 @@ export interface Member {
   name: string;
   born: string | null;
   abbr: string | null;
+  /** <html><lífshlaup>: the member's CV page on althingi.is */
+  cvUrl?: string | null;
 }
 
 export function parseMembers(xml: string): Member[] {
@@ -220,6 +222,7 @@ export function parseMembers(xml: string): Member[] {
     name: text(kid(m, "nafn")),
     born: text(kid(m, "fæðingardagur")) || null,
     abbr: text(kid(m, "skammstöfun")) || null,
+    cvUrl: text(kid(kid(m, "html"), "lífshlaup")) || null,
   }));
 }
 
@@ -271,6 +274,8 @@ export interface MatterRow {
   subtitle: string | null;
   typeCode: string | null;
   typeLabel: string | null;
+  /** the matter's page on althingi.is (ferill / bferill), as served */
+  htmlUrl?: string | null;
 }
 
 export function parseMatterList(xml: string): MatterRow[] {
@@ -284,6 +289,7 @@ export function parseMatterList(xml: string): MatterRow[] {
       subtitle: text(kid(m, "efnisgreining")) || null,
       typeCode: attr(t, "málstegund") ?? null,
       typeLabel: text(kid(t, "heiti")) || null,
+      htmlUrl: text(kid(m, "html")) || null,
     };
   });
 }

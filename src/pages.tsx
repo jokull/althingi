@@ -192,7 +192,7 @@ const Hit = ({ h, party }: { h: SpeechHit; party: string | null | undefined }) =
     <header class="hit-h">
       {h.memberId === null ? <span class="who">{h.memberName}</span> : <a class="who" href={`/thingmadur/${h.memberId}`}>{h.memberName}</a>}
       {party && <Party name={party} />}
-      <span class="hit-when">{h.speechType}{h.provisional ? " · bráðabirgðatexti" : ""} · <a href={speechUrl(h.speechId)}><time datetime={h.started.replace(" ", "T")}>{fmtDateTime(h.started)}</time></a></span>
+      <span class="hit-when">{h.speechType}{h.provisional ? " · bráðabirgðatexti" : ""} · <a href={speechUrl(h.speechId)}><time datetime={h.started.replace(" ", "T")}>{fmtDateTime(h.started)}</time></a>{h.althingiUrl && <> · <a href={h.althingiUrl} rel="noopener">Á vef Alþingis →</a></>}</span>
     </header>
     {h.matter && (
       <a class="hit-matter" href={matterUrl(h.matter.lthing, h.matter.cls, h.matter.nr)}>{h.matter.title ?? `${h.matter.nr}. mál`}</a>
@@ -477,7 +477,7 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
             {r.matterCards.length > 0 && !e && (
               <div class="mcards">
                 {r.matterCards.map((c) => (
-                  <a class="erow k-mal" href={matterUrl(c.lthing, c.cls, c.nr)}><KindMark k="mal" /><span class="erow-b"><span class="erow-t">{c.title}</span><span class="erow-m">{c.nr}. mál á {c.lthing}. þingi</span></span></a>
+                  <div class="erow k-mal"><KindMark k="mal" /><span class="erow-b"><a class="erow-t" href={matterUrl(c.lthing, c.cls, c.nr)}>{c.title}</a><span class="erow-m">{c.nr}. mál á {c.lthing}. þingi</span></span><a class="erow-s" href={c.althingiUrl} rel="noopener">Á vef Alþingis →</a></div>
                 ))}
               </div>
             )}
@@ -547,6 +547,7 @@ export const SpeechPageView = ({ s }: { s: SpeechPage }) => {
             <a href={`/dagur/${s.date}`}>Allur þingdagurinn</a>
             {s.vodUrl && <a href={s.vodUrl} rel="noopener">Horfa á upptöku</a>}
             {s.audioUrl && <a href={s.audioUrl} rel="noopener">Hljóð</a>}
+            {s.althingiUrl && <a href={s.althingiUrl} rel="noopener">Á vef Alþingis →</a>}
           </p>
         </header>
         <section class="prose" aria-label="Ræðutexti">
@@ -606,6 +607,7 @@ export const MatterPageView = ({ m, x }: { m: MatterPage; x?: MatterExtras }) =>
         <p class="sp-links">
           {m.speechCount > 0 && <a href={`${url}/umraeda`}>Öll umræðan á einni síðu</a>}
           <a href={`${url}/atom`} hx-boost="false">Fylgjast með málinu (Atom)</a>
+          <a href={m.althingiUrl} rel="noopener">Á vef Alþingis →</a>
         </p>
       </header>
       {m.cls === "B" && <p class="notice notice-soft">B-mál: titill úr ræðuskrá; engin þingskjöl eða atkvæðagreiðslur fylgja.</p>}
@@ -654,12 +656,12 @@ export const MatterPageView = ({ m, x }: { m: MatterPage; x?: MatterExtras }) =>
             <thead><tr><th>Tími</th><th>Um hvað</th><th class="num">Já</th><th class="num">Nei</th><th class="num">Hjá</th><th>Niðurstaða</th></tr></thead>
             <tbody>
               {m.votes.map((v) => (
-                <tr><td class="mut nowrap">{v.at ? `${shortDate(v.at)} ${fmtTime(v.at)}` : ""}</td><td>{v.kind}</td><td class="num">{v.yes ?? "–"}</td><td class="num">{v.no ?? "–"}</td><td class="num">{v.abstain ?? "–"}</td>
+                <tr><td class="mut nowrap"><a href={v.althingiUrl} rel="noopener" title="Atkvæðagreiðslan á vef Alþingis">{v.at ? `${shortDate(v.at)} ${fmtTime(v.at)}` : `nr. ${v.id}`}</a></td><td>{v.kind}</td><td class="num">{v.yes ?? "–"}</td><td class="num">{v.no ?? "–"}</td><td class="num">{v.abstain ?? "–"}</td>
                   <td><span class="vres">{v.result ?? v.method ?? ""}</span><VoteBar yes={v.yes} no={v.no} abstain={v.abstain} /></td></tr>
               ))}
             </tbody>
           </table></div>
-          <p class="hint">Atkvæði einstakra þingmanna bætast við síðar.</p>
+          <p class="hint">Tíminn vísar á atkvæðagreiðsluna á vef Alþingis.</p>
         </section>
       )}
 
@@ -764,6 +766,7 @@ export const MemberPageView = ({ m }: { m: MemberPage }) => {
             {sessions.length > 0 && <div><dt>Þingseta</dt><dd>{sessions.length === 1 ? `${sessions[0]}. þing` : `${sessions[0]}.–${sessions[sessions.length - 1]}. þing`}</dd></div>}
             <div><dt>Ræður í safni</dt><dd>{n(m.speechCount)}</dd></div>
             {m.born && <div><dt>Fæðingardagur</dt><dd>{fmtDate(m.born)}</dd></div>}
+            <div><dd><a href={m.althingiUrl} rel="noopener">Á vef Alþingis →</a></dd></div>
           </dl>
         </div>
       </header>
@@ -992,13 +995,13 @@ export const DocPageView = ({ d }: { d: DocPage }) => (
       <h1>{d.matter?.title ?? `Þingskjal ${d.nr}`}</h1>
       <p class="lede">{d.issued ? `Útbýtt ${fmtDate(d.issued)}` : ""}{d.matter && <> · <a href={matterUrl(d.lthing, d.matter.cls, d.matter.nr)}>{d.matter.nr}. mál á {d.lthing}. þingi</a></>}</p>
     </header>
-    <p class="notice notice-soft">Texti þingskjala er ekki enn í þessu safni. {d.htmlUrl && <a href={d.htmlUrl} rel="noopener">Lesa skjalið á althingi.is</a>}{d.pdfUrl && <> · <a href={d.pdfUrl} rel="noopener">PDF</a></>}</p>
+    <p class="notice notice-soft">Texti þingskjala er ekki enn í þessu safni. <a href={d.althingiUrl} rel="noopener">Á vef Alþingis →</a>{d.pdfUrl && <> · <a href={d.pdfUrl} rel="noopener">PDF</a></>}</p>
     {d.votes.length > 0 && (
       <section id="atkvaedi">
         <h2>Atkvæðagreiðslur um skjalið <span class="n">{d.votes.length}</span></h2>
         <div class="table-wrap"><table class="votes">
           <thead><tr><th>Tími</th><th>Um hvað</th><th class="num">Já</th><th class="num">Nei</th><th class="num">Hjá</th><th>Niðurstaða</th></tr></thead>
-          <tbody>{d.votes.map((v) => <tr><td class="mut nowrap">{v.at ? `${shortDate(v.at)} ${fmtTime(v.at)}` : ""}</td><td>{v.kind}</td><td class="num">{v.yes ?? "–"}</td><td class="num">{v.no ?? "–"}</td><td class="num">{v.abstain ?? "–"}</td><td>{v.result ?? ""}</td></tr>)}</tbody>
+          <tbody>{d.votes.map((v) => <tr><td class="mut nowrap"><a href={v.althingiUrl} rel="noopener" title="Atkvæðagreiðslan á vef Alþingis">{v.at ? `${shortDate(v.at)} ${fmtTime(v.at)}` : `nr. ${v.id}`}</a></td><td>{v.kind}</td><td class="num">{v.yes ?? "–"}</td><td class="num">{v.no ?? "–"}</td><td class="num">{v.abstain ?? "–"}</td><td>{v.result ?? ""}</td></tr>)}</tbody>
         </table></div>
         <p class="hint">Atkvæði einstakra þingmanna bætast við síðar.</p>
       </section>

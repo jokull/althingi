@@ -1,3 +1,4 @@
+import { matterPageUrl, speechPageUrl } from "./althingi-urls.ts";
 // Search v2 (docs/DECISIONS.md §9). One indexed query per page; snippets are computed in-process for the returned hits only.
 //   recall  : words -> AND of OR-groups of lemmas over paragraphs.search_vector (all candidate readings)
 //   phrase  : "quoted" -> adjacent best-guess lemmas over paragraphs.seq_vector (<->)
@@ -53,6 +54,8 @@ export interface SpeechHit {
   matter: { lthing: number; cls: string; nr: number; title: string | null } | null;
   /** text is Alþingi's provisional version (raedur_bradabirgda) */
   provisional: boolean;
+  /** the speech's page on althingi.is (text, audio and video there) */
+  althingiUrl: string | null;
   /** score of the best paragraph (after boosts) */
   score: number;
   matchingParagraphs: number;
@@ -65,6 +68,8 @@ export interface MatterCard {
   cls: string;
   nr: number;
   title: string;
+  /** the matter's page on althingi.is */
+  althingiUrl: string;
 }
 
 export interface SearchResult {
@@ -198,14 +203,14 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
     {
       speech_id: string; seq: number; text: string; score: number; speech_date: string; started: Date; started_txt: string;
       member_id: number | null; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
-      lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean;
+      lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean; html_url: string | null;
       tok_lemma: string[] | null; tok_start: number[] | null; tok_len: number[] | null;
     }[]
   >`
     with hits as (
       select p.speech_id, p.seq, p.text, s.speech_date::text, s.started, s.started::text as started_txt,
              s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
-             s.provisional,
+             s.provisional, s.html_url,
              (${rank}
                * case s.type when 'ræða' then 1.0 when 'flutningsræða' then 1.0 when 'svar' then 1.0
                              when 'andsvar' then 0.8 when 'grein fyrir atkvæði' then 0.6
@@ -254,8 +259,8 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
     total = c?.n ?? 0;
   }
   const cards = rq
-    ? await sql<{ lthing: number; cls: string; nr: number; title: string }[]>`
-        select lthing, cls, nr, title from matters m
+    ? await sql<{ lthing: number; cls: string; nr: number; title: string; html_url: string | null }[]>`
+        select lthing, cls, nr, title, html_url from matters m
         where m.title_vector @@ ${rq}
           ${fold(parsed.numbers.map((n) => sql`and m.title ~ ${`(^|[^0-9])${n}([^0-9]|$)`}`))}
         order by (lthing = ${current}) desc, lthing desc, nr limit 3`
@@ -276,7 +281,7 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
         speechId: r.speech_id, date: r.speech_date, started: r.started_txt, _startedTxt: r.started_txt,
         memberId: r.member_id, memberName: r.member_name, speechType: r.type, debate: r.debate,
         matter: r.matter_cls && r.matter_nr !== null ? { lthing: r.lthing, cls: r.matter_cls, nr: r.matter_nr, title: r.title } : null,
-        provisional: r.provisional ?? false,
+        provisional: r.provisional ?? false, althingiUrl: speechPageUrl(r.lthing, r.speech_id, r.html_url),
         score: r.score, matchingParagraphs: Number(r.n_par), paragraphs: [],
       };
       bySpeech.set(r.speech_id, h);
@@ -299,7 +304,7 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   return {
     timing: { dbMs, appMs: elapsed - dbMs },
     query: explained,
-    matterCards: [...cards],
+    matterCards: cards.map((c) => ({ lthing: c.lthing, cls: c.cls, nr: c.nr, title: c.title, althingiUrl: matterPageUrl(c.lthing, c.cls, c.nr, c.html_url) })),
     nextCursor: all.length > limit && last ? enc([last.score, last._startedTxt, last.speechId]) : null,
     hits: page.map(({ _startedTxt, ...h }) => h),
     ...(total !== undefined ? { total: Math.min(total, TOTAL_CAP), totalCapped: total > TOTAL_CAP } : {}),

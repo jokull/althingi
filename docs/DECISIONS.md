@@ -193,3 +193,24 @@ byte-identical to the XML service's (`cmp` on 3 fixtures from 138, 148, 157). Th
 to the service for anything newer. Speech lists, members, seats, matters still come from the service. Backfill of 131–156
 drops from ~240k requests (~14 days at 5 s) to a few thousand. Not used: `raedur_bradabirgda/` (provisional texts).
 Unexplored, possibly useful later: `lidaskjol/` (per-item sitting records, speech order and votes), `utbyting/` (document distribution).
+
+## Deep links to althingi.is (2026-11-11)
+
+Owner decision: every entity page, search hit, matter card and MCP entity (`althingi_url`) links to its page on
+althingi.is, as a plain "Á vef Alþingis →" link in the meta/facts row (`rel="noopener"`, same tab). The URL the source XML
+provides is stored and wins; a URL is constructed only from a pattern that URLs in the data confirm (`src/althingi-urls.ts`).
+Nothing is fetched to check a link.
+
+| Entity | Stored from | Constructed fallback (when nothing stored) | Confirmed by |
+|---|---|---|---|
+| Speech | speech lists `<slóðir><html>` → `speeches.html_url` | `/altext/raeda/<lthing>/<rad…>.html` (dump-only speeches) | 2,501 links in fixtures |
+| Matter | `thingmalalisti <html>` → `matters.html_url` (0007) | A: `/thingstorf/thingmalalistar-eftir-thingum/ferill/?ltg=&mnr=`; B: `…/bferill/?ltg=&mnr=` | vote lists, lagasafn "Ferill", thingmalalisti B rows |
+| Member | `thingmenn <html><lífshlaup>` → `members.cv_url` (0007) | `/altext/cv/?nfaerslunr=<id>` (non-MP speakers) | 414 links in member lists |
+| Vote | `atkvaedagreidslur <nánar><html>` → `votes.html_url` (0007) | `/dba-bin/atkvgr.pl?nnafnak=<vote id>` (dump- and detail-only votes) | 280 links in vote lists |
+| Þingskjal | `thingskjol` / matter detail `<slóð><html>` → `documents.html_url` | `/altext/<lthing>/s/<nnnn>.html` (dump-only documents) | 3,060 links |
+| Law | — | `/lagas/nuna/<YYYYNNN>.html` | **constructed, not in the data**: owner-specified and already used by `/log` before; the zip itself only confirms `/lagasafn/pdf/<edition>/<YYYYNNN>.pdf` |
+| Umsögn / erindi | `erindaskrá <slóð><pdf>` → `submissions.pdf_url` | none | served |
+
+No link (no page URL for these anywhere in the dump, raw cache or fixtures): parties, committees, sitting days /
+fundargerðir, efnisflokkar outside the current session. Stored `http://` links are upgraded to `https://` and a doubled
+path slash (`althingi.is//thingstorf/…`, as served in thingmalalisti) is collapsed.

@@ -177,6 +177,48 @@ describe("web", () => {
   });
 });
 
+describe("deep links to althingi.is", () => {
+  const ext = (body: string, href: string) => expect(body).toContain(`href="${href}" rel="noopener"`);
+  test("every entity page renders its althingi.is page as a plain link", async () => {
+    if (!ok) return;
+    // speech: the speech list's own <html> link
+    const sp = await (await get(`/raeda/${speechId}`)).text();
+    ext(sp, "https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
+    expect(sp).toContain("Á vef Alþingis →");
+    // matter (A): the ferill page; its votes link to the vote page; documents to the document page
+    const m = await (await get("/mal/157/a/300")).text();
+    ext(m, "https://www.althingi.is/thingstorf/thingmalalistar-eftir-thingum/ferill/157/300/?ltg=157&amp;mnr=300"); // as served in thingmalalisti
+    expect(m).toMatch(/href="https:\/\/www\.althingi\.is\/dba-bin\/atkvgr\.pl\?nnafnak=\d+" rel="noopener"/);
+    // member: the CV page from the member list's <html><lífshlaup>
+    const mem = await (await get("/thingmadur/633")).text();
+    ext(mem, "https://www.althingi.is/altext/cv/?nfaerslunr=633");
+    // document
+    const [d] = await sql<{ nr: number; html_url: string }[]>`select nr, html_url from documents where lthing = 157 and html_url is not null order by nr limit 1`;
+    const doc = await (await get(`/thingskjal/157/${d!.nr}`)).text();
+    ext(doc, d!.html_url.replace(/^http:/, "https:"));
+    // law: the current collection's page
+    ext(await (await get("/log/1991/34")).text(), "https://www.althingi.is/lagas/nuna/1991034.html");
+    // B-mál use bferill
+    const [b] = await sql<{ nr: number }[]>`select nr from matters where lthing = 157 and cls = 'B' order by nr limit 1`;
+    if (b) expect(await (await get(`/mal/157/b/${b.nr}`)).text()).toContain(`thingmalalistar-eftir-thingum/bferill/`);
+  });
+
+  test("search hits and matter cards link out too; MCP entities carry althingi_url", async () => {
+    if (!ok) return;
+    const r = await (await get(`/leit?q=${encodeURIComponent(word)}&beint=1`)).text();
+    expect(r).toContain("https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
+    const sp = await (await get(`/raeda/${speechId}`)).text();
+    expect(sp).not.toContain('target="_blank"');
+    const g = await call("get_speech", { speech_id: speechId });
+    expect(g.speech.althingi_url).toBe("https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
+    expect((await call("get_member", { member_id: 633 })).member.althingi_url).toBe("https://www.althingi.is/altext/cv/?nfaerslunr=633");
+    const mt = await call("get_matter", { lthing: 157, class: "A", nr: 300 });
+    expect(mt.matter.althingi_url).toContain("ferill/157/300/?ltg=157&mnr=300");
+    expect(mt.votes.every((v: { althingi_url: string }) => v.althingi_url.includes("atkvgr.pl?nnafnak="))).toBe(true);
+    expect(mt.documents.every((d: { althingi_url: string }) => d.althingi_url.startsWith("https://www.althingi.is/altext/157/s/"))).toBe(true);
+  });
+});
+
 describe("omnisearch", () => {
   test("name matching is word-prefix, not fuzzy; a near-miss is never the top result", () => {
     expect(nameMatches("Katrín Jakobsdóttir", "katrín jak")).toBe(true);
@@ -329,7 +371,7 @@ describe("mcp", () => {
     expect(m.matter.status).toBe("Samþykkt sem lög frá Alþingi.");
     expect(m.documents.length).toBe(7);
     expect(m.votes.length).toBe(36);
-    expect(m.laws_amended).toEqual([{ year: 1991, nr: 34, url: expect.stringContaining("/log/1991/34") }]);
+    expect(m.laws_amended).toEqual([{ year: 1991, nr: 34, url: expect.stringContaining("/log/1991/34"), althingi_url: "https://www.althingi.is/lagas/nuna/1991034.html" }]);
     expect(m.related_matters[0]).toMatchObject({ relation: "lagtFramÁðurSem", lthing: 154, nr: 726 });
     expect(m.consultations).toEqual({ requests: 38, submissions_received: 17 });
     const b = await sql<{ nr: number }[]>`select nr from matters where lthing = 148 and cls = 'B' limit 1`;
@@ -351,7 +393,8 @@ describe("mcp", () => {
     if (!ok) return;
     const v = await call("list_votes", { lthing: 157, class: "A", nr: 300 });
     expect(v.votes.length).toBe(36);
-    expect(v.ballots_note).toContain("ekki enn");
+    expect(v.ballots_note).toContain("althingi_url");
+    expect(v.votes[0].althingi_url).toMatch(/^https:\/\/www\.althingi\.is\/dba-bin\/atkvgr\.pl\?nnafnak=\d+$/);
     const byType = await call("aggregate", { metric: "speeches", group_by: "speech_type" });
     expect(byType.buckets.reduce((n: number, b: { value: number }) => n + b.value, 0)).toBe(1); // one speech with text in this DB
     const byYear = await call("aggregate", { metric: "words", group_by: "year", q: word });

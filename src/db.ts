@@ -48,10 +48,11 @@ export async function upsertSessions(sql: Sql, rows: SessionRow[]): Promise<void
 }
 
 export async function upsertMembers(sql: Sql, rows: Member[]): Promise<void> {
-  const data = rows.map((r) => ({ id: r.id, name: r.name, born: r.born, abbr: r.abbr }));
+  const data = rows.map((r) => ({ id: r.id, name: r.name, born: r.born, abbr: r.abbr, cv_url: r.cvUrl ?? null }));
   await inChunks(data, (c) => sql`
     insert into members ${sql(c)}
-    on conflict (id) do update set name = excluded.name, born = coalesce(excluded.born, members.born), abbr = coalesce(excluded.abbr, members.abbr)`);
+    on conflict (id) do update set name = excluded.name, born = coalesce(excluded.born, members.born), abbr = coalesce(excluded.abbr, members.abbr),
+      cv_url = coalesce(excluded.cv_url, members.cv_url)`);
 }
 
 export async function upsertSeats(sql: Sql, rows: Seat[]): Promise<void> {
@@ -75,12 +76,13 @@ export async function upsertSeats(sql: Sql, rows: Seat[]): Promise<void> {
 export async function upsertMatters(sql: Sql, rows: MatterRow[], lemmatize: (t: string) => string = () => ""): Promise<void> {
   const data = uniqBy(rows, (m) => `${m.lthing}|${m.cls}|${m.nr}`).map((m) => ({
     lthing: m.lthing, cls: m.cls, nr: m.nr, title: m.title, subtitle: m.subtitle,
-    type_code: m.typeCode, type_label: m.typeLabel, stub: false, title_lemmas: lemmatize(m.title),
+    type_code: m.typeCode, type_label: m.typeLabel, stub: false, title_lemmas: lemmatize(m.title), html_url: m.htmlUrl ?? null,
   }));
   await inChunks(data, (c) => sql`
     insert into matters ${sql(c)}
     on conflict (lthing, cls, nr) do update set title = excluded.title, subtitle = excluded.subtitle,
       type_code = excluded.type_code, type_label = excluded.type_label, stub = false,
+      html_url = coalesce(excluded.html_url, matters.html_url),
       title_lemmas = case when excluded.title_lemmas <> '' then excluded.title_lemmas else matters.title_lemmas end`);
 }
 
@@ -437,7 +439,7 @@ export async function upsertDocumentList(sql: Sql, rows: import("./parse.ts").Do
 export async function upsertVoteList(sql: Sql, rows: import("./parse.ts").VoteRow[]): Promise<number> {
   const data = uniqBy(rows, (r) => String(r.id)).map((v) => ({
     id: v.id, lthing: v.lthing, cls: v.cls, nr: v.nr, voted_at: v.votedAt, kind_code: v.kindCode, kind_label: v.kindLabel,
-    doc_nr: v.docNr, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, source: "service",
+    doc_nr: v.docNr, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, source: "service", html_url: v.htmlUrl,
   }));
   let n = 0;
   await inChunks(data, async (c) => {
@@ -446,8 +448,9 @@ export async function upsertVoteList(sql: Sql, rows: import("./parse.ts").VoteRo
       on conflict (id) do update set kind_code = excluded.kind_code, kind_label = excluded.kind_label,
         method = coalesce(excluded.method, votes.method), result = coalesce(excluded.result, votes.result),
         voted_at = coalesce(votes.voted_at, excluded.voted_at), doc_nr = coalesce(votes.doc_nr, excluded.doc_nr),
-        yes = coalesce(votes.yes, excluded.yes), no = coalesce(votes.no, excluded.no), abstain = coalesce(votes.abstain, excluded.abstain)
-      where (votes.kind_code, votes.kind_label) is distinct from (excluded.kind_code, excluded.kind_label)
+        yes = coalesce(votes.yes, excluded.yes), no = coalesce(votes.no, excluded.no), abstain = coalesce(votes.abstain, excluded.abstain),
+        html_url = coalesce(excluded.html_url, votes.html_url)
+      where (excluded.html_url is not null and votes.html_url is distinct from excluded.html_url) or (votes.kind_code, votes.kind_label) is distinct from (excluded.kind_code, excluded.kind_label)
          or (excluded.method is not null and votes.method is distinct from excluded.method)
          or (excluded.result is not null and votes.result is distinct from excluded.result)
          or (votes.voted_at is null and excluded.voted_at is not null) or (votes.doc_nr is null and excluded.doc_nr is not null)

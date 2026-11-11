@@ -74,5 +74,4 @@ export function parseChapterIndex(html: string): { edition: string | null; laws:
   return { edition, laws };
 }
 
-/** althingi.is page of a law in the current collection (pattern confirmed by the zip's own links, e.g. `lagas/nuna/…`). */
-export const lawUrl = (year: number, nr: number) => `https://www.althingi.is/lagas/nuna/${year}${String(nr).padStart(3, "0")}.html`;
+export { lawPageUrl as lawUrl } from "./althingi-urls.ts";

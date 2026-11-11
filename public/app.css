@@ -152,6 +152,7 @@ kbd{font:500 .75rem/1 var(--sans);border:1px solid var(--line-2);border-bottom-w
 .group-h a{font-size:.8125rem;text-transform:none;letter-spacing:0;font-weight:500}
 .erow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px;border-radius:10px;color:var(--ink);text-decoration:none;transition:background-color .12s}
 .erow:hover{background:var(--sunk);text-decoration:none}
+div.erow a.erow-t{color:inherit;text-decoration:none}div.erow a.erow-t:hover{text-decoration:underline}div.erow a.erow-s{color:var(--mut)}
 .erow-b{display:flex;flex-direction:column;min-width:0}
 .erow-t{font-weight:550;font-size:.9375rem;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .erow-m{font-size:.8125rem;color:var(--mut);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

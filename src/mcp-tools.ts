@@ -1,3 +1,4 @@
+import { documentPageUrl, lawPageUrl, matterPageUrl, memberPageUrl, speechPageUrl, votePageUrl } from "./althingi-urls.ts";
 // MCP tool implementations as plain functions (testable without the protocol). Shapes follow docs/PERSONAS.md:
 // small chainable payloads, ids + source URLs everywhere, a `corpus` block on every response, derived/inferred flags,
 // and a structured `why` when a search returns nothing.
@@ -73,14 +74,14 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
       speech_id: h.speechId, date: h.date, started: h.started, time: fmtTime(h.started),
       member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null },
       speech_type: h.speechType, debate: h.debate, provisional: h.provisional,
-      matter: h.matter ? { lthing: h.matter.lthing, class: h.matter.cls, nr: h.matter.nr, title: h.matter.title, url: `${SITE}/mal/${h.matter.lthing}/${h.matter.cls.toLowerCase()}/${h.matter.nr}` } : null,
+      matter: h.matter ? { lthing: h.matter.lthing, class: h.matter.cls, nr: h.matter.nr, title: h.matter.title, url: `${SITE}/mal/${h.matter.lthing}/${h.matter.cls.toLowerCase()}/${h.matter.nr}`, althingi_url: matterPageUrl(h.matter.lthing, h.matter.cls, h.matter.nr) } : null,
       score: Math.round(h.score * 1000) / 1000, matching_paragraphs: h.matchingParagraphs,
       paragraphs: h.paragraphs.slice(0, compact ? 1 : 2).map((p) => ({
         mgr: p.seq + 1, text: clip(p.snippets[0]?.text ?? "", compact ? 200 : SNIPPET_MAX), url: `${SITE}/raeda/${h.speechId}#mgr-${p.seq + 1}`,
       })),
-      url: `${SITE}/raeda/${h.speechId}`,
+      url: `${SITE}/raeda/${h.speechId}`, althingi_url: h.althingiUrl,
     })),
-    matter_cards: r.matterCards.map((c) => ({ lthing: c.lthing, class: c.cls, nr: c.nr, title: c.title, url: `${SITE}/mal/${c.lthing}/${c.cls.toLowerCase()}/${c.nr}` })),
+    matter_cards: r.matterCards.map((c) => ({ lthing: c.lthing, class: c.cls, nr: c.nr, title: c.title, url: `${SITE}/mal/${c.lthing}/${c.cls.toLowerCase()}/${c.nr}`, althingi_url: c.althingiUrl })),
     next_cursor: r.nextCursor,
     ...(r.hits.length === 0 ? { why: whyEmpty(a.q, r.query.parsed, filtered, { from: corpus.text_dates.from, to: corpus.text_dates.to, dateFrom: a.date_from, dateTo: a.date_to }) } : {}),
     derived: false,
@@ -107,9 +108,9 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
   return {
     corpus: await corpusBlock(ctx.sql),
     speech: {
-      id: s.id, url: `${SITE}/raeda/${s.id}`, date: s.date, started: s.started, ended: s.ended, speech_type: s.type, debate: s.debate,
-      member: { id: s.memberId, name: s.memberName, party_at_date: s.party }, office: s.office, capacity: s.capacity,
-      matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title } : null,
+      id: s.id, url: `${SITE}/raeda/${s.id}`, althingi_url: s.althingiUrl, date: s.date, started: s.started, ended: s.ended, speech_type: s.type, debate: s.debate,
+      member: { id: s.memberId, name: s.memberName, party_at_date: s.party, althingi_url: s.memberId === null ? null : memberPageUrl(s.memberId) }, office: s.office, capacity: s.capacity,
+      matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title, althingi_url: matterPageUrl(s.matter.lthing, s.matter.cls, s.matter.nr) } : null,
       audio_url: s.audioUrl, video_url: s.vodUrl, word_count: s.wordCount,
       provisional: s.provisional, // true: Alþingi's provisional text (bráðabirgðatexti); replaced when the final arrives
       text_source: s.textSource,
@@ -131,7 +132,7 @@ export async function getContext(ctx: Ctx, a: { speech_id: string; mgr: number; 
   const picked = s.paragraphs.filter((p) => p.seq + 1 >= a.mgr - w && p.seq + 1 <= a.mgr + w);
   return {
     corpus: await corpusBlock(ctx.sql),
-    speech_id: s.id, url: `${SITE}/raeda/${s.id}#mgr-${a.mgr}`, citation: citation(s, a.mgr - 1),
+    speech_id: s.id, url: `${SITE}/raeda/${s.id}#mgr-${a.mgr}`, althingi_url: s.althingiUrl, citation: citation(s, a.mgr - 1),
     member: { id: s.memberId, name: s.memberName, party_at_date: s.party }, started: s.started, speech_type: s.type,
     matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title } : null,
     paragraphs: picked.map((p) => ({ mgr: p.seq + 1, text: p.text, interjections: p.interjections, is_target: p.seq + 1 === a.mgr })),
@@ -147,16 +148,16 @@ export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; n
     corpus: await corpusBlock(ctx.sql),
     matter: {
       lthing: m.lthing, class: m.cls, nr: m.nr, title: m.title, subtitle: m.subtitle, type: m.typeLabel, status: m.statusText,
-      url: `${SITE}/mal/${m.lthing}/${m.cls.toLowerCase()}/${m.nr}`,
+      url: `${SITE}/mal/${m.lthing}/${m.cls.toLowerCase()}/${m.nr}`, althingi_url: m.althingiUrl,
       detail_fetched: m.detailFetched,
       note: m.cls === "B" ? "B-mál: titill úr ræðuskrá, engin þingskjöl eða atkvæðagreiðslur." : undefined,
     },
-    topics: m.topics, laws_amended: m.laws.map((l) => ({ year: l.year, nr: l.nr, url: `${SITE}/log/${l.year}/${l.nr}` })),
+    topics: m.topics, laws_amended: m.laws.map((l) => ({ year: l.year, nr: l.nr, url: `${SITE}/log/${l.year}/${l.nr}`, althingi_url: lawPageUrl(l.year, l.nr) })),
     related_matters: m.links.map((l) => ({ relation: l.kind, lthing: l.lthing, class: l.cls, nr: l.nr, title: l.title })),
-    documents: m.documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, source_url: d.htmlUrl })),
-    votes: m.votes.map((v) => ({ id: v.id, at: v.at, about: v.kind, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    documents: m.documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, source_url: d.htmlUrl, althingi_url: d.althingiUrl })),
+    votes: m.votes.map((v) => ({ id: v.id, at: v.at, about: v.kind, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, althingi_url: v.althingiUrl })),
     consultations: { requests: m.consultations.length, submissions_received: m.submissionCount },
-    speeches: { total: m.speechCount, index: m.speeches.slice(0, 100).map((s) => ({ id: s.id, started: s.started, member: { id: s.memberId, name: s.memberName }, speech_type: s.type, debate: s.debate })) },
+    speeches: { total: m.speechCount, index: m.speeches.slice(0, 100).map((s) => ({ id: s.id, started: s.started, member: { id: s.memberId, name: s.memberName }, speech_type: s.type, debate: s.debate, althingi_url: speechPageUrl(m.lthing, s.id) })) },
     derived: false,
   };
 }
@@ -172,18 +173,18 @@ export async function getMember(ctx: Ctx, a: { member_id?: number; name?: string
   if (!m) return { error: "member_not_found", corpus: await corpusBlock(ctx.sql) };
   return {
     corpus: await corpusBlock(ctx.sql),
-    member: { id: m.id, name: m.name, born: m.born, url: `${SITE}/thingmadur/${m.id}`, speeches_in_corpus: m.speechCount },
+    member: { id: m.id, name: m.name, born: m.born, url: `${SITE}/thingmadur/${m.id}`, althingi_url: m.althingiUrl, speeches_in_corpus: m.speechCount },
     seats: m.seats.map((s) => ({ lthing: s.lthing, kind: s.kind, party: s.party, constituency: s.constituency, from: s.from, to: s.to, sitting: s.kind !== "með varamann" })),
     seat_note: "'með varamann' = í leyfi, varamaður situr; flokkur á tilteknum degi er alltaf fundinn með þingsetu á þeim degi.",
-    recent_speeches: m.recent.slice(0, 10).map((r) => ({ id: r.id, started: r.started, speech_type: r.type, matter_title: r.matterTitle })),
+    recent_speeches: m.recent.slice(0, 10).map((r) => ({ id: r.id, started: r.started, speech_type: r.type, matter_title: r.matterTitle, althingi_url: speechPageUrl(r.lthing, r.id) })),
     derived: false,
   };
 }
 
 export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; nr?: number; date?: string; doc_nr?: number; after_id?: number; limit?: number }) {
   const cls = (a.class ?? "A").toUpperCase();
-  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null }[]>`
-    select id, nr, cls, voted_at::text as at, kind_label, method, result, yes, no, abstain, doc_nr from votes
+  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null }[]>`
+    select id, nr, cls, voted_at::text as at, kind_label, method, result, yes, no, abstain, doc_nr, html_url from votes
     where lthing = ${a.lthing}
       ${a.nr !== undefined ? ctx.sql`and cls = ${cls} and nr = ${a.nr}` : ctx.sql``}
       ${a.date ? ctx.sql`and voted_at::date = ${a.date}` : ctx.sql``}
@@ -192,9 +193,13 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
     order by id limit ${Math.min(a.limit ?? 50, 200)}`;
   return {
     corpus: await corpusBlock(ctx.sql),
-    votes: rows.map((v) => ({ id: v.id, matter: { lthing: a.lthing, class: v.cls, nr: v.nr }, document_nr: v.doc_nr, at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    votes: rows.map((v) => ({
+      id: v.id, althingi_url: votePageUrl(v.id, v.html_url),
+      matter: { lthing: a.lthing, class: v.cls, nr: v.nr, althingi_url: matterPageUrl(a.lthing, v.cls, v.nr) },
+      document_nr: v.doc_nr, document_althingi_url: v.doc_nr === null ? null : documentPageUrl(a.lthing, v.doc_nr),
+      at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
     next_after_id: rows.length === Math.min(a.limit ?? 50, 200) ? rows[rows.length - 1]!.id : null,
-    ballots_note: "Atkvæði einstakra þingmanna eru ekki enn í safninu; hér eru samtölur.",
+    ballots_note: "Hér eru samtölur; atkvæði einstakra þingmanna eru á althingi_url.",
     derived: false,
   };
 }
@@ -285,8 +290,8 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
   const cond = sql`
     ${rq ? sql`and p.search_vector @@ to_tsquery('simple', ${rq})` : sql``}
     ${pq ? sql`and p.seq_vector @@ to_tsquery('simple', ${pq})` : sql``}`;
-  const first = await sql<{ speech_id: string; seq: number; started: string; member_id: number; member_name: string; type: string; text: string; speech_date: string }[]>`
-    select p.speech_id, p.seq, s.started::text, s.member_id, s.member_name, s.type, p.text, s.speech_date::text
+  const first = await sql<{ speech_id: string; seq: number; started: string; member_id: number; member_name: string; type: string; text: string; speech_date: string; lthing: number; html_url: string | null }[]>`
+    select p.speech_id, p.seq, s.started::text, s.member_id, s.member_name, s.type, p.text, s.speech_date::text, s.lthing, s.html_url
     from paragraphs p join speeches s on s.id = p.speech_id where true ${cond} order by s.started, p.speech_id, p.seq limit ${Math.min(a.limit ?? 5, 20)}`;
   const years = await sql<{ y: number; n: number }[]>`
     select extract(year from s.speech_date)::int y, count(distinct s.id)::int n
@@ -297,7 +302,7 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
     query: { text: a.q, interpreted_as: describe(parsed) },
     earliest: first.map((f) => ({
       speech_id: f.speech_id, mgr: f.seq + 1, started: f.started, member: { id: f.member_id, name: f.member_name, party_at_date: parties.get(f.speech_id) ?? null },
-      speech_type: f.type, text: clip(f.text), url: `${SITE}/raeda/${f.speech_id}#mgr-${f.seq + 1}`,
+      speech_type: f.type, text: clip(f.text), url: `${SITE}/raeda/${f.speech_id}#mgr-${f.seq + 1}`, althingi_url: speechPageUrl(f.lthing, f.speech_id, f.html_url),
     })),
     speeches_per_year: years.map((y) => ({ year: y.y, speeches: y.n })),
     caveat: "„Fyrst“ á aðeins við ræðutexta í safninu (frá 2005; sjá corpus.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.",

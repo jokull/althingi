@@ -1,3 +1,4 @@
+import { documentPageUrl, matterPageUrl, memberPageUrl, speechPageUrl, submissionUrl, votePageUrl } from "./althingi-urls.ts";
 // Read queries behind the pages. Party is ALWAYS resolved through seats on the date in question, never by session.
 import type { Sql } from "./db.ts";
 
@@ -9,6 +10,8 @@ export interface SpeechPage {
   audioUrl: string | null; vodUrl: string | null; wordCount: number | null; textState: string;
   /** Alþingi's provisional text (bráðabirgðatexti), replaced when the final arrives */
   provisional: boolean; textSource: string | null;
+  /** the speech on althingi.is (its own text/audio/video page) */
+  althingiUrl: string | null;
   paragraphs: { seq: number; text: string; interjections: string[] }[];
   prevId: string | null; nextId: string | null;
 }
@@ -31,12 +34,12 @@ export async function speechPage(sql: Sql, id: string): Promise<SpeechPage | nul
     id: string; lthing: number; speech_date: string; started: string; ended: string | null; type: string; debate: string;
     member_id: number | null; member_name: string; role_kind: string | null; office: string | null; speaker_capacity: string | null;
     matter_cls: string | null; matter_nr: number | null; title: string | null; audio_url: string | null; vod_url: string | null;
-    word_count: number | null; text_state: string; fundur: number | null; provisional: boolean; text_source: string | null;
+    word_count: number | null; text_state: string; fundur: number | null; provisional: boolean; text_source: string | null; html_url: string | null;
   }[]>`
     select s.id, s.lthing, s.speech_date::text, s.started::text, s.ended::text, s.type, s.debate, s.member_id,
            coalesce(s.member_name, s.speaker_abbr, '') as member_name,
            s.role_kind, s.office, s.speaker_capacity, s.matter_cls, s.matter_nr, m.title, s.audio_url, s.vod_url,
-           s.word_count, s.text_state, s.fundur, s.provisional, s.text_source
+           s.word_count, s.text_state, s.fundur, s.provisional, s.text_source, s.html_url
     from speeches s left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
     where s.id = ${id}`;
   if (!s) return null;
@@ -57,7 +60,7 @@ export async function speechPage(sql: Sql, id: string): Promise<SpeechPage | nul
     roleKind: s.role_kind, office: s.office, capacity: s.speaker_capacity,
     matter: s.matter_cls && s.matter_nr !== null ? { lthing: s.lthing, cls: s.matter_cls, nr: s.matter_nr, title: s.title } : null,
     audioUrl: s.audio_url, vodUrl: s.vod_url, wordCount: s.word_count, textState: s.text_state,
-    provisional: s.provisional, textSource: s.text_source,
+    provisional: s.provisional, textSource: s.text_source, althingiUrl: speechPageUrl(s.lthing, s.id, s.html_url),
     paragraphs, prevId: nb.find((x) => x.dir === "prev")?.id ?? null, nextId: nb.find((x) => x.dir === "next")?.id ?? null,
   };
 }
@@ -65,11 +68,13 @@ export async function speechPage(sql: Sql, id: string): Promise<SpeechPage | nul
 export interface MatterPage {
   lthing: number; cls: string; nr: number; title: string; subtitle: string | null; typeLabel: string | null; statusText: string | null;
   stub: boolean; detailFetched: boolean;
+  /** the matter's page (ferill) on althingi.is */
+  althingiUrl: string;
   topics: { id: number; name: string }[];
   laws: { year: number; nr: number }[];
   links: { kind: string; lthing: number; cls: string; nr: number; title: string | null }[];
-  documents: { nr: number; type: string; issued: string | null; htmlUrl: string | null }[];
-  votes: { id: number; at: string | null; kind: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null }[];
+  documents: { nr: number; type: string; issued: string | null; htmlUrl: string | null; althingiUrl: string }[];
+  votes: { id: number; at: string | null; kind: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; althingiUrl: string }[];
   consultations: { due: string | null; recipient: string; committee: string | null }[];
   submissionCount: number;
   speeches: { id: string; started: string; date: string; memberId: number; memberName: string; type: string; debate: string; words: number | null }[];
@@ -77,8 +82,8 @@ export interface MatterPage {
 }
 
 export async function matterPage(sql: Sql, lthing: number, cls: string, nr: number): Promise<MatterPage | null> {
-  const [m] = await sql<{ title: string; subtitle: string | null; type_label: string | null; status_text: string | null; stub: boolean; fetched: boolean }[]>`
-    select title, subtitle, type_label, status_text, stub, detail_fetched_at is not null as fetched
+  const [m] = await sql<{ title: string; subtitle: string | null; type_label: string | null; status_text: string | null; stub: boolean; fetched: boolean; html_url: string | null }[]>`
+    select title, subtitle, type_label, status_text, stub, detail_fetched_at is not null as fetched, html_url
     from matters where lthing = ${lthing} and cls = ${cls} and nr = ${nr}`;
   if (!m) return null;
   const [topics, laws, links, documents, votes, consults, subs, speeches, cnt] = await Promise.all([
@@ -86,8 +91,8 @@ export async function matterPage(sql: Sql, lthing: number, cls: string, nr: numb
     sql<{ law_year: number; law_nr: number }[]>`select law_year, law_nr from matter_laws where lthing = ${lthing} and cls = ${cls} and nr = ${nr} order by 1, 2`,
     sql<{ kind: string; to_lthing: number; to_cls: string; to_nr: number; to_title: string | null }[]>`select kind, to_lthing, to_cls, to_nr, to_title from matter_links where lthing = ${lthing} and cls = ${cls} and nr = ${nr}`,
     sql<{ nr: number; type: string; issued: string | null; html_url: string | null }[]>`select nr, type, issued::text, html_url from documents where lthing = ${lthing} and matter_cls = ${cls} and matter_nr = ${nr} order by nr`,
-    sql<{ id: number; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null }[]>`
-      select id, voted_at::text as at, kind_label, method, result, yes, no, abstain from votes where lthing = ${lthing} and cls = ${cls} and nr = ${nr} order by voted_at, id`,
+    sql<{ id: number; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; html_url: string | null }[]>`
+      select id, voted_at::text as at, kind_label, method, result, yes, no, abstain, html_url from votes where lthing = ${lthing} and cls = ${cls} and nr = ${nr} order by voted_at, id`,
     sql<{ due: string | null; recipient: string; committee: string | null }[]>`
       select cr.due::text, cr.recipient, c.name as committee from consultation_requests cr left join committees c on c.id = cr.committee_id
       where cr.lthing = ${lthing} and cr.cls = ${cls} and cr.nr = ${nr} order by cr.due, cr.recipient limit 200`,
@@ -99,10 +104,11 @@ export async function matterPage(sql: Sql, lthing: number, cls: string, nr: numb
   ]);
   return {
     lthing, cls, nr, title: m.title, subtitle: m.subtitle, typeLabel: m.type_label, statusText: m.status_text, stub: m.stub, detailFetched: m.fetched,
+    althingiUrl: matterPageUrl(lthing, cls, nr, m.html_url),
     topics, laws: laws.map((l) => ({ year: l.law_year, nr: l.law_nr })),
     links: links.map((l) => ({ kind: l.kind, lthing: l.to_lthing, cls: l.to_cls, nr: l.to_nr, title: l.to_title })),
-    documents: documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, htmlUrl: d.html_url })),
-    votes: votes.map((v) => ({ id: v.id, at: v.at, kind: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    documents: documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, htmlUrl: d.html_url, althingiUrl: documentPageUrl(lthing, d.nr, d.html_url) })),
+    votes: votes.map((v) => ({ id: v.id, at: v.at, kind: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, althingiUrl: votePageUrl(v.id, v.html_url) })),
     consultations: consults, submissionCount: subs[0]?.n ?? 0,
     speeches: speeches.map((s) => ({ id: s.id, started: s.started, date: s.speech_date, memberId: s.member_id, memberName: s.member_name, type: s.type, debate: s.debate, words: s.word_count })),
     speechCount: cnt[0]?.n ?? 0,
@@ -111,13 +117,15 @@ export async function matterPage(sql: Sql, lthing: number, cls: string, nr: numb
 
 export interface MemberPage {
   id: number; name: string; born: string | null;
+  /** the member's CV page on althingi.is */
+  althingiUrl: string;
   seats: { lthing: number; kind: string; party: string | null; constituency: string | null; from: string | null; to: string | null }[];
   speechCount: number;
   recent: { id: string; started: string; type: string; matterTitle: string | null; matterCls: string | null; matterNr: number | null; lthing: number; words: number | null }[];
 }
 
 export async function memberPage(sql: Sql, id: number): Promise<MemberPage | null> {
-  const [m] = await sql<{ name: string; born: string | null }[]>`select name, born::text from members where id = ${id}`;
+  const [m] = await sql<{ name: string; born: string | null; cv_url: string | null }[]>`select name, born::text, cv_url from members where id = ${id}`;
   // a speaker that has speeches but no members row yet still gets a page
   const [fallback] = m ? [] : await sql<{ member_name: string }[]>`select member_name from speeches where member_id = ${id} limit 1`;
   if (!m && !fallback) return null;
@@ -132,7 +140,7 @@ export async function memberPage(sql: Sql, id: number): Promise<MemberPage | nul
       where s.member_id = ${id} and s.text_state = 'done' order by s.started desc limit 40`,
   ]);
   return {
-    id, name: m?.name ?? fallback!.member_name, born: m?.born ?? null,
+    id, name: m?.name ?? fallback!.member_name, born: m?.born ?? null, althingiUrl: memberPageUrl(id, m?.cv_url),
     seats: seats.map((s) => ({ lthing: s.lthing, kind: s.kind, party: s.party, constituency: s.constituency, from: s.from_date, to: s.to_date })),
     speechCount: cnt[0]?.n ?? 0,
     recent: recent.map((r) => ({ id: r.id, started: r.started, type: r.type, matterTitle: r.title, matterCls: r.matter_cls, matterNr: r.matter_nr, lthing: r.lthing, words: r.word_count })),
@@ -347,7 +355,7 @@ export async function matterExtras(sql: Sql, lthing: number, cls: string, nr: nu
   }
   return {
     rapporteurs: rap.map((r) => ({ memberId: r.member_id, name: r.name })),
-    submissions: subs.map((s) => ({ sender: s.sender, kind: s.kind, received: s.received, pdfUrl: s.pdf_url })),
+    submissions: subs.map((s) => ({ sender: s.sender, kind: s.kind, received: s.received, pdfUrl: submissionUrl(s.pdf_url) })),
     committees: comms, timeline,
   };
 }
@@ -356,8 +364,10 @@ export async function matterExtras(sql: Sql, lthing: number, cls: string, nr: nu
 
 export interface DocPage {
   lthing: number; nr: number; type: string; issued: string | null; htmlUrl: string | null; pdfUrl: string | null;
+  /** the document on althingi.is (stored html link, else the confirmed /altext/<l>/s/<nnnn>.html pattern) */
+  althingiUrl: string;
   matter: { cls: string; nr: number; title: string | null } | null;
-  votes: { id: number; at: string | null; kind: string; result: string | null; yes: number | null; no: number | null; abstain: number | null }[];
+  votes: { id: number; at: string | null; kind: string; result: string | null; yes: number | null; no: number | null; abstain: number | null; althingiUrl: string }[];
 }
 
 export async function docPage(sql: Sql, lthing: number, nr: number): Promise<DocPage | null> {
@@ -366,12 +376,12 @@ export async function docPage(sql: Sql, lthing: number, nr: number): Promise<Doc
     from documents d left join matters m on m.lthing = d.lthing and m.cls = d.matter_cls and m.nr = d.matter_nr
     where d.lthing = ${lthing} and d.nr = ${nr}`;
   if (!d) return null;
-  const votes = await sql<{ id: number; at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null }[]>`
-    select id, voted_at::text as at, kind_label, result, yes, no, abstain from votes where lthing = ${lthing} and doc_nr = ${nr} order by voted_at, id`;
+  const votes = await sql<{ id: number; at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null; html_url: string | null }[]>`
+    select id, voted_at::text as at, kind_label, result, yes, no, abstain, html_url from votes where lthing = ${lthing} and doc_nr = ${nr} order by voted_at, id`;
   return {
-    lthing, nr, type: d.type, issued: d.issued, htmlUrl: d.html_url, pdfUrl: d.pdf_url,
+    lthing, nr, type: d.type, issued: d.issued, htmlUrl: d.html_url, pdfUrl: d.pdf_url, althingiUrl: documentPageUrl(lthing, nr, d.html_url),
     matter: d.matter_cls && d.matter_nr !== null ? { cls: d.matter_cls, nr: d.matter_nr, title: d.title } : null,
-    votes: votes.map((v) => ({ id: v.id, at: v.at, kind: v.kind_label, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    votes: votes.map((v) => ({ id: v.id, at: v.at, kind: v.kind_label, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, althingiUrl: votePageUrl(v.id, v.html_url) })),
   };
 }
 
