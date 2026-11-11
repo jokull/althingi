@@ -26,7 +26,7 @@ export const McpPage = () => (
         </section>
       ))}
       <h2>Hvað er í boði</h2>
-      <p>Leit í ræðutexta frá 2005 sem finnur allar beygingarmyndir, ræður með tölusettum málsgreinum, mál með flutningsmönnum, skjölum og atkvæðagreiðslum, atkvæði hvers þingmanns, þingfundir með dagskrá og lagasafnið. Hver niðurstaða hefur slóð til að vísa í.</p>
+      <p>Leit í ræðutexta frá 131. þingi (október 2004) sem finnur allar beygingarmyndir, ræður með tölusettum málsgreinum, mál með flutningsmönnum, skjölum og atkvæðagreiðslum, atkvæði hvers þingmanns, þingfundir með dagskrá og lagasafnið. Hver niðurstaða hefur slóð til að vísa í.</p>
       <p>Þjónninn notar Streamable HTTP án lota (stateless) og svarar JSON. Takmörk: {RATE}</p>
       <h2>Fyrir forritara og gervigreind</h2>
       <ul>

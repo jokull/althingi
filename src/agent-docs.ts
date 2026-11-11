@@ -38,7 +38,7 @@ export async function corpusFacts(sql: Sql): Promise<CorpusFacts> {
   return { first: r?.first ?? null, last: r?.last ?? null, from: r?.d0 ?? null, to: r?.d1 ?? null, speeches: r?.n ?? 0 };
 }
 const boundary = (f: CorpusFacts) => f.last
-  ? `Speech text for sessions ${f.first}–${f.last} (${f.from} to ${f.to}, ${f.speeches.toLocaleString("en")} speeches). The text era starts in 2005 (session 131); older speeches are index-only and not searchable. Older sessions are still being added: check list_sessions.`
+  ? `Speech text for sessions ${f.first}–${f.last} (${f.from} to ${f.to}, ${f.speeches.toLocaleString("en")} speeches). The text era starts at session 131 (October 2004); older speeches are index-only and not searchable. Older sessions are still being added: check list_sessions.`
   : "The corpus is empty right now.";
 
 /** https://llmstxt.org: H1, one blockquote, prose, then H2 link lists; `## Optional` last. */
@@ -50,7 +50,7 @@ export async function llmsTxt(sql: Sql): Promise<string> {
 
 Use the MCP server: ${MCP_URL} (Streamable HTTP, stateless, no authentication, JSON responses). Claude: Customize › Connectors › Add custom connector, "No sign-in". ChatGPT: chatgpt.com/plugins › Add custom MCP server, "No authentication". Claude Code: \`claude mcp add --transport http althingi ${MCP_URL}\`. Cursor / VS Code: a server with \`"url": "${MCP_URL}"\` (VS Code also \`"type": "http"\`). Full instructions: ${SITE}/mcp.md
 
-Corpus: ${boundary(f)} Every MCP response carries a \`corpus\` block; "first", "never" and totals hold only within it.
+Corpus: ${boundary(f)} Searches, counts and lookups in the MCP carry a one-line \`corpus\` (list_sessions has the full boundary); "first", "never" and totals hold only within it.
 
 Search queries are Icelandic keywords, not questions: any inflection finds all forms ("hestinum" finds "hestur"), all words must occur in one paragraph, "quoted" means the exact phrase. Put people, parties, dates and matters in filters, not in the query.
 
@@ -112,7 +112,7 @@ ${CLIENTS.map((c) => `## ${c.name}\n\n${c.steps}${c.code ? `\n\n\`\`\`\n${c.code
 
 ## Hvað þjónninn gerir / What it does
 
-Leit í ræðum frá 2005 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
+Leit í ræðum frá 131. þingi, október 2004 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
 
 Takmörk / limits: ${RATE}
 
@@ -153,7 +153,7 @@ url: "${SITE}/"
 
 Leitarvél yfir ræður, mál, atkvæðagreiðslur og lög Alþingis sem finnur allar beygingarmyndir orða („hestinum“ finnur „hestur“). Search engine for the Icelandic parliament.
 
-${f.last ? `Safnið: ${f.speeches} ræður með texta af ${f.first}.–${f.last}. þingi (${f.from} til ${f.to}). Ræðutexti er til frá 2005.` : "Safnið er tómt."}
+${f.last ? `Safnið: ${f.speeches} ræður með texta af ${f.first}.–${f.last}. þingi (${f.from} til ${f.to}). Ræðutexti er til frá 131. þingi (október 2004).` : "Safnið er tómt."}
 
 ## Fyrir gervigreind / For AI agents
 
@@ -186,7 +186,7 @@ Leitarvél yfir ræður Alþingis með íslenskri beygingargreiningu (lemma-is).
 
 ## Mörk safnsins
 
-Ræðutexti er til frá 2005. Eldri ræður (1991–2004) eru aðeins skráðar í ræðuskrá og ekki leitarbærar. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 2005.
+Ræðutexti er til frá 131. þingi (október 2004). Eldri ræður (fyrir 131. þing) eru aðeins skráðar í ræðuskrá og ekki leitarbærar. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 131. þingi (október 2004).
 
 ## Hvað er áætlað
 
@@ -211,7 +211,7 @@ export function homeJsonLd(f: CorpusFacts) {
     "@graph": [
       { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: "Alþingi · leit", inLanguage: "is",
         potentialAction: { "@type": "SearchAction", target: `${SITE}/leit?q={q}`, "query-input": "required name=q" } },
-      { "@type": "Dataset", name: "Ræður Alþingis (texti frá 2005)", description: `Speeches, matters, votes with per-member ballots, members and laws of the Icelandic parliament. Public MCP server at ${MCP_URL} (no sign-in); Markdown of every page at <url>.md; guide at ${SITE}/llms.txt.`,
+      { "@type": "Dataset", name: "Ræður Alþingis (texti frá 131. þingi, október 2004)", description: `Speeches, matters, votes with per-member ballots, members and laws of the Icelandic parliament. Public MCP server at ${MCP_URL} (no sign-in); Markdown of every page at <url>.md; guide at ${SITE}/llms.txt.`,
         url: `${SITE}/`, inLanguage: "is", isBasedOn: "https://www.althingi.is", creditText: ATTRIBUTION,
         temporalCoverage: f.from && f.to ? `${f.from}/${f.to}` : undefined,
         distribution: [

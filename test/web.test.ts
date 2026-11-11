@@ -84,7 +84,7 @@ describe("web", () => {
     if (!ok) return;
     const body = await (await get("/leit?q=hvalkjötsframleiðsla")).text();
     expect(body).toContain("Engar niðurstöður");
-    expect(body).toContain("frá 2005");
+    expect(body).toContain("frá 131. þingi (október 2004)");
     expect(body).toContain("Framíköll eru ekki leitarbær");
   });
 
@@ -317,7 +317,7 @@ describe("mcp", () => {
     if (!ok) return;
     const init = await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "0" } });
     expect(init.json.result.serverInfo.name).toBe("althingi-search");
-    expect(init.json.result.instructions).toContain("from 2005 only");
+    expect(init.json.result.instructions).toContain("from session 131 (October 2004) only");
     expect(init.res.headers.get("cache-control")).toMatch(/^no-(store|cache)$/); // POST event-stream: never cacheable
     const { json } = await rpc("tools/list", undefined, 2);
     const names = json.result.tools.map((t: { name: string }) => t.name).sort();
@@ -328,7 +328,9 @@ describe("mcp", () => {
   test("search_speeches: chainable ids, urls, corpus block, party_at_date, small payload", async () => {
     if (!ok) return;
     const r = await call("search_speeches", { q: word, limit: 3 });
-    expect(r.corpus).toMatchObject({ text_from: "2005" });
+    expect(r.corpus).toContain("session 131 (October 2004)");
+    expect(r.corpus.length).toBeLessThan(300);
+    expect(r).not.toHaveProperty("corpus_detail"); // the full object only where absence could be misread
     expect(r.hits.length).toBeGreaterThan(0);
     const h = r.hits[0];
     expect(h.speech_id).toMatch(/^rad\d{8}T\d{6}$/);
@@ -343,7 +345,8 @@ describe("mcp", () => {
     if (!ok) return;
     const r = await call("search_speeches", { q: "hvalkjötsframleiðsla" });
     expect(r.hits).toEqual([]);
-    expect(r.why).toEqual(expect.arrayContaining(["text_corpus_starts_2005", "interjections_not_indexed", "all_query_words_must_match_in_the_same_paragraph"]));
+    expect(r.corpus_detail.text_dates.from).toBeTruthy();
+    expect(r.why).toEqual(expect.arrayContaining(["text_corpus_starts_session_131_october_2004", "interjections_not_indexed", "all_query_words_must_match_in_the_same_paragraph"]));
     const stop = await call("search_speeches", { q: "og" });
     expect(stop.why).toContain("only_stopwords_or_numbers");
     expect(stop.query.dropped_stopwords).toContain("og");
@@ -408,7 +411,9 @@ describe("mcp", () => {
     const fu = await call("first_use", { q: word });
     expect(fu.earliest[0].speech_id).toBe(speechId);
     expect(fu.speeches_per_year).toEqual([{ year: 2018, speeches: 1 }]);
-    expect(fu.caveat).toContain("2005");
+    expect(fu.caveat).toContain("131. þingi");
+    expect(fu.corpus_detail.text_from).toBe("session 131 (October 2004)");
+    expect(ss.corpus_detail.sessions_with_text).toContain(148);
   });
 });
 

@@ -1,6 +1,7 @@
 import { documentPageUrl, lawPageUrl, matterPageUrl, memberPageUrl, speechPageUrl, votePageUrl } from "./althingi-urls.ts";
 // MCP tool implementations as plain functions (testable without the protocol). Shapes follow docs/PERSONAS.md:
-// small chainable payloads, ids + source URLs everywhere, a `corpus` block on every response, derived/inferred flags,
+// small chainable payloads, ids + source URLs everywhere, a one-line `corpus` boundary wherever a count or an absence
+// could be misread (the full object on list_sessions, first_use and zero-hit searches), derived/inferred flags,
 // and a structured `why` when a search returns nothing.
 import type { Sql } from "./db.ts";
 import { parseQuery, describe } from "./explain.ts";
@@ -14,18 +15,57 @@ export interface Ctx { sql: Sql; currentLthing: number }
 const SNIPPET_MAX = 400;
 const clip = (s: string, n = SNIPPET_MAX) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-export async function corpusBlock(sql: Sql) {
-  const [r] = await sql<{ n: number; d0: string | null; d1: string | null; sessions: number[] }[]>`
-    select count(*)::int n, min(speech_date)::text d0, max(speech_date)::text d1,
-           coalesce(array_agg(distinct lthing order by lthing) filter (where lthing is not null), '{}') as sessions
-    from speeches where text_state = 'done'`;
-  return {
-    text_from: "2005",
-    speeches_with_text: r?.n ?? 0,
-    sessions_with_text: r?.sessions ?? [],
-    text_dates: { from: r?.d0 ?? null, to: r?.d1 ?? null },
-    note: "Ræðutexti er til frá 2005 (XML-öld). Eldri ræður eru ekki leitarbærar. 'Fyrst', 'aldrei' og samtölur eiga við textana í safninu (sjá text_dates/sessions_with_text), ekki allan feril Alþingis.",
-  };
+/** The text era: speech XML (and the bulk dump) starts with session 131, which opened on 2004-10-01. */
+export const TEXT_ERA = { lthing: 131, en: "session 131 (October 2004)", is: "131. þingi (október 2004)" } as const;
+
+export interface CorpusDetail {
+  text_from: string; speeches_with_text: number; sessions_with_text: number[];
+  text_dates: { from: string | null; to: string | null }; note: string;
+}
+
+/** "131–150, 157–158" from a sorted list of session numbers (the corpus need not be contiguous while it fills). */
+export function sessionRanges(xs: number[]): string {
+  const out: string[] = [];
+  for (let i = 0; i < xs.length; i++) {
+    let j = i;
+    while (j + 1 < xs.length && xs[j + 1] === xs[j]! + 1) j++;
+    out.push(i === j ? `${xs[i]}` : `${xs[i]}–${xs[j]}`);
+    i = j;
+  }
+  return out.join(", ");
+}
+
+// the corpus stats scan every speech row: computed at most once a minute per pool, not on every tool call
+const CORPUS_TTL_MS = 60_000;
+const corpusCache = new WeakMap<Sql, { at: number; p: Promise<CorpusDetail> }>();
+
+/** The full boundary object: list_sessions, first_use and zero-hit searches (where absence could be misread). */
+export function corpusDetail(sql: Sql): Promise<CorpusDetail> {
+  const hit = corpusCache.get(sql);
+  if (hit && Date.now() - hit.at < CORPUS_TTL_MS) return hit.p;
+  const p = (async () => {
+    const [r] = await sql<{ n: number; d0: string | null; d1: string | null; sessions: number[] }[]>`
+      select count(*)::int n, min(speech_date)::text d0, max(speech_date)::text d1,
+             coalesce(array_agg(distinct lthing order by lthing) filter (where lthing is not null), '{}') as sessions
+      from speeches where text_state = 'done'`;
+    return {
+      text_from: TEXT_ERA.en,
+      speeches_with_text: r?.n ?? 0,
+      sessions_with_text: r?.sessions ?? [],
+      text_dates: { from: r?.d0 ?? null, to: r?.d1 ?? null },
+      note: `Ræðutexti er til frá ${TEXT_ERA.is}. Eldri ræður eru ekki leitarbærar. 'Fyrst', 'aldrei' og samtölur eiga við textana í safninu (sjá text_dates/sessions_with_text), ekki allan feril Alþingis.`,
+    };
+  })();
+  p.catch(() => corpusCache.delete(sql));
+  corpusCache.set(sql, { at: Date.now(), p });
+  return p;
+}
+
+/** One line for every response where a count or an absence could be misread (replaces the ~500-byte object). */
+export async function corpusBlock(sql: Sql): Promise<string> {
+  const d = await corpusDetail(sql);
+  if (!d.speeches_with_text) return `No speech text ingested yet; the text era starts at ${TEXT_ERA.en}.`;
+  return `Speech text: sessions ${sessionRanges(d.sessions_with_text)} (${d.text_dates.from} to ${d.text_dates.to}, ${d.speeches_with_text} speeches); the text era starts at ${TEXT_ERA.en}, older speeches are not searchable. 'First', 'never' and totals hold only within this.`;
 }
 
 export interface SearchArgs {
@@ -42,7 +82,7 @@ function whyEmpty(q: string, parsed: ReturnType<typeof parseQuery>, filtered: bo
   else if (parsed.empty) why.push("only_stopwords_or_numbers");
   if (parsed.numbers.length) why.push("numbers_must_be_within_8_tokens_of_a_query_word");
   if (filtered) why.push("filters_may_exclude_everything");
-  why.push("text_corpus_starts_2005", "interjections_not_indexed", "all_query_words_must_match_in_the_same_paragraph");
+  why.push("text_corpus_starts_session_131_october_2004", "interjections_not_indexed", "all_query_words_must_match_in_the_same_paragraph");
   return why;
 }
 
@@ -66,9 +106,10 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
   }
   const parties = await partiesFor(sql, r.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
   const filtered = Boolean(a.member_id || a.party_id || a.date_from || a.date_to || a.lthing || a.speech_type || a.office || a.debate || a.capacity || a.matter);
-  const corpus = await corpusBlock(sql);
+  const [corpus, detail] = await Promise.all([corpusBlock(sql), corpusDetail(sql)]);
   return {
     corpus,
+    ...(r.hits.length === 0 ? { corpus_detail: detail } : {}),
     query: { text: a.q, interpreted_as: r.query.description, dropped_stopwords: r.query.parsed.dropped, numbers: r.query.parsed.numbers },
     ...(r.total !== undefined ? { total: r.totalCapped ? `${r.total}+` : r.total, total_counts: "speeches with at least one matching paragraph, all pages" } : {}),
     hits: r.hits.map((h) => ({
@@ -84,7 +125,7 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
     })),
     matter_cards: r.matterCards.map((c) => ({ lthing: c.lthing, class: c.cls, nr: c.nr, title: c.title, url: `${SITE}/mal/${c.lthing}/${c.cls.toLowerCase()}/${c.nr}`, althingi_url: c.althingiUrl })),
     next_cursor: r.nextCursor,
-    ...(r.hits.length === 0 ? { why: whyEmpty(a.q, r.query.parsed, filtered, { from: corpus.text_dates.from, to: corpus.text_dates.to, dateFrom: a.date_from, dateTo: a.date_to }) } : {}),
+    ...(r.hits.length === 0 ? { why: whyEmpty(a.q, r.query.parsed, filtered, { from: detail.text_dates.from, to: detail.text_dates.to, dateFrom: a.date_from, dateTo: a.date_to }) } : {}),
     derived: false,
   };
 }
@@ -110,7 +151,6 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
     out.push({ mgr: n, text: p.text, interjections: p.interjections });
   }
   return {
-    corpus: await corpusBlock(ctx.sql),
     speech: {
       id: s.id, url: `${SITE}/raeda/${s.id}`, althingi_url: s.althingiUrl, date: s.date, started: s.started, ended: s.ended, speech_type: s.type, debate: s.debate,
       member: { id: s.memberId, name: s.memberName, party_at_date: s.party, althingi_url: s.memberId === null ? null : memberPageUrl(s.memberId) }, office: s.office, capacity: s.capacity,
@@ -133,11 +173,10 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
 /** Evidence window: paragraphs around one paragraph, with its cite string. */
 export async function getContext(ctx: Ctx, a: { speech_id: string; mgr: number; window?: number }) {
   const s = await speechPage(ctx.sql, a.speech_id);
-  if (!s) return { error: "speech_not_found", speech_id: a.speech_id };
+  if (!s) return { error: "speech_not_found", hint: "Speech ids look like rad20180306T163325 and come from search_speeches, get_matter or get_member.", speech_id: a.speech_id, corpus: await corpusBlock(ctx.sql) };
   const w = Math.min(Math.max(a.window ?? 1, 0), 5);
   const picked = s.paragraphs.filter((p) => p.seq + 1 >= a.mgr - w && p.seq + 1 <= a.mgr + w);
   return {
-    corpus: await corpusBlock(ctx.sql),
     speech_id: s.id, url: `${SITE}/raeda/${s.id}#mgr-${a.mgr}`, althingi_url: s.althingiUrl, citation: citation(s, a.mgr - 1),
     member: { id: s.memberId, name: s.memberName, party_at_date: s.party }, started: s.started, speech_type: s.type,
     matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title } : null,
@@ -223,7 +262,6 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
       ${a.after_id !== undefined ? ctx.sql`and id > ${a.after_id}` : ctx.sql``}
     order by id limit ${Math.min(a.limit ?? 50, 200)}`;
   return {
-    corpus: await corpusBlock(ctx.sql),
     votes: rows.map((v) => ({
       id: v.id, althingi_url: votePageUrl(v.id, v.html_url),
       matter: { lthing: a.lthing, class: v.cls, nr: v.nr, althingi_url: matterPageUrl(a.lthing, v.cls, v.nr) },
@@ -275,7 +313,7 @@ export async function aggregate(ctx: Ctx, a: AggArgs) {
     query: a.q ? { text: a.q, interpreted_as: describe(parsed!), counts: "speeches with at least one matching paragraph" } : null,
     buckets: rows.map((r) => ({ key: r.key, value: r.n })),
     caveats: [
-      "Tölur eiga við ræðutexta frá 2005 sem er kominn í safnið (sjá corpus).",
+      `Tölur eiga við ræðutexta frá ${TEXT_ERA.is} sem er kominn í safnið (sjá corpus).`,
       ...(a.group_by === "party" ? ["Flokkur er fundinn með þingsetu á ræðudegi."] : []),
       ...(a.substantive_only ? [] : ["Telur allar ræðutegundir (líka andsvör og fundarstjórn); notaðu substantive_only til að sleppa fundarstjórn forseta."]),
     ],
@@ -293,7 +331,6 @@ export async function explainQuery(ctx: Ctx, a: { q: string }) {
       "Samsett orð sem eru í orðabók eru ekki klofin í fyrirspurn; ókunn samsett orð leita að heild eða öllum hlutum.",
       "Innan gæsalappa er leitað að nákvæmri röð (með smáorðum).",
     ],
-    corpus: await corpusBlock(ctx.sql),
   };
 }
 
@@ -306,7 +343,7 @@ export async function listSessions(ctx: Ctx) {
              count(*) filter (where text_state = 'unavailable') unavailable from speeches group by lthing) c using (lthing)
     where s.lthing >= 100 order by s.lthing desc`;
   return {
-    corpus: await corpusBlock(ctx.sql),
+    corpus: await corpusBlock(ctx.sql), corpus_detail: await corpusDetail(ctx.sql),
     sessions: rows.map((r) => ({ lthing: r.lthing, period: r.period, starts: r.starts, ends: r.ends, speeches_with_text: r.done, speeches_pending: r.pending, speeches_index_only: r.unavailable, text_complete: r.done > 0 && r.pending === 0 })),
     derived: false,
   };
@@ -329,14 +366,14 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
     from paragraphs p join speeches s on s.id = p.speech_id where true ${cond} group by 1 order by 1`;
   const parties = await partiesFor(sql, first.map((f) => ({ speechId: f.speech_id, memberId: f.member_id, date: f.speech_date })));
   return {
-    corpus: await corpusBlock(sql),
+    corpus: await corpusBlock(sql), corpus_detail: await corpusDetail(sql),
     query: { text: a.q, interpreted_as: describe(parsed) },
     earliest: first.map((f) => ({
       speech_id: f.speech_id, mgr: f.seq + 1, started: f.started, member: { id: f.member_id, name: f.member_name, party_at_date: parties.get(f.speech_id) ?? null },
       speech_type: f.type, text: clip(f.text), url: `${SITE}/raeda/${f.speech_id}#mgr-${f.seq + 1}`, althingi_url: speechPageUrl(f.lthing, f.speech_id, f.html_url),
     })),
     speeches_per_year: years.map((y) => ({ year: y.y, speeches: y.n })),
-    caveat: "„Fyrst“ á aðeins við ræðutexta í safninu (frá 2005; sjá corpus.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.",
+    caveat: `„Fyrst“ á aðeins við ræðutexta í safninu (frá ${TEXT_ERA.is}; sjá corpus_detail.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.`,
     derived: false,
   };
 }
