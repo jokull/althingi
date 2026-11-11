@@ -51,7 +51,8 @@ export class ServiceClient {
     const maxAgeMs = o.maxAgeMs ?? Number.POSITIVE_INFINITY;
     const norm = normalizeUrl(url);
     const rec = await recordedFetch(this.sql, norm);
-    const age = rec ? Date.now() - rec.fetched_at.getTime() : Number.POSITIVE_INFINITY;
+    // maxAgeMs 0 = always ask the server (DB and process clocks can disagree by milliseconds)
+    const age = rec && maxAgeMs > 0 ? Date.now() - rec.fetched_at.getTime() : Number.POSITIVE_INFINITY;
     if (rec?.status === 404 && age < maxAgeMs) return null;
     const onDisk = rec?.status === 200 && rec.path && existsSync(rec.path);
     if (onDisk && age < maxAgeMs) return { body: readFileSync(rec!.path!, "utf8"), changed: false, fromCache: true, unchanged: false };
