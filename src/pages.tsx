@@ -114,7 +114,7 @@ D.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest(
 
 /** The Markdown twin of a page path, when it has one (see md-routes.ts). */
 export const mdHref = (path: string): string | null =>
-  path === "/" ? "/index.md" : /^\/(raeda|mal|thingmadur|log|dagur|flokkur|thingskjal)\/[^.]+$/.test(path) && !path.endsWith("/umraeda") || path === "/um" || path === "/mcp" ? `${path}.md` : null;
+  path === "/" ? "/index.md" : /^\/(raeda|mal|thingmadur|log|dagur|flokkur|thingskjal)\/[^.]+$/.test(path) && !/\/(umraeda|atom)$/.test(path) || path === "/um" || path === "/mcp" ? `${path}.md` : null;
 
 export const Layout = ({ title, desc, canonical, q, jsonld, wide, children, md }: LayoutProps) => (
   <html lang="is">

@@ -83,6 +83,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   const isPublic = (p: string) => /\.(md|json|txt|xml)$/.test(p) || p === "/mcp/server-card" || p.startsWith("/.well-known/");
   app.use("*", (c, next) => (isPublic(new URL(c.req.url).pathname) ? PUBLIC_CORS(c, next) : next()));
   const MD = { "Content-Type": "text/markdown; charset=utf-8" };
+  // reads the SDK private registry (no public list API in 1.x); the llms-full test (### get_vote) catches a break
   const tools = () => Object.entries((buildServer(sql, 0) as unknown as { _registeredTools: Record<string, { title?: string; description?: string }> })._registeredTools)
     .map(([name, t]) => ({ name, title: t.title, description: t.description }));
 
@@ -508,9 +509,9 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     }
     if (c.req.method !== "POST") return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server, no sessions to delete)." }, id: null }, 405, { Allow: "POST, OPTIONS" });
     // Origin (spec: MUST validate, 403 if invalid). DNS rebinding targets local servers; for a public read-only server
-    // any web origin is fine, so only malformed values are refused.
+    // any origin is fine (web, extensions, webviews), so only malformed values are refused. Never 401/403 otherwise: clients read those as "start OAuth".
     const origin = c.req.header("origin");
-    if (origin && origin !== "null" && !/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(origin)) return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid Origin header" }, id: null }, 403);
+    if (origin && origin !== "null" && !/^[a-z][a-z0-9+.-]*:\/\/\S+$/i.test(origin)) return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Invalid Origin header" }, id: null }, 403);
     const wait = limited(clientKey((n) => c.req.header(n)));
     if (wait !== null) {
       return c.json({ jsonrpc: "2.0", error: { code: -32000, message: `Rate limited: at most 60 requests a minute per client. Retry after ${wait} s.`, data: { retry_after_seconds: wait } }, id: null },

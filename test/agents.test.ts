@@ -169,6 +169,15 @@ describe("mcp tools for agents", () => {
     expect(f.text).toContain("#mgr-");
     expect((await call("fetch", { id: "https://althingi.solberg.is/mal/157/A/300.md" })).structuredContent.title).toBeTruthy();
     expect((await call("fetch", { id: "/nope" })).isError).toBe(true);
+    // MCP-returned Markdown is capped; the .md route is not
+    const big = "Lorem ipsum dolor sit amet. ".repeat(4000);
+    await s.sql`insert into law_articles (year, nr, edition, article_id, heading, text) values (1991, 34, '157a', 'G3', '3. gr.', ${big})`;
+    const lf = (await call("fetch", { id: "/log/1991/34" })).structuredContent;
+    expect(lf.truncated).toBe(true);
+    expect(lf.text.length).toBeLessThan(61_000);
+    expect(lf.text).toContain("https://althingi.solberg.is/log/1991/34.md");
+    expect((await (await get("/log/1991/34.md")).text()).length).toBeGreaterThan(100_000);
+    await s.sql`delete from law_articles where article_id = 'G3'`;
   });
 
   test("resources: templates by https URL, read returns Markdown; guide resource; prompts", async () => {
@@ -219,6 +228,11 @@ describe("markdown twins", () => {
     expect(body).toContain(`<link rel="alternate" type="text/markdown" href="/raeda/${s.speechId}.md"/>`);
     expect(h.headers.get("link")).toContain(`</raeda/${s.speechId}.md>; rel="alternate"`);
     expect(h.headers.get("vary")).toContain("Accept");
+    const feedPage = await (await get("/mal/157/a/300")).text();
+    expect(feedPage).toContain(`href="/mal/157/a/300.md"`);
+    const { mdHref } = await import("../src/pages.tsx");
+    expect(mdHref("/mal/157/a/300/atom")).toBeNull();
+    expect(mdHref("/mal/157/a/300/umraeda")).toBeNull();
   });
 });
 
@@ -313,5 +327,8 @@ describe("discovery surfaces", () => {
     if (!s) return;
     expect((await post({ jsonrpc: "2.0", id: 1, method: "tools/list" }, { origin: "javascript:alert(1)" })).status).toBe(403);
     expect((await post({ jsonrpc: "2.0", id: 1, method: "tools/list" }, { origin: "http://localhost:6274" })).status).toBe(200);
+    for (const origin of ["chrome-extension://abcdefghijklmnop", "http://[::1]:6274", "vscode-webview://x", "null"]) {
+      expect((await post({ jsonrpc: "2.0", id: 1, method: "tools/list" }, { origin })).status, origin).toBe(200);
+    }
   });
 });

@@ -17,6 +17,11 @@ const ro = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, o
 const iso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const cls = z.enum(["A", "B", "a", "b"]).describe("A = þingmál (bills, resolutions, questions); B = other business (debates, points of order). Default A");
 
+/** MCP-returned Markdown stays under ~60k chars (Claude Code caps tool output at 25k tokens); the .md URL has it all. */
+const MD_CAP = 60_000;
+const capMd = (md: string, url: string) => md.length <= MD_CAP ? md
+  : `${md.slice(0, MD_CAP)}\n\n[truncated: ${md.length} characters in all. Full text at ${url}.md; for a law, get_law(year, nr, article=N) returns one article.]\n`;
+
 /** Tool result: JSON text (for clients without structured output) + structuredContent. `{error}` payloads become isError. */
 const out = (data: unknown) => {
   const d = data as Record<string, unknown>;
@@ -255,12 +260,13 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
     title: "Fetch a document (generic)",
     description: "Full Markdown of one page by id from `search` (or any althingi.solberg.is URL/path): a speech (/raeda/<id>), matter (/mal/<lthing>/a/<nr>), member (/thingmadur/<id>), law (/log/<year>/<nr>), day (/dagur/YYYY-MM-DD), party or document.",
     inputSchema: { id: z.string().min(2).max(300).describe("e.g. /raeda/rad20180306T163325, /mal/157/a/300, https://althingi.solberg.is/log/1991/34") },
-    outputSchema: { id: z.string(), title: z.string(), text: z.string(), url: z.string(), metadata: z.record(z.string(), z.string()).nullable() },
+    outputSchema: { id: z.string(), title: z.string(), text: z.string(), url: z.string(), metadata: z.record(z.string(), z.string()).nullable(), truncated: z.boolean().optional() },
     annotations: ro,
   }, async ({ id }) => {
     const d = await renderMd(sql, id, currentLthing);
     if (!d) return out({ error: "not_found", hint: "Use an id from `search`, or a path like /raeda/rad20180306T163325, /mal/157/a/300, /thingmadur/633, /log/1991/34." });
-    const data = { id: d.path, title: d.title, text: d.markdown, url: `${SITE}${d.path}`, metadata: d.althingi_url ? { althingi_url: d.althingi_url, format: "text/markdown" } : { format: "text/markdown" } };
+    const text = capMd(d.markdown, `${SITE}${d.path}`);
+    const data = { id: d.path, title: d.title, text, url: `${SITE}${d.path}`, metadata: d.althingi_url ? { althingi_url: d.althingi_url, format: "text/markdown" } : { format: "text/markdown" }, ...(text !== d.markdown ? { truncated: true } : {}) };
     return { content: [{ type: "text" as const, text: JSON.stringify(data) }], structuredContent: data };
   });
 
@@ -269,7 +275,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
     s.registerResource(name, new ResourceTemplate(`${SITE}${tpl}.md`, { list: undefined }), { title, description, mimeType: "text/markdown" }, async (uri) => {
       const d = await renderMd(sql, uri.href, currentLthing);
       if (!d) throw new Error(`Not found: ${uri.href}`);
-      return { contents: [{ uri: uri.href, mimeType: "text/markdown", text: d.markdown }] };
+      return { contents: [{ uri: uri.href, mimeType: "text/markdown", text: capMd(d.markdown, `${SITE}${d.path}`) }] };
     });
   md("speech", "Ræða (speech)", "/raeda/{speech_id}", "Full text of a speech with numbered paragraphs (#mgr-N) and a citation.");
   md("matter", "Þingmál (matter)", "/mal/{lthing}/{class}/{nr}", "A matter: status, sponsors, documents, votes, speeches. class is a or b.");

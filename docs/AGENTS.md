@@ -34,7 +34,7 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
   - Never 401, never `WWW-Authenticate`.
   - `/.well-known/oauth-protected-resource*` and `/.well-known/oauth-authorization-server` stay 404, and tests assert it.
   - We deliberately serve no protected-resource metadata.
-- **Origin:** a public read-only server treats every web origin as valid. Only a malformed `Origin` (not `http(s)://host[:port]`) gets 403. `null` is allowed.
+- **Origin:** a public read-only server treats every origin as valid: web, `chrome-extension://`, webviews, IPv6 localhost. Only a malformed `Origin` (no `scheme://`) gets 403, and `null` is allowed. This is the only 403 `/mcp` can emit, and Claude Code reads 403 as "needs auth", so the check is deliberately loose.
 - **CORS:**
   - Methods: `Allow-Origin: *`, methods GET/POST/OPTIONS.
   - Allowed headers: `Content-Type, Accept, Mcp-Session-Id, MCP-Protocol-Version, Last-Event-ID, Mcp-Method, Mcp-Name, Authorization`.
@@ -131,7 +131,8 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
 - **`.md` URLs are canonical.** Every entity page has one: speech, matter, member, law, day, party, document, plus `/index.md`, `/um.md` and `/mcp.md`. One renderer (`src/md-routes.ts`) feeds the routes, the MCP resources and `fetch`.
   - Each file has a small front matter (url, ids, citation) and the same facts as the HTML.
   - Speech paragraphs keep their `#mgr-N` anchors.
-- **`Accept: text/markdown`** (when preferred over HTML) on an HTML URL gets a **302 to the `.md` twin**, not inline negotiation. Inline negotiation would cross-poison the edge cache. HTML responses also carry `Vary: Accept` for caches that honour it.
+- **`Accept: text/markdown`** (when preferred over HTML) on an HTML URL gets a **302 to the `.md` twin**, not inline negotiation. Inline negotiation would cross-poison the edge cache. Behind Cloudflare the 302 only fires on an edge miss, because a cached HTML page is served whatever the Accept header says. So the `.md` URLs, not Accept, are what llms.txt and the `<link rel=alternate>` advertise. HTML responses also carry `Vary: Accept` for caches that honour it.
+- **Size cap:** MCP-returned Markdown (from `fetch` and `resources/read`) is capped at 60k characters, with a trailing pointer to the `.md` URL and `get_law(article=N)`, and `fetch` sets `truncated: true`. 84 laws exceed 60k characters; the largest is 404k. The HTTP `.md` routes are never cut.
 - **JSON:** `/leit.json` plus the MCP. Per-entity `.json` twins were deferred: the MCP tools already return that JSON.
 - **OpenAPI 3.1** is at `/openapi.json`, covering `/leit.json`, the feeds, the CSV exports, `/healthz`, `/llms.txt` and the `.md` routes.
 - **JSON-LD on the front page:** `WebSite` with a `SearchAction`, and a `Dataset` whose `distribution` lists the MCP endpoint, `/leit.json` and `llms.txt`, with `creditText` attribution. The existing `Person`, `Legislation` and `CreativeWork` blocks stay.

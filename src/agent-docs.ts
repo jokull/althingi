@@ -54,7 +54,7 @@ Corpus: ${boundary(f)} Every MCP response carries a \`corpus\` block; "first", "
 
 Search queries are Icelandic keywords, not questions: any inflection finds all forms ("hestinum" finds "hestur"), all words must occur in one paragraph, "quoted" means the exact phrase. Put people, parties, dates and matters in filters, not in the query.
 
-Every page has a Markdown version at the same URL plus \`.md\` (or send \`Accept: text/markdown\`). Cite the page URL; speech paragraphs have stable anchors \`#mgr-N\`. Party is always the member's party on the date in question.
+Every page has a Markdown version: add \`.md\` to its URL (e.g. ${SITE}/mal/157/a/300.md). Cite the page URL; speech paragraphs have stable anchors \`#mgr-N\`. Party is always the member's party on the date in question.
 
 Rate limits: ${RATE} Bulk use: please ask rather than crawl.
 
