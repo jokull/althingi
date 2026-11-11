@@ -517,7 +517,20 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       return c.json({ jsonrpc: "2.0", error: { code: -32000, message: `Rate limited: at most 60 requests a minute per client. Retry after ${wait} s.`, data: { retry_after_seconds: wait } }, id: null },
         429, { "Retry-After": String(wait) });
     }
-    return handleMcp(c, sql, (await current()).lthing);
+    // one log line per JSON-RPC message: client, method, tool + args (search terms are public queries), status, ms.
+    // No IPs. Body is read from a clone so the transport still gets the stream.
+    const t0 = Date.now();
+    const peek = await c.req.raw.clone().json().catch(() => null) as unknown;
+    const res = await handleMcp(c, sql, (await current()).lthing);
+    if (process.env.MCP_LOG !== "0") {
+      for (const m of (Array.isArray(peek) ? peek : [peek]) as { method?: string; params?: { name?: string; arguments?: unknown; clientInfo?: { name?: string; version?: string } } }[]) {
+        if (!m?.method) continue;
+        const what = m.method === "tools/call" ? `${m.params?.name} ${JSON.stringify(m.params?.arguments ?? {}).slice(0, 300)}`
+          : m.method === "initialize" ? `client=${m.params?.clientInfo?.name ?? "?"}/${m.params?.clientInfo?.version ?? "?"}` : "";
+        console.log(`${new Date().toISOString()} mcp ${m.method} ${what} ua=${(c.req.header("user-agent") ?? "").slice(0, 60)} -> ${res.status} ${Date.now() - t0}ms`);
+      }
+    }
+    return res;
   });
 
   app.notFound((c) => html(c, <NotFound what="Síðan fannst ekki." />, 404));
