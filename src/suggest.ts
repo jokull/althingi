@@ -16,7 +16,13 @@ export async function suggest(sql: Sql, q: string): Promise<Suggestion[]> {
     const tq = lex.map((l) => `'${l.replace(/'/g, "''").replace(/\\/g, "\\\\")}'`).join(" | ");
     const known = await sql`select 1 from vocab where word = any(${lex}) limit 1`;
     if (known.length) continue;
-    if (tq && (await sql`select 1 from paragraphs where search_vector @@ to_tsquery('simple', ${tq}) limit 1`).length) continue;
+    // count, not `limit 1`: with LIMIT the planner seq-scans ~1M paragraphs hoping for an early match, and for a word
+    // that is nowhere that scan runs to the end (statement timeout, 2026-11-11). Without it, the GIN index answers.
+    // Only words missing from vocab get here, so the count is small.
+    if (tq) {
+      const [row] = await sql<{ n: number }[]>`select count(*)::int n from paragraphs where search_vector @@ to_tsquery('simple', ${tq})`;
+      if ((row?.n ?? 0) > 0) continue;
+    }
     const word = part.lemmas[0] ?? "";
     const near = await sql<{ word: string }[]>`
       select word from vocab

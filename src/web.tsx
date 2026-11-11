@@ -118,7 +118,8 @@ export function createApp(sql: Sql) {
     const result = await search(sql, { ...p, withTotal: !p.cursor });
     const parties = await partiesFor(sql, result.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
     // did-you-mean only when nothing was found: a suggestion above real hits reads as "your word is not here"
-    const suggestions = !p.cursor && result.hits.length === 0 && q.trim() ? await suggest(sql, q) : [];
+    // did-you-mean is a nicety: if it fails or times out, the page still renders without it
+    const suggestions = !p.cursor && result.hits.length === 0 && q.trim() ? await suggest(sql, q).catch(() => []) : [];
     const rg = await corpusRange();
     const now = await current();
     const memberName = p.memberId !== undefined ? (await nameLists()).members.find((m) => m.id === p.memberId)?.name : undefined;
