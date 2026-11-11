@@ -31,6 +31,7 @@ h2 .n,h1 .n{font-weight:500;color:var(--mut);font-size:.8125rem;font-variant-num
 p{margin:0 0 .8em}
 kbd{font:500 .75rem/1 var(--sans);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--mut);background:var(--surface)}
 .mut{color:var(--mut)}.nowrap{white-space:nowrap}
+.plain{list-style:none;padding:0;margin:0 0 1.2em}.plain li{padding:3px 0;font-size:.9375rem}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip{position:absolute;left:12px;top:-60px;z-index:50;background:var(--ink);color:var(--bg);padding:8px 12px;border-radius:8px}
 .skip:focus{top:8px}

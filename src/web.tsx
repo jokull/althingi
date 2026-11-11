@@ -349,7 +349,7 @@ export function createApp(sql: Sql) {
     const year = num(c.req.param("year")), nr = num(c.req.param("nr"));
     if (year === undefined || nr === undefined || year < 1800 || year > 2100) return html(c, <NotFound what="Lögin fundust ekki." />, 404);
     c.header("Cache-Control", LIVE);
-    return html(c, <LawPageView year={year} nr={nr} matters={await lawPage(sql, year, nr)} />);
+    return html(c, <LawPageView l={await lawPage(sql, year, nr)} />);
   });
 
   app.get("/thingmadur/:id", async (c) => {

@@ -55,7 +55,7 @@ export function topResult(e: EntityResult, q: string): EntityHit | null {
   const party = e.flokkar.find((p) => words(p.title).join(" ").startsWith(qs) || qs.startsWith(words(p.title).join(" ")));
   if (party) return party;
   if (e.nefndir.length === 1 && words(e.nefndir[0]!.title).join(" ").startsWith(qs)) return e.nefndir[0]!;
-  if (e.log.length === 1) return e.log[0]!;
+  if (e.log.length === 1 && /\d/.test(q)) return e.log[0]!;
   if (e.mal.length === 1) return e.mal[0]!;
   return null;
 }
@@ -127,11 +127,22 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
       group by u.lthing, u.cls, u.nr, lower(u.who)
       order by max(u.at) desc nulls last limit ${limit}`,
     nums.length >= 1
-      ? sql<{ law_year: number; law_nr: number; n: number }[]>`
-          select law_year, law_nr, count(*)::int n from matter_laws
-          where law_nr = ${Number(nums[0])} or law_year = ${Number(nums[0])}
-          group by 1, 2 order by law_year desc limit ${limit}`
-      : [],
+      ? sql<{ law_year: number; law_nr: number; n: number; title: string | null }[]>`
+          select x.law_year, x.law_nr, x.n, c.title from (
+            select law_year, law_nr, count(*)::int n from matter_laws
+            where law_nr = ${Number(nums[0])} or law_year = ${Number(nums[0])} group by 1, 2) x
+          left join laws_current c on c.year = x.law_year and c.nr = x.law_nr
+          order by x.law_year desc limit ${limit}`
+      : raw.length >= 3
+        // laws by title (current collection): every query word is in the title, or a close trigram match
+        ? sql<{ law_year: number; law_nr: number; n: number; title: string | null }[]>`
+            select c.year as law_year, c.nr as law_nr, c.title,
+                   (select count(*)::int from matter_laws l where l.law_year = c.year and l.law_nr = c.nr) as n
+            from laws_current c
+            where c.title ilike ${like} or c.title % ${raw}
+            order by (c.title ilike ${like}) desc, (c.in_force like 'Felld%') nulls first, similarity(c.title, ${raw}) desc, c.year desc
+            limit ${limit}`
+        : [],
   ]);
 
   const span = (a: number | null, b: number | null) => (a && b ? (a === b ? `${a}. þing` : `${a}.–${b}. þing`) : null);
@@ -164,7 +175,8 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
     meta: `${r.whats.join(", ")}${r.at ? ` · ${r.at.slice(0, 10)}` : ""}${r.title ? ` · ${r.title}` : ""}`,
   }));
   out.log = log.map((r) => ({
-    kind: "log", href: `/log/${r.law_year}/${r.law_nr}`, title: `Lög nr. ${r.law_nr}/${r.law_year}`, badge: "lög", meta: `${r.n} ${r.n === 1 ? "mál breytti" : "mál breyttu"} þeim`,
+    kind: "log", href: `/log/${r.law_year}/${r.law_nr}`, title: r.title ?? `Lög nr. ${r.law_nr}/${r.law_year}`, badge: "lög",
+    meta: [r.title ? `nr. ${r.law_nr}/${r.law_year}` : "", r.n ? `${r.n} ${r.n === 1 ? "mál breytti" : "mál breyttu"} þeim` : ""].filter(Boolean).join(" · "),
   }));
   return out;
 }

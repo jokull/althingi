@@ -4,7 +4,8 @@ import type { Child } from "hono/jsx";
 import { raw } from "hono/html";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import type { CommitteeMatter, DayPage, DocPage, ListedMatter, MatterExtras, MatterPage, MemberPage, PartyPage, SpeechPage, TranscriptSpeech } from "./queries.ts";
+import type { CommitteeMatter, DayPage, DocPage, LawPage, ListedMatter, MatterExtras, MatterPage, MemberPage, PartyPage, SpeechPage, TranscriptSpeech } from "./queries.ts";
+import { lawUrl } from "./laws.ts";
 import type { SearchResult, SpeechHit } from "./search.ts";
 import type { Suggestion } from "./suggest.ts";
 
@@ -704,23 +705,49 @@ export const MatterPageView = ({ m, x }: { m: MatterPage; x?: MatterExtras }) =>
 
 // ---------------------------------------------------------------- law, member, party, day, home, about
 
-export const LawPageView = ({ year, nr, matters }: { year: number; nr: number; matters: { lthing: number; cls: string; nr: number; title: string; status: string | null }[] }) => (
-  <Layout title={`Lög nr. ${nr}/${year} – mál sem breyttu þeim`} canonical={`/log/${year}/${nr}`}>
-    <header class="page-head">
-      <p class="crumbs">Lög</p>
-      <h1>Lög nr. {nr}/{year}</h1>
-      <p class="lede"><a href={`https://www.althingi.is/lagas/nuna/${year}${String(nr).padStart(3, "0")}.html`} rel="noopener">Lagatexti á althingi.is</a></p>
-    </header>
-    <h2>Mál sem breyta lögunum ({matters.length})</h2>
-    {matters.length === 0 && <p class="empty">Engin mál í safninu sem breyta þessum lögum (enn).</p>}
-    <div class="klist">
-      {matters.map((m) => (
-        <a class="erow k-mal" href={matterUrl(m.lthing, m.cls, m.nr)}><KindMark k="mal" />
-          <span class="erow-b"><span class="erow-t">{m.title}</span><span class="erow-m">{m.nr}. mál á {m.lthing}. þingi{m.status ? ` · ${m.status}` : ""}</span></span></a>
-      ))}
-    </div>
-  </Layout>
-);
+export const LawPageView = ({ l }: { l: LawPage }) => {
+  const { year, nr, law, matters } = l;
+  const label = `Lög nr. ${nr}/${year}`;
+  return (
+    <Layout title={law ? `${law.title} (${label})` : `${label} – mál sem breyttu þeim`} canonical={`/log/${year}/${nr}`}
+      jsonld={law ? { "@context": "https://schema.org", "@type": "Legislation", name: law.title, legislationIdentifier: `${nr}/${year}`, url: `${SITE}/log/${year}/${nr}` } : undefined}>
+      <header class="page-head">
+        <p class="crumbs">Lög{law?.chapter ? ` · ${law.chapter}` : ""}</p>
+        <h1>{law?.title ?? label}</h1>
+        <dl class="facts">
+          {law && <div><dt>Númer</dt><dd>{label}</dd></div>}
+          {law?.inForce && <div><dt>Gildi</dt><dd>{law.inForce}</dd></div>}
+          {law?.matter && <div><dt>Ferill</dt><dd>{law.matter.title
+            ? <a href={matterUrl(law.matter.lthing, "A", law.matter.nr)}>{law.matter.nr}. mál á {law.matter.lthing}. þingi</a>
+            : <>{law.matter.nr}. mál á {law.matter.lthing}. þingi</>}</dd></div>}
+          {law && <div><dt>Útgáfa</dt><dd>{law.edition}</dd></div>}
+          <div><dd><a href={lawUrl(year, nr)} rel="noopener">Á vef Alþingis →</a></dd></div>
+        </dl>
+      </header>
+      <h2>Mál sem breyta lögunum ({matters.length})</h2>
+      {matters.length === 0 && <p class="empty">Engin mál í safninu sem breyta þessum lögum (enn).</p>}
+      <div class="klist">
+        {matters.map((m) => (
+          <a class="erow k-mal" href={matterUrl(m.lthing, m.cls, m.nr)}><KindMark k="mal" />
+            <span class="erow-b"><span class="erow-t">{m.title}</span><span class="erow-m">{m.nr}. mál á {m.lthing}. þingi{m.status ? ` · ${m.status}` : ""}</span></span></a>
+        ))}
+      </div>
+      {l.amendedBy.length > 0 && <>
+        <h2>Breytt með ({l.amendedBy.length})</h2>
+        <ul class="plain">
+          {l.amendedBy.map((a) => <li><a href={`/log/${a.year}/${a.nr}`}>L. {a.nr}/{a.year}</a>{a.title ? ` · ${a.title}` : ""}{a.effective ? <span class="mut"> ({a.effective})</span> : null}</li>)}
+        </ul>
+      </>}
+      {l.amends.length > 0 && <>
+        <h2>Lög sem þessi lög breyttu ({l.amends.length})</h2>
+        <ul class="plain">
+          {l.amends.map((a) => <li><a href={`/log/${a.year}/${a.nr}`}>L. {a.nr}/{a.year}</a>{a.title ? ` · ${a.title}` : ""}</li>)}
+        </ul>
+      </>}
+      {law && <p class="mut">Úr lagasafni Alþingis, útgáfu {law.edition}. Lagatextinn sjálfur er á vef Alþingis.</p>}
+    </Layout>
+  );
+};
 
 export const MemberPageView = ({ m }: { m: MemberPage }) => {
   const latest = [...m.seats].reverse().find((s) => s.party);

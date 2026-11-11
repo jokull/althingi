@@ -187,11 +187,44 @@ export async function partiesFor(sql: Sql, items: { speechId: string; memberId: 
   return out;
 }
 
-export async function lawPage(sql: Sql, year: number, nr: number): Promise<{ lthing: number; cls: string; nr: number; title: string; status: string | null }[]> {
-  return sql`
-    select m.lthing, m.cls, m.nr, m.title, m.status_text as status
-    from matter_laws l join matters m on m.lthing = l.lthing and m.cls = l.cls and m.nr = l.nr
-    where l.law_year = ${year} and l.law_nr = ${nr} order by m.lthing desc, m.nr`;
+export interface LawPage {
+  year: number; nr: number;
+  /** from the law collection (null when the law is not in the current lagasafn, e.g. only an amending act) */
+  law: { title: string; chapter: string | null; inForce: string | null; edition: string; matter: { lthing: number; nr: number; title: string | null } | null } | null;
+  /** matters (in this corpus) that amend the law, from matter detail <breytingaráLögum> */
+  matters: { lthing: number; cls: string; nr: number; title: string; status: string | null }[];
+  /** "Breytt með" in the collection: acts that amended this law */
+  amendedBy: { year: number; nr: number; effective: string | null; title: string | null }[];
+  /** laws this act amended (the same list read from the other side) */
+  amends: { year: number; nr: number; title: string | null }[];
+}
+
+export async function lawPage(sql: Sql, year: number, nr: number): Promise<LawPage> {
+  const [matters, [law], amendedBy, amends] = await Promise.all([
+    sql<{ lthing: number; cls: string; nr: number; title: string; status: string | null }[]>`
+      select m.lthing, m.cls, m.nr, m.title, m.status_text as status
+      from matter_laws l join matters m on m.lthing = l.lthing and m.cls = l.cls and m.nr = l.nr
+      where l.law_year = ${year} and l.law_nr = ${nr} order by m.lthing desc, m.nr`,
+    sql<{ title: string; chapter: string | null; in_force: string | null; edition: string; matter_lthing: number | null; matter_nr: number | null; mtitle: string | null }[]>`
+      select l.title, l.chapter, l.in_force, l.edition, l.matter_lthing, l.matter_nr, m.title as mtitle
+      from laws_current l left join matters m on m.lthing = l.matter_lthing and m.cls = 'A' and m.nr = l.matter_nr
+      where l.year = ${year} and l.nr = ${nr}`,
+    sql<{ by_year: number; by_nr: number; effective_text: string | null; title: string | null }[]>`
+      select a.by_year, a.by_nr, a.effective_text, c.title from law_amendments a left join laws_current c on c.year = a.by_year and c.nr = a.by_nr
+      where a.year = ${year} and a.nr = ${nr} order by a.by_year desc, a.by_nr desc`,
+    sql<{ year: number; nr: number; title: string | null }[]>`
+      select a.year, a.nr, c.title from law_amendments a left join laws_current c on c.year = a.year and c.nr = a.nr
+      where a.by_year = ${year} and a.by_nr = ${nr} order by a.year, a.nr`,
+  ]);
+  return {
+    year, nr, matters,
+    law: law ? {
+      title: law.title, chapter: law.chapter, inForce: law.in_force, edition: law.edition,
+      matter: law.matter_lthing !== null && law.matter_nr !== null ? { lthing: law.matter_lthing, nr: law.matter_nr, title: law.mtitle } : null,
+    } : null,
+    amendedBy: amendedBy.map((a) => ({ year: a.by_year, nr: a.by_nr, effective: a.effective_text, title: a.title })),
+    amends,
+  };
 }
 
 /**
