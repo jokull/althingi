@@ -30,3 +30,14 @@ ssh -f -N -L 3051:localhost:3050 mac-mini  # look at the mini's site from the la
 
 ## Backups (scripts ready, not yet scheduled)
 `ops/backup.sh` (nightly pg_dump), `ops/restore-test.sh` (monthly), `ops/alert.sh` (Telegram via openclaw; needs `ALERT_TELEGRAM_TARGET` in `~/althingi/.env`).
+
+## Public edge (live since 2026-11-11)
+
+- `https://althingi.solberg.is` → named tunnel `9f7a5ed9…` on the mini (also serves lemma.solberg.is), ingress in
+  `~/.cloudflared/config.yml` → `http://localhost:3050`. The tunnel runs from `~/Library/LaunchAgents/com.jokull.cloudflared-tunnel.plist`
+  (`cloudflared tunnel run 9f7a5ed9…`). Do NOT use `brew services restart cloudflared`: brew's plist starts cloudflared
+  without arguments and the tunnel goes down (happened once, ~1 min outage of both hosts).
+- Zone solberg.is, cache rule (phase http_request_cache_settings): host althingi.solberg.is, not /mcp, not /healthz →
+  cache eligible, edge + browser TTL respect origin (our `s-maxage` rules in src/web.tsx decide).
+- Rate limit (phase http_ratelimit): /leit* and /mcp*, 40 req / 10 s per IP+colo, block 10 s.
+- Rollback: remove the althingi ingress line and restart via `launchctl kickstart -k gui/$(id -u)/com.jokull.cloudflared-tunnel`; delete the CNAME.
