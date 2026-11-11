@@ -262,6 +262,8 @@ describe("db", () => {
         (${sp!.member_id}, 148, 'þingmaður',   7777, (${sp!.speech_date}::date - 30), (${sp!.speech_date}::date + 30)),
         (${sp!.member_id}, 148, 'með varamann', 7778, (${sp!.speech_date}::date - 30), (${sp!.speech_date}::date + 30)),
         (${sp!.member_id}, 148, 'þingmaður',   7779, (${sp!.speech_date}::date + 31), (${sp!.speech_date}::date + 90))`;
+    // party-on-the-date is precomputed in speech_index (upsertSeats does this; raw inserts must do it by hand)
+    await sql`select speech_index_reparty(array[${sp!.member_id}]::int[])`;
     expect(await has({})).toBe(true);
     expect(await has({ partyId: 7777 })).toBe(true); // sitting for 7777 on the date
     expect(await has({ partyId: 7778 })).toBe(false); // "með varamann" = on leave, does not count

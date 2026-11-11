@@ -2,7 +2,7 @@
 // dump-only tables (ballots, sponsors, sittings, laws), so agent-facing surfaces can be tested end to end.
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
-import { type Sql, connect, migrate, upsertCommittees, upsertMatterDetail, upsertMatters, upsertMembers, upsertSeats, upsertSessions, upsertSpeechIndex } from "../src/db.ts";
+import { type Sql, connect, migrate, refreshCorpusState, upsertCommittees, upsertMatterDetail, upsertMatters, upsertMembers, upsertSeats, upsertSessions, upsertSpeechIndex } from "../src/db.ts";
 import { ingestSpeechXml } from "../src/ingest.ts";
 import { lemmaText } from "../src/lemma.ts";
 import { parseCommittees, parseMatterDetail, parseMatterList, parseMembers, parseSeats, parseSessions, parseSpeechList } from "../src/parse.ts";
@@ -39,6 +39,7 @@ export async function seed(name: string): Promise<Seeded | null> {
   await sql`insert into sitting_events (lthing, fundur, at, kind, cls, nr) values (157, 40, '2025-12-01 13:30', 'fundurhefst', '', 0), (157, 40, '2025-12-01 15:00', 'umræðuLokið', 'A', 300)`;
   await sql`insert into laws (year, nr, edition, title, chapter, in_force, text) values (1991, 34, '157a', 'Lög um fjárfestingu erlendra aðila í atvinnurekstri', '7. Atvinnuvegir', 'Tóku gildi 1. júní 1991', '1. gr. Erlendum aðilum er heimilt...')`;
   await sql`insert into law_articles (year, nr, edition, article_id, heading, text) values (1991, 34, '157a', 'G1', '1. gr.', 'Erlendum aðilum er heimilt að fjárfesta í atvinnurekstri hér á landi.'), (1991, 34, '157a', 'G2', '2. gr.', 'Önnur grein.')`;
+  await refreshCorpusState(sql); // what the ingest post step does: the web layer reads the row, never computes it
   return {
     sql, speechId, word, voteId: v!.id,
     drop: async () => { await sql.end(); await admin.unsafe(`drop database ${name} with (force)`); await admin.end(); },

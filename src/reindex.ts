@@ -1,7 +1,7 @@
 // Re-derive lemma_text, lemma_seq and paragraph_tokens from the stored paragraph text. No recrawl, ever.
 // Targets paragraphs whose token row is missing or was built by another lemma-is version; newest speeches first.
 import type { Sql } from "./db.ts";
-import { writeTokens } from "./db.ts";
+import { refreshSpeechIndex, writeTokens } from "./db.ts";
 import { analyze, lemmaVersion } from "./lemma.ts";
 
 export interface ReindexStats { paragraphs: number; speechesMarked: number; version: string }
@@ -30,6 +30,7 @@ export async function reindex(sql: Sql, opts: { batch?: number; limit?: number; 
                     ${out.map((o) => o.a.lemmaSeq)}::text[]) as v(sid, sq, lt, lp, ls)
         where p.speech_id = v.sid and p.seq = v.sq`;
       await writeTokens(tx, out.map((o) => ({ speechId: o.r.speech_id, seq: o.r.seq, tokens: o.a.tokens })), version);
+      await refreshSpeechIndex(tx, [...new Set(out.map((o) => o.r.speech_id))]);
     });
     done += rows.length;
     opts.log?.(`reindex: ${done} paragraphs`);
