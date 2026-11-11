@@ -2,27 +2,33 @@ import { documentPageUrl, lawPageUrl, matterPageUrl, memberPageUrl, speechPageUr
 // MCP tool implementations as plain functions (testable without the protocol). Shapes follow docs/PERSONAS.md:
 // small chainable payloads, ids + source URLs everywhere, a `corpus` block on every response, derived/inferred flags,
 // and a structured `why` when a search returns nothing.
+import { type AggArgs, type Bucket, type FirstUse, aggregateBuckets, firstUse as firstUseQuery } from "./aggregate.ts";
+import { Lru, memo } from "./cache.ts";
+import { corpusState } from "./corpus.ts";
 import type { Sql } from "./db.ts";
-import { parseQuery, describe } from "./explain.ts";
+import { type ParsedQuery, parseQuery, describe } from "./explain.ts";
 import { lawPage, matterPage, memberPage, partiesFor, speechPage } from "./queries.ts";
 import { phraseTsQuery, recallTsQuery, search } from "./search.ts";
 import { fmtTime, citation, SITE } from "./pages.tsx";
 
 export interface Ctx { sql: Sql; currentLthing: number }
 
+// immutable until the next ingest: memoized by (params, corpus_state.version), docs/PERFORMANCE.md §3.4
+const aggLru = new Lru<Promise<Bucket[]>>(500);
+const cachedBuckets = memo(aggLru, (_sql: Sql, a: AggArgs, v: number) => `${v}|${JSON.stringify(a)}`, (sql, a) => aggregateBuckets(sql, a));
+const firstLru = new Lru<Promise<FirstUse>>(200);
+const cachedFirstUse = memo(firstLru, (_sql: Sql, p: ParsedQuery, lim: number, v: number) => `${v}|${lim}|${JSON.stringify(p.parts)}`, (sql, p, lim) => firstUseQuery(sql, p, lim));
+
 const SNIPPET_MAX = 400;
 const clip = (s: string, n = SNIPPET_MAX) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 export async function corpusBlock(sql: Sql) {
-  const [r] = await sql<{ n: number; d0: string | null; d1: string | null; sessions: number[] }[]>`
-    select count(*)::int n, min(speech_date)::text d0, max(speech_date)::text d1,
-           coalesce(array_agg(distinct lthing order by lthing) filter (where lthing is not null), '{}') as sessions
-    from speeches where text_state = 'done'`;
+  const s = await corpusState(sql); // precomputed row, cached in-process (docs/PERFORMANCE.md §3.4): free per response
   return {
     text_from: "2005",
-    speeches_with_text: r?.n ?? 0,
-    sessions_with_text: r?.sessions ?? [],
-    text_dates: { from: r?.d0 ?? null, to: r?.d1 ?? null },
+    speeches_with_text: s.speechesDone,
+    sessions_with_text: s.sessions.filter((x) => x.done > 0).map((x) => x.lthing).sort((a, b) => a - b),
+    text_dates: { from: s.from, to: s.to },
     note: "Ræðutexti er til frá 2005 (XML-öld). Eldri ræður eru ekki leitarbærar. 'Fyrst', 'aldrei' og samtölur eiga við textana í safninu (sjá text_dates/sessions_with_text), ekki allan feril Alþingis.",
   };
 }
@@ -220,45 +226,18 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
   };
 }
 
-export interface AggArgs {
-  metric: "speeches" | "words"; group_by: "year" | "member" | "party" | "speech_type" | "lthing";
-  q?: string; date_from?: string; date_to?: string; lthing?: number; speech_type?: string; member_id?: number; substantive_only?: boolean;
-}
+export type { AggArgs };
 
 export async function aggregate(ctx: Ctx, a: AggArgs) {
   const { sql } = ctx;
   const parsed = a.q ? parseQuery(a.q) : null;
-  const rq = parsed ? recallTsQuery(parsed) : null;
-  const pq = parsed ? phraseTsQuery(parsed) : null;
-  const key = {
-    year: sql`extract(year from s.speech_date)::int::text`, member: sql`s.member_id::text || ': ' || s.member_name`,
-    party: sql`coalesce(pt.name, '(óþekktur flokkur)')`, speech_type: sql`s.type`, lthing: sql`s.lthing::text`,
-  }[a.group_by];
-  const value = a.metric === "words" ? sql`coalesce(sum(s.word_count), 0)::int` : sql`count(*)::int`;
-  const rows = await sql<{ key: string; n: number }[]>`
-    select ${key} as key, ${value} as n
-    from speeches s
-    ${a.group_by === "party" ? sql`left join lateral (
-        select p.name from seats st join parties p on p.id = st.party_id
-        where st.member_id = s.member_id and st.kind in ('þingmaður', 'varamaður')
-          and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31')
-        order by st.from_date desc nulls last limit 1) pt on true` : sql``}
-    where s.text_state = 'done'
-      ${a.date_from ? sql`and s.speech_date >= ${a.date_from}` : sql``}
-      ${a.date_to ? sql`and s.speech_date <= ${a.date_to}` : sql``}
-      ${a.lthing !== undefined ? sql`and s.lthing = ${a.lthing}` : sql``}
-      ${a.speech_type ? sql`and s.type = ${a.speech_type}` : sql``}
-      ${a.member_id !== undefined ? sql`and s.member_id = ${a.member_id}` : sql``}
-      ${a.substantive_only ? sql`and s.type in ('ræða', 'flutningsræða', 'andsvar', 'svar') and coalesce(s.role_kind, '') <> 'forseti'` : sql``}
-      ${rq || pq ? sql`and exists (select 1 from paragraphs p where p.speech_id = s.id
-          ${rq ? sql`and p.search_vector @@ to_tsquery('simple', ${rq})` : sql``}
-          ${pq ? sql`and p.seq_vector @@ to_tsquery('simple', ${pq})` : sql``})` : sql``}
-    group by 1 order by ${a.group_by === "year" || a.group_by === "lthing" ? sql`1` : sql`2 desc, 1`} limit 50`;
+  // the SQL lives in src/aggregate.ts (speech_index, docs/PERFORMANCE.md §3.2); results are memoized per corpus version
+  const rows = await cachedBuckets(sql, a, (await corpusState(sql)).version);
   return {
     corpus: await corpusBlock(sql),
     metric: a.metric, group_by: a.group_by,
     query: a.q ? { text: a.q, interpreted_as: describe(parsed!), counts: "speeches with at least one matching paragraph" } : null,
-    buckets: rows.map((r) => ({ key: r.key, value: r.n })),
+    buckets: rows.map((r) => ({ key: r.key, value: r.n, ...(r.id !== null ? { id: r.id } : {}), ...(r.name !== null ? { name: r.name } : {}) })),
     caveats: [
       "Tölur eiga við ræðutexta frá 2005 sem er kominn í safnið (sjá corpus).",
       ...(a.group_by === "party" ? ["Flokkur er fundinn með þingsetu á ræðudegi."] : []),
@@ -303,15 +282,8 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
   const rq = recallTsQuery(parsed), pq = phraseTsQuery(parsed);
   const sql = ctx.sql;
   if (!rq && !pq) return { error: "nothing_searchable", why: whyEmpty(a.q, parsed, false), corpus: await corpusBlock(sql) };
-  const cond = sql`
-    ${rq ? sql`and p.search_vector @@ to_tsquery('simple', ${rq})` : sql``}
-    ${pq ? sql`and p.seq_vector @@ to_tsquery('simple', ${pq})` : sql``}`;
-  const first = await sql<{ speech_id: string; seq: number; started: string; member_id: number; member_name: string; type: string; text: string; speech_date: string; lthing: number; html_url: string | null }[]>`
-    select p.speech_id, p.seq, s.started::text, s.member_id, s.member_name, s.type, p.text, s.speech_date::text, s.lthing, s.html_url
-    from paragraphs p join speeches s on s.id = p.speech_id where true ${cond} order by s.started, p.speech_id, p.seq limit ${Math.min(a.limit ?? 5, 20)}`;
-  const years = await sql<{ y: number; n: number }[]>`
-    select extract(year from s.speech_date)::int y, count(distinct s.id)::int n
-    from paragraphs p join speeches s on s.id = p.speech_id where true ${cond} group by 1 order by 1`;
+  // src/aggregate.ts: earliest from the speech-level index, exact at paragraph level; memoized per corpus version
+  const { earliest: first, years } = await cachedFirstUse(sql, parsed, Math.min(a.limit ?? 5, 20), (await corpusState(sql)).version);
   const parties = await partiesFor(sql, first.map((f) => ({ speechId: f.speech_id, memberId: f.member_id, date: f.speech_date })));
   return {
     corpus: await corpusBlock(sql),
@@ -320,7 +292,7 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
       speech_id: f.speech_id, mgr: f.seq + 1, started: f.started, member: { id: f.member_id, name: f.member_name, party_at_date: parties.get(f.speech_id) ?? null },
       speech_type: f.type, text: clip(f.text), url: `${SITE}/raeda/${f.speech_id}#mgr-${f.seq + 1}`, althingi_url: speechPageUrl(f.lthing, f.speech_id, f.html_url),
     })),
-    speeches_per_year: years.map((y) => ({ year: y.y, speeches: y.n })),
+    speeches_per_year: years.map((y) => ({ year: y.year, speeches: y.n })),
     caveat: "„Fyrst“ á aðeins við ræðutexta í safninu (frá 2005; sjá corpus.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.",
     derived: false,
   };
