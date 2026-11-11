@@ -11,7 +11,7 @@ import { searchEntities } from "./entities.ts";
 import { SITE } from "./pages.tsx";
 import { llmsTxt } from "./agent-docs.ts";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 // every tool only reads a closed corpus: no side effects, same answer for the same arguments, no outside world
 const ro = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
 const iso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
@@ -53,7 +53,7 @@ const SEARCH_OUT = {
 const INSTRUCTIONS = [
   "Search and fetch Icelandic parliament (Alþingi) speeches, matters (þingmál), votes with per-member ballots, members, laws and sittings. Speech TEXT exists from session 131 (October 2004) only; counts, searches and lookups carry a one-line `corpus` stating what is covered (list_sessions has the detail) — never claim something 'never' happened without checking it.",
   "Queries are lemmatized Icelandic keywords: an inflected word finds all its forms; all words must occur in the same paragraph; \"quoted\" = exact adjacent phrase. Translate the user's topic into Icelandic content words; put people, parties, dates and matters into filters (resolve names with get_member). explain_query shows how a query was read.",
-  "Ids chain: search_speeches -> speech_id -> get_speech / get_context; matter {lthing,class,nr} -> get_matter -> votes[].id -> get_vote; member.id -> get_member / member_votes; law {year,nr} -> get_law; sitting {lthing,fundur} -> get_sitting. Every item has a `url` to cite (append .md for Markdown; resources use the same https URLs). Party is always 'party_at_date' (seat on that day).",
+  "For how a topic evolved, start with topic_timeline(q): per year, the matters behind the speeches, their outcome and final vote by party. Ids chain: search_speeches -> speech_id -> get_speech / get_context; matter {lthing,class,nr} -> get_matter -> votes[].id -> get_vote; member.id -> get_member / member_votes; law {year,nr} -> get_law; sitting {lthing,fundur} -> get_sitting. Every item has a `url` to cite (append .md for Markdown; resources use the same https URLs). Party is always 'party_at_date' (seat on that day).",
   "Fields marked inferred are not source facts. Interjections (framíköll) are shown but not searchable. Rate limit: 60 requests a minute per client (HTTP 429 + Retry-After).",
 ].join(" ");
 
@@ -318,7 +318,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
     argsSchema: { topic: z.string().describe("Topic in any language"), period: z.string().optional().describe("e.g. 2023, or 157. þing") },
   }, ({ topic, period }) => ({
     messages: [{ role: "user", content: { type: "text", text:
-      `Using the Alþingi tools: translate "${topic}" into 1–3 Icelandic keyword queries (check them with explain_query), run search_speeches${period ? ` limited to ${period}` : ""}, use aggregate(group_by=party) for the balance, open the most relevant speeches with get_context, and answer with quotes cited by their url (#mgr-N). State the corpus boundary from the corpus line.` } }],
+      `Using the Alþingi tools: translate "${topic}" into 1–3 Icelandic keyword queries (check them with explain_query), run topic_timeline${period ? ` limited to ${period}` : ""} for the matters and outcomes year by year, then search_speeches (one year or one matter at a time) for what was said, use aggregate(group_by=party) for the balance, open the most relevant speeches with get_context, and answer with quotes cited by their url (#mgr-N). State the corpus boundary from the corpus line.` } }],
   }));
   s.registerPrompt("member_record", {
     title: "A member's record",

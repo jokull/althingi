@@ -52,7 +52,7 @@ Use the MCP server: ${MCP_URL} (Streamable HTTP, stateless, no authentication, J
 
 Corpus: ${boundary(f)} Searches, counts and lookups in the MCP carry a one-line \`corpus\` (list_sessions has the full boundary); "first", "never" and totals hold only within it.
 
-Search queries are Icelandic keywords, not questions: any inflection finds all forms ("hestinum" finds "hestur"), all words must occur in one paragraph, "quoted" means the exact phrase. Put people, parties, dates and matters in filters, not in the query.
+Search queries are Icelandic keywords, not questions: any inflection finds all forms ("hestinum" finds "hestur"), all words must occur in one paragraph, "quoted" means the exact phrase. Put people, parties, dates and matters in filters, not in the query. For "how has the debate on X evolved", start with one call: \`topic_timeline(q="veiðigjald")\` gives speeches per year, the matters behind them, their outcome and the final vote by party; aggregate(group_by="matter") counts by matter.
 
 Every page has a Markdown version: add \`.md\` to its URL (e.g. ${SITE}/mal/157/a/300.md). Cite the page URL; speech paragraphs have stable anchors \`#mgr-N\`. Party is always the member's party on the date in question.
 
@@ -112,7 +112,9 @@ ${CLIENTS.map((c) => `## ${c.name}\n\n${c.steps}${c.code ? `\n\n\`\`\`\n${c.code
 
 ## Hvað þjónninn gerir / What it does
 
-Leit í ræðum frá 131. þingi, október 2004 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
+Leit í ræðum frá 131. þingi, október 2004 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, topic_timeline, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
+
+Dæmi / example: „hvernig hefur umræðan um veiðigjöld þróast?“ → \`topic_timeline(q="veiðigjald")\`: ræður á ári, helstu mál hvers árs, afdrif þeirra og lokaatkvæðagreiðsla eftir flokkum; síðan \`get_matter\` og \`search_speeches(q, lthing, matter)\` fyrir umræðuna sjálfa.
 
 Takmörk / limits: ${RATE}
 

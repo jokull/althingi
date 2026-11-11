@@ -60,20 +60,46 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
 **Decisions**
 
 - **Annotations:** every tool is `readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false`. They are closed-world because they read our own index, not the internet. Every tool has a `title` and an `outputSchema`; the schemas are shallow, give the stable top-level keys, and allow extra keys.
-- **Errors:** `{error, hint}` payloads are returned with `isError: true`. The text is the JSON itself, so old clients can still parse it, and `hint` names the tool that gives a valid id.
+- **Structured output:** every successful result has `structuredContent` plus one text item holding the same JSON. Every object in an `outputSchema` is a zod `looseObject`, so the published JSON Schema has no `additionalProperties: false`. Until 2026-11-11 it had (zod's `z.object` default), every result carried keys the schema did not name, and a client that validates `structuredContent` against `outputSchema` had to reject it and fall back to the text. `test/agents.test.ts` calls every tool and validates the result against its published schema with ajv.
+- **Errors:** `{error, hint}` payloads are returned with `isError: true`. The text is the JSON itself, so old clients can still parse it, and `hint` names the tool that gives a valid id. A thrown error never reaches the agent as a raw Postgres message (`run()` in `src/mcp.ts`, `toolFailure` in `src/mcp-tools.ts`):
+  - statement timeout (`57014`; the MCP pool allows 8 s) → `{error: "timeout", hint, retry: [{tool, arguments, why}], corpus}`. The hint says a timeout is not an absence of data. `retry` holds ready calls: the same call over one year of the range, `aggregate(group_by="year", q)` to pick the years, and the call with `lthing`.
+  - any other error → `{error: "internal_error", hint, retry}`. The Postgres code and message go to the log.
+- **Corpus boundary:** the text era starts at **session 131 (October 2004)**; the first speech with text is from 2004-10-01. The same words are used in the MCP, llms.txt, /um, the footer, the front page and the Markdown footer. `corpus` is one line (session ranges, dates, count; about 200 characters) on searches, counts (`aggregate`, `topic_timeline`, `first_use`), `get_matter`, `get_member` and error payloads. The full object (`corpus_detail`: `text_from`, `speeches_with_text`, `sessions_with_text`, `text_dates`, `note`) is on `list_sessions`, `first_use` and zero-hit `search_speeches`, where an absence could be misread. `get_speech`, `get_context`, `list_votes` and `explain_query` carry none. The stats are cached per pool for 60 s instead of scanning `speeches` on every call.
 - **Names:** all existing names are kept; no renames. New tools:
   - `get_vote`: per-member ballots with party on the vote date, verbatim choice plus an English gloss, and a per-party tally.
   - `member_votes`: one member's record, filterable by session, matter and choice, with a tally; paged by `before_id`.
   - `get_law`: lagasafn metadata, article index, `amended_by`/`amends`, the matters that amend it, and article text on request within a ~20 KB budget. Can also be looked up by title.
   - `get_sitting` / `list_sittings`: agenda, events with English glosses, speeches in order.
   - `search` / `fetch`: the ChatGPT pair. `fetch` returns the page's Markdown.
+  - `topic_timeline(q, date_from?, date_to?, lthing?, member_id?, top_matters? = 3, max 5)` (2026-11-11): for each year, the speeches matching `q`, and the matters most of them were given under, as `years[].top_matters[] = {matter: "lthing/class/nr", title, speeches}`. `matters[]` lists each such matter once, with `status`, `status_source` and `final_vote {id, at, result, yes, no, abstain, by_party}`. It runs one grouped scan and then three batched queries for the outcomes (`matterOutcomes` in `src/outcomes.ts`). Measured on the mini: `veiðigjald` over the whole corpus takes 0.6 s and returns about 50 KB.
 - **Added to existing tools:**
   - `get_matter` adds `sponsors` (flutningsmenn, with office), `rapporteurs` and `sitting_events`.
   - `get_speech` adds `reply_to` (with `inferred`) and `replies`.
   - The stale "ballots not in the corpus" text in `list_votes` is fixed.
+  - 2026-11-11, from an agent session on "how has the debate on veiðigjöld evolved":
+    - `aggregate` gains `group_by: "matter"`. Its buckets are `{key: "lthing/class/nr", value, matter: {lthing, class, nr, title, url}}`, and speeches without a matter go in key `(ekkert mál)` with `matter: null`.
+    - `aggregate` member and party buckets no longer merge the id and the name into `key` (it used to be `"124: Einar K. Guðfinnsson"`). `key` is now the id as a string, and the bucket also has `id`, `name` and `url`. A dump-only speaker without an id gets the abbreviation as `key`, with `id: null`.
+    - `get_matter`:
+      - `matter.status_source` is new. `status` is filled when Alþingi left it empty (see "Derived fields").
+      - `matter.subtitle` is `null`, never `""`.
+      - `votes[]` gains `type_code`, `result_en`, `result_derived` (only when true), `is_final`, and `by_party` on the final vote.
+      - `final_vote_id` and `votes_note` are new.
+    - `corpus` is now a string. The old object moved to `corpus_detail`, and only on some tools (see "Corpus boundary").
+    - The `why` code `text_corpus_starts_2005` is renamed `text_corpus_starts_session_131_october_2004`.
+    - No tool was renamed or removed.
+
+**Derived fields** (`src/outcomes.ts`; a derived value is always flagged):
+
+| Field | Source fact first | Then (flagged) |
+|---|---|---|
+| vote `result` | Alþingi's `result` | `result_derived: true`. A counted vote (method `S`/`N`/`H`, or the label atkvæðagreiðslukerfi/nafnakall/handaupprétting) with yes + no > 0 gets `samþykkt` when yes > no and `Fellt` otherwise (a tie fails). Method `K` gets `kallað aftur` and `E` gets `kom ekki til atkvæðagreiðslu`. Procedural `G`/`Y` votes ("mál gengur", the presiding officer's declaration) and 0/0/0 rows stay `null`. On the mini, yes > no agreed with Alþingi's own result on 2,380 of 2,387 counted votes; the 7 others have no counts. |
+| vote `is_final` | — | The last vote, by time and then id, whose type code (dump `tegatkvgr`, else the service code) is `lg` (the bill as a whole) or `þa` (the resolution as a whole). Article, amendment and referral votes are never final. Only 3 matters have more than one `lg` vote. |
+| matter `status` | `status_text` (`status_source: "althingi"`) | A `frvAfgreittSemLög` sitting event gives "Samþykkt sem lög frá Alþingi." (`sitting_event`). Failing that, a passed final vote gives the same text for `lg` and "Samþykkt sem ályktun Alþingis." for `þa` (`final_vote`). Nothing negative is derived. |
+
+Status is empty when matter detail was never fetched (`detail_fetched: false`). On 2026-11-11 that held for 20,678 of the A-matters on the mini, including 140/142, 142/15, 149/144 and 153/490. Three of those four now get a derived status from `frvAfgreittSemLög`. 140/142 (a þáltill.) has only procedural votes and no event, so its status stays `null`. `subtitle` comes from the session list: 149/144's entry has none, so it stays `null` until its matter detail is fetched.
 - **Descriptions** are written for models. They give worked examples ("lög nr. 34/1991 → year=1991, nr=34"; a natural-language question → keyword `q` plus date filters), state the id chain, and name the next tool.
 - **Resources:** templates at the same https URLs as the Markdown pages (`/raeda/{speech_id}.md`, `/mal/{lthing}/{class}/{nr}.md`, `/thingmadur/{member_id}.md`, `/log/{year}/{nr}.md`, `/dagur/{date}.md`), plus one static `llms.txt` guide resource. Templates are not enumerated, because the corpus is too large to list. https was chosen over a custom scheme because the URIs are then also citable and fetchable.
-- **Prompts:** `debate_on_topic` and `member_record`. These are research recipes that chain the tools.
+- **Prompts:** `debate_on_topic` and `member_record`. These are research recipes that chain the tools. `debate_on_topic` starts with `topic_timeline`.
 - **Not done:** icons, completions, `resource_link` items in tool results (the urls are already in the JSON).
 
 ## 3. Discovery
@@ -98,7 +124,7 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
   - `rel="alternate" type="text/markdown"` → the page's `.md` twin (a convention, not a standard)
 - **llms.txt** follows the llmstxt.org format exactly, in this order:
   1. MCP endpoint and one-line connect per client;
-  2. corpus boundary, computed from the DB;
+  2. corpus boundary, computed from the DB, and the `topic_timeline` example;
   3. query rules;
   4. Markdown/citation scheme;
   5. rate limits;
@@ -153,6 +179,8 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
 
 ## 6. Deferred / open
 
+- **Indexes for the counting tools** (left to the query-performance work): `topic_timeline` and `aggregate` scan `paragraphs` through the GIN index and group speeches. The existing `speeches_matter (lthing, matter_cls, matter_nr, started)` index and the votes/sitting_events indexes cover the outcome lookups. Nothing new is needed at 0.6 s; revisit if multi-word queries over the whole corpus near the 8 s limit.
+- **The HTML matter page** could reuse `src/outcomes.ts` (derived status, final vote). Only the MCP uses it now.
 - **v2 SDK** with 2026-07-28 support (`server/discover`, `ttlMs`/`cacheScope: "public"`). Wait until Claude and ChatGPT document 2026 clients.
 - **Registry publish:** generate an Ed25519 key, serve `/.well-known/mcp-registry-auth`, then run `mcp-publisher login http --domain althingi.solberg.is` and `publish`. The owner does this.
 - **`ai-train`** in Content-Signal (and `__usage_ai-training`): decided 2026-11-11, stay neutral (no signal either way). Revisit only if the owner asks.
