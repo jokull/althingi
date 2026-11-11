@@ -83,7 +83,7 @@ function fromMirror(xmlUrl: string): string | null {
   const p = m && join(MIRROR, m[1]!, "raedur", m[2]!);
   if (!p || !existsSync(p)) return null;
   const body = readFileSync(p, "utf8");
-  if (!body.includes("<ræða")) return null; // not a speech file: fall back to the service
+  if (!/<(?:\w+:)?ræða[\s>]/.test(body)) return null; // not a speech file (158 serves `<ns:ræða`): fall back to the service
   if (++mirrorHits % 1000 === 0) log(`text: ${mirrorHits} read from the local mirror`);
   return body;
 }
