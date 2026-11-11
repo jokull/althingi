@@ -85,3 +85,7 @@ describe("recall query shape", () => {
     expect(numberProximityTsQuery(parseQuery("veiðigjald"))).toBeNull();
   });
 });
+
+test("document reference with the session spelled out", () => {
+  expect(route("þskj. 421 á 157. þingi", 158)?.path).toBe("/thingskjal/157/421");
+});

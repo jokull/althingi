@@ -129,7 +129,11 @@ export const lemmaText = (text: string): string => indexLemmas(text).join(" ");
 /** Query side: per-token candidate groups (OR within a group, AND across groups). */
 export function queryGroups(q: string): string[][] {
   const { lem, opts } = load();
-  return buildSearchQuery(q, lem, opts).groups.map((g) => [...new Set(g.map((x) => x.toLowerCase()))]);
+  // multi-word lemmas from hyphenated ellipsis compounds ("umhverfis- og samgöngunefnd" -> " og samgöngunefnd") are split
+  // and stopword-filtered exactly like the index side does (indexLemmas), so the query never asks for a lexeme "og".
+  return buildSearchQuery(q, lem, opts).groups
+    .map((g) => [...new Set(g.flatMap((x) => x.toLowerCase().split(/\s+/).map((p) => p.replace(/^-+|-+$/g, "")).filter((p) => p && !isStopword(p))))])
+    .filter((g) => g.length > 0);
 }
 
 /** Escape one lexeme for a Postgres tsquery literal. */
@@ -240,7 +244,9 @@ export interface QueryGroup {
  * finding the split point whose two halves lemmatize to exactly those variants (linking s/a/u tolerated).
  */
 function groupParts(lem: BinaryLemmatizer, words: string[], flat: string[]): string[][] | null {
-  const want = new Set(flat);
+  // lemma-is >= 0.13 decomposes recursively (framleiðsla -> leiðsla): a nested constituent sits inside a top-level part,
+  // so only the top-level parts have to be covered by the binary split.
+  const want = new Set(flat.filter((x) => !flat.some((y) => y !== x && y.length > x.length && y.includes(x))));
   let best: { groups: string[][]; score: number } | null = null;
   for (const word of words) {
     for (let k = 2; k <= word.length - 2; k++) {
@@ -275,13 +281,25 @@ export function queryGroupsStructured(q: string): QueryGroup[] {
   const toks = processText(q, lem, { ...opts, removeStopwords: false, includeNumbers: false }).filter(
     (t) => t.kind === "word" && t.compoundLemmas && t.compoundLemmas.length > 0,
   );
-  const same = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+  // The group is a stopword-filtered subset of the token's readings: lemma-is also lists non-lemma part strings
+  // ("umhverfis") and stopword parts ("meðal") among a compound's lemmas. Matching on set EQUALITY missed those tokens and
+  // left every part as a free alternative (umhverfismál -> ... | mál, meðalhóf -> ... | hefja). Match on: the token's
+  // whole-word reading is in the group and the group is contained in the token's readings.
+  const covers = (t: (typeof toks)[number], g: string[]) => {
+    const ls = new Set(t.lemmas.flatMap((l) => l.toLowerCase().split(/\s+/).map((p) => p.replace(/^-+|-+$/g, ""))));
+    const whole = (t.disambiguated ?? t.lemmas[0] ?? "").toLowerCase();
+    return g.includes(whole) && g.every((x) => ls.has(x));
+  };
   return groups.map((g): QueryGroup => {
-    const t = toks.find((x) => same([...new Set(x.lemmas.map((l) => l.toLowerCase()))], g));
+    const t = toks.find((x) => covers(x, g));
     if (!t) return { any: g, allOf: null };
     // A word the dictionary knows ("lögregla", "verðbólga") has its own indexed lemma; splitting it on the query side
     // would turn it into etymology ("lög & regla"). Parts are only an alternative for words BÍN does not know.
-    if (lem.isKnown(t.original.toLowerCase()) || lem.isKnown(t.original)) return { any: g.filter((x) => !(t.compoundLemmas ?? []).map((l) => l.toLowerCase()).includes(x)) || g, allOf: null };
+    if (lem.isKnown(t.original.toLowerCase()) || lem.isKnown(t.original)) {
+      const parts = new Set((t.compoundLemmas ?? []).map((l) => l.toLowerCase()));
+      const any = g.filter((x) => !parts.has(x));
+      return { any: any.length ? any : g, allOf: null };
+    }
     const flat = [...new Set((t.compoundLemmas ?? []).map((l) => l.toLowerCase()))];
     const any = g.filter((x) => !flat.includes(x));
     const words = [...new Set([(t.disambiguated ?? t.lemmas[0] ?? t.original).toLowerCase(), t.original.toLowerCase()])];

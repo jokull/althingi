@@ -151,9 +151,9 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
     stats: [`${r.speeches.toLocaleString("is-IS")} ræður í safni`],
     party: { id: r.id, seats: r.seats, lthing: r.lthing, speeches: r.speeches },
   }));
-  out.nefndir = nefndir.map((r) => ({ kind: "nefndir", href: `/leit?q=${encodeURIComponent(r.name)}&t=umsagnir`, title: r.name, badge: "nefnd", meta: [r.first_lthing ? `frá ${r.first_lthing}. þingi` : "", `${r.n} mál með umsagnarbeiðnum`].filter(Boolean).join(" · ") }));
+  out.nefndir = nefndir.map((r) => ({ kind: "nefndir", href: `/nefnd/${r.id}`, title: r.name, badge: "nefnd", meta: [r.first_lthing ? `frá ${r.first_lthing}. þingi` : "", `${r.n} mál með umsagnarbeiðnum`].filter(Boolean).join(" · ") }));
   out.efni = efni.map((r) => ({
-    kind: "efni", href: `/leit?q=${encodeURIComponent(r.name)}&t=mal`, title: r.name, meta: `${r.parent_name ? r.parent_name + " · " : ""}${r.n} mál`,
+    kind: "efni", href: `/efni/${r.id}`, title: r.name, meta: `${r.parent_name ? r.parent_name + " · " : ""}${r.n} mál`,
   }));
   out.atkvaedi = atkvaedi.map((r) => ({
     kind: "atkvaedi", href: `/mal/${r.lthing}/${r.cls.toLowerCase()}/${r.nr}#atkvaedi`, title: r.title, badge: r.kind_label,

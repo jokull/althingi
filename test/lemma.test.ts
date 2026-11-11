@@ -10,7 +10,7 @@ const paragraphs = readdirSync(dir)
 
 describe("lemma.ts (single source for ingest and query)", () => {
   test("version string pins package + binary", () => {
-    expect(lemmaVersion()).toMatch(/^lemma-is@0\.12\.0\+[0-9a-f]{12}\/r\d+$/);
+    expect(lemmaVersion()).toMatch(/^lemma-is@0\.13\.0\+[0-9a-f]{12}\/r\d+$/);
   });
 
   test("lemmas are lowercase and deduplicated", () => {
@@ -149,4 +149,14 @@ describe("lemma.ts (single source for ingest and query)", () => {
     expect(b.lemmaParts.split(" ").filter(Boolean).length).toBeGreaterThan(new Set(b.lemmaParts.split(" ")).size - 1);
     expect(b.lemmaParts.split(" ").some((x) => b.lemmaText.split(" ").includes(x))).toBe(false);
   });
+});
+
+test("known compounds never leak their parts as free query alternatives", () => {
+  // lemma-is lists non-lemma part strings ("umhverfis") and stopword parts ("meðal") among the readings; the group must
+  // still be recognised as the compound's, or "umhverfismál" matches every paragraph that contains "mál"
+  for (const [w, whole] of [["umhverfismál", "umhverfismál"], ["meðalhóf", "meðalhóf"], ["umhverfisráðherra", "umhverfisráðherra"], ["innanríkisráðherra", "innanríkisráðherra"]] as const) {
+    expect(queryGroupsStructured(w)).toEqual([{ any: [whole], allOf: null }]);
+  }
+  // multi-word lemmas from ellipsis compounds are split and stopword-filtered like the index side
+  expect(queryGroups("umhverfis- og samgöngunefnd").flat()).not.toContain(" og samgöngunefnd");
 });

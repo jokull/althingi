@@ -23,7 +23,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("search_speeches", {
     title: "Search speeches",
-    description: "Lemma-aware full-text search over speech paragraphs (text from 2005). Returns hits grouped by speech with the best paragraph snippets, party at the speech date, matter, and cite-able urls. Zero hits return a structured `why`.",
+    description: "Lemma-aware full-text search over speech paragraphs (text from 2005). Returns hits grouped by speech with the best paragraph snippets, party at the speech date, matter, cite-able urls, and `total` (matching speeches over all pages, exact up to 10000). Zero hits return a structured `why`. `q` is KEYWORDS, not a question: put content words in Icelandic (any inflection; all forms match) and move people, parties, dates, matters and speech types into the structured filters (resolve names with get_member first). Quote exact phrases.",
     inputSchema: {
       q: z.string().min(1).max(200).describe("Query: words (any inflection), \"quoted phrase\", numbers near words. Not a law/matter number lookup — use get_matter for that."),
       member_id: z.number().int().optional(), party_id: z.number().int().optional().describe("Party id; resolved through seats ON the speech date"),
@@ -33,7 +33,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       debate: z.array(z.enum(["1", "2", "3", "*", "S", "E", "F", "T"])).optional(),
       capacity: z.string().optional().describe("Decoded speaker capacity, e.g. 'ráðherra', 'forseti'"),
       matter: z.string().regex(/^[abAB]\/\d{1,5}$/).optional().describe("Restrict to one matter of the given lthing: 'a/300' (use with lthing)"),
-      sort: z.enum(["relevance", "newest"]).optional(), limit: z.number().int().min(1).max(100).optional().describe("Default 10; above 25 results are compacted"),
+      sort: z.enum(["relevance", "newest", "oldest"]).optional(), limit: z.number().int().min(1).max(100).optional().describe("Default 10; above 25 results are compacted"),
       cursor: z.string().optional(),
     },
     annotations: ro,
@@ -70,7 +70,12 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
   s.registerTool("list_votes", {
     title: "List votes",
     description: "Vote summaries (counts, result, method) for a session, optionally one matter or one day. Per-member ballots are not in the corpus yet.",
-    inputSchema: { lthing: z.number().int(), class: z.enum(["A", "B", "a", "b"]).optional(), nr: z.number().int().optional(), date: iso.optional(), limit: z.number().int().min(1).max(200).optional() },
+    inputSchema: {
+      lthing: z.number().int(), class: z.enum(["A", "B", "a", "b"]).optional(), nr: z.number().int().optional(), date: iso.optional(),
+      doc_nr: z.number().int().optional().describe("Votes on one þingskjal (document number)"),
+      after_id: z.number().int().optional().describe("Paging: pass next_after_id from the previous call"),
+      limit: z.number().int().min(1).max(200).optional(),
+    },
     annotations: ro,
   }, async (a) => out(await T.listVotes(ctx, a)));
 

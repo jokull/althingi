@@ -12,7 +12,7 @@
         "hono": "^4.13.17",
         "htmlparser2": "^12.0.0",
         "htmx.org": "^2.0.11",
-        "lemma-is": "0.12.0",
+        "lemma-is": "0.13.0",
         "postgres": "^4.1.0",
         "zod": "^4.6.7",
       },
@@ -193,7 +193,7 @@
 
     "json-schema-typed": ["json-schema-typed@8.0.2", "", {}, "sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA=="],
 
-    "lemma-is": ["lemma-is@0.12.0", "", { "dependencies": { "dawg-lookup": "^2.2.1", "dawg-set": "^0.0.0", "tokenize-is": "^0.2.0", "trie-mapping": "^4.0.0" } }, "sha512-j56VIMXakqJo96GQ3pmkX16bjw9mELVhYZT9d+xzG6zcScN5rn2O7j3we2qs1haVSmEailUv5oJjKP52U6uOZg=="],
+    "lemma-is": ["lemma-is@0.13.0", "", { "dependencies": { "dawg-lookup": "^2.2.1", "dawg-set": "^0.0.0", "tokenize-is": "^0.2.0", "trie-mapping": "^4.0.0" } }, "sha512-PuHoLQVFxizn5UyT0Ap0morkgqOhb4Iu0w8g82SHpWShBe8aYIlSn8GVZn8M0to8aTR+gWSGQ+NDYNhOc30qRw=="],
 
     "math-intrinsics": ["math-intrinsics@1.1.0", "", {}, "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="],
 

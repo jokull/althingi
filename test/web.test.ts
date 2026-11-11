@@ -360,3 +360,82 @@ describe("mcp", () => {
     expect(fu.caveat).toContain("2005");
   });
 });
+
+describe("persona sweep fixes", () => {
+  test("keywords are searched as typed; a known member in the keywords is only OFFERED as a filter", async () => {
+    if (!ok) return;
+    const [s] = await sql<{ member_id: number; member_name: string }[]>`select member_id, member_name from speeches where id = ${speechId}`;
+    const r = await get(`/leit?q=${encodeURIComponent(`${s!.member_name} ${word}`)}`);
+    expect(r.status).toBe(200); // no rewrite, no redirect
+    const page = await r.text();
+    expect(page).toContain("Sía:");
+    expect(page).toContain(`thm=${s!.member_id}`);
+    expect(page).not.toContain("Lesið sem:");
+    // the offered filter works
+    const f = await (await get(`/leit?q=${encodeURIComponent(word)}&thm=${s!.member_id}`)).text();
+    expect(f).toContain(`/raeda/${speechId}`);
+    // a member name WITH filters stays on the search page
+    expect((await get(`/leit?q=${encodeURIComponent(s!.member_name)}&tegund=andsvar`)).status).toBe(200);
+  });
+
+  test("filters without words list speeches (browse), with a total and an oldest-first sort", async () => {
+    if (!ok) return;
+    const [s] = await sql<{ member_id: number }[]>`select member_id from speeches where id = ${speechId}`;
+    const body = await (await get(`/leit?q=&thm=${s!.member_id}`)).text();
+    expect(body).toContain(`/raeda/${speechId}`);
+    const old = await (await get(`/leit?q=${encodeURIComponent(word)}&nyjast=elst`)).text();
+    expect(old).toContain(`/raeda/${speechId}`);
+    const j = await (await get(`/leit.json?q=${encodeURIComponent(word)}`)).json() as { total: number; hits: { speech_id: string }[] };
+    expect(j.total).toBe(1);
+    expect(j.hits[0]!.speech_id).toBe(speechId);
+  });
+
+  test("document, transcript, feed, topic and committee pages exist", async () => {
+    if (!ok) return;
+    const [d] = await sql<{ nr: number }[]>`select nr from documents where lthing = 157 and matter_nr = 300 order by nr limit 1`;
+    const doc = await get(`/thingskjal/157/${d!.nr}`);
+    expect(doc.status).toBe(200);
+    expect(await doc.text()).toContain("althingi.is");
+    expect((await get("/thingskjal/157/99999")).status).toBe(404);
+    const feed = await get("/mal/157/a/300/atom");
+    expect(feed.headers.get("content-type")).toContain("atom");
+    expect(await feed.text()).toContain("<entry>");
+    expect((await get("/mal/157/a/300/umraeda")).status).toBe(200);
+    const mp = await (await get("/mal/157/a/300")).text();
+    expect(mp).toContain("Ferill málsins");
+    expect(mp).toContain("/mal/157/a/300/atom");
+    const [t] = await sql<{ efnisflokkur_id: number }[]>`select efnisflokkur_id from matter_efnisflokkar where lthing = 157 and nr = 300 limit 1`;
+    if (t) expect(await (await get(`/efni/${t.efnisflokkur_id}`)).text()).toContain("/mal/157/a/300");
+    const [c] = await sql<{ committee_id: number }[]>`select committee_id from consultation_requests where lthing = 157 and nr = 300 and committee_id is not null limit 1`;
+    if (c) expect(await (await get(`/nefnd/${c.committee_id}`)).text()).toContain("/mal/157/a/300");
+  });
+
+  test("did-you-mean is not shown above real hits", async () => {
+    if (!ok) return;
+    const body = await (await get(`/leit?q=${encodeURIComponent(word)}`)).text();
+    expect(body).not.toContain("finnst ekki í safninu");
+  });
+});
+
+describe("mcp persona fixes", () => {
+  test("search_speeches returns a total; empty date ranges outside the corpus say so", async () => {
+    if (!ok) return;
+    const r = await call("search_speeches", { q: word });
+    expect(r.total).toBe(1);
+    const e = await call("search_speeches", { q: word, date_from: "1998-01-01", date_to: "1998-12-31" });
+    expect(e.why).toContain("date_range_before_first_speech_in_corpus");
+    const v = await call("list_votes", { lthing: 157, nr: 300, limit: 2 });
+    expect(v.votes[0]).toHaveProperty("document_nr");
+  });
+});
+
+describe("glossary and votes export", () => {
+  test("'hvað er andsvar' shows the glossary entry; votes CSV per session", async () => {
+    if (!ok) return;
+    expect(await (await get(`/leit?q=${encodeURIComponent("hvað er andsvar")}`)).text()).toContain("Fleiri orðskýringar");
+    expect(await (await get("/um")).text()).toContain("ordskyringar");
+    const csv = await get("/thing/157/atkvaedagreidslur.csv");
+    expect(csv.headers.get("content-type")).toContain("text/csv");
+    expect(await csv.text()).toContain("vote_id");
+  });
+});

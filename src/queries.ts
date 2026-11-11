@@ -260,3 +260,136 @@ export async function partyPage(sql: Sql, id: number): Promise<PartyPage | null>
     recent: recent.map((r) => ({ id: r.id, started: r.started, type: r.type, memberId: r.member_id, memberName: r.member_name, lthing: r.lthing, cls: r.matter_cls, nr: r.matter_nr, title: r.title })),
   };
 }
+
+// ---------------------------------------------------------------- matter extras: rapporteurs, submissions, timeline
+
+export interface MatterExtras {
+  rapporteurs: { memberId: number; name: string }[];
+  submissions: { sender: string; kind: string | null; received: string | null; pdfUrl: string | null }[];
+  committees: { id: number; name: string }[];
+  /** one axis, oldest first: documents issued, first speech of each debate stage, votes */
+  timeline: { at: string; kind: "skjal" | "umræða" | "atkvæði"; label: string; href?: string }[];
+}
+
+export async function matterExtras(sql: Sql, lthing: number, cls: string, nr: number): Promise<MatterExtras> {
+  const [rap, subs, comms, docs, stages, votes] = await Promise.all([
+    sql<{ member_id: number; name: string }[]>`select member_id, name from matter_rapporteurs where lthing = ${lthing} and cls = ${cls} and nr = ${nr} order by name`,
+    sql<{ sender: string; kind: string | null; received: string | null; pdf_url: string | null }[]>`
+      select sender, kind, received::text, pdf_url from submissions where lthing = ${lthing} and cls = ${cls} and nr = ${nr} order by received nulls last, sender limit 300`,
+    sql<{ id: number; name: string }[]>`
+      select distinct c.id, c.name from committees c
+      where c.id in (select committee_id from consultation_requests where lthing = ${lthing} and cls = ${cls} and nr = ${nr}
+                     union select committee_id from submissions where lthing = ${lthing} and cls = ${cls} and nr = ${nr})`,
+    sql<{ nr: number; type: string; issued: string | null }[]>`select nr, type, issued::text from documents where lthing = ${lthing} and matter_cls = ${cls} and matter_nr = ${nr} and issued is not null`,
+    sql<{ debate: string; started: string; n: number }[]>`
+      select debate, min(started)::text as started, count(*)::int n from speeches
+      where lthing = ${lthing} and matter_cls = ${cls} and matter_nr = ${nr} and text_state = 'done' group by debate`,
+    sql<{ at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null }[]>`
+      select voted_at::text as at, kind_label, result, yes, no from votes where lthing = ${lthing} and cls = ${cls} and nr = ${nr} and voted_at is not null`,
+  ]);
+  const stageLabel = (d: string) => (/^[123]$/.test(d) ? `${d}. umræða hefst` : "Umræða");
+  const raw: MatterExtras["timeline"] = [
+    ...docs.map((d) => ({ at: d.issued!, kind: "skjal" as const, label: `Þingskjal ${d.nr}: ${d.type}`, href: `/thingskjal/${lthing}/${d.nr}` })),
+    ...stages.map((s) => ({ at: s.started, kind: "umræða" as const, label: `${stageLabel(s.debate)} (${s.n} ${s.n === 1 ? "ræða" : "ræður"})` })),
+    ...votes.filter((v) => v.result || v.yes !== null).map((v) => ({ at: v.at!, kind: "atkvæði" as const, label: `${v.kind_label}${v.result ? `: ${v.result}` : ""}${v.yes !== null ? ` (${v.yes}–${v.no ?? 0})` : ""}` })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+  // a day of amendment votes is one line, not thirty: "18.6.2026 · 27 atkvæðagreiðslur, síðast: Þskj.: samþykkt (48–0)"
+  const timeline: MatterExtras["timeline"] = [];
+  for (const e of raw) {
+    const prev = timeline[timeline.length - 1];
+    if (e.kind === "atkvæði" && prev?.kind === "atkvæði" && prev.at.slice(0, 10) === e.at.slice(0, 10)) {
+      const n = (Number(prev.label.match(/^(\d+) atkvæðagreiðslur/)?.[1]) || 1) + 1;
+      timeline[timeline.length - 1] = { ...prev, label: `${n} atkvæðagreiðslur, síðast: ${e.label}`, href: "#atkvaedi" };
+    } else timeline.push({ ...e, ...(e.kind === "atkvæði" ? { href: "#atkvaedi" } : {}) });
+  }
+  return {
+    rapporteurs: rap.map((r) => ({ memberId: r.member_id, name: r.name })),
+    submissions: subs.map((s) => ({ sender: s.sender, kind: s.kind, received: s.received, pdfUrl: s.pdf_url })),
+    committees: comms, timeline,
+  };
+}
+
+// ---------------------------------------------------------------- one document (þingskjal): ids + links, no text yet
+
+export interface DocPage {
+  lthing: number; nr: number; type: string; issued: string | null; htmlUrl: string | null; pdfUrl: string | null;
+  matter: { cls: string; nr: number; title: string | null } | null;
+  votes: { id: number; at: string | null; kind: string; result: string | null; yes: number | null; no: number | null; abstain: number | null }[];
+}
+
+export async function docPage(sql: Sql, lthing: number, nr: number): Promise<DocPage | null> {
+  const [d] = await sql<{ type: string; issued: string | null; html_url: string | null; pdf_url: string | null; matter_cls: string | null; matter_nr: number | null; title: string | null }[]>`
+    select d.type, d.issued::text, d.html_url, d.pdf_url, d.matter_cls, d.matter_nr, m.title
+    from documents d left join matters m on m.lthing = d.lthing and m.cls = d.matter_cls and m.nr = d.matter_nr
+    where d.lthing = ${lthing} and d.nr = ${nr}`;
+  if (!d) return null;
+  const votes = await sql<{ id: number; at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null }[]>`
+    select id, voted_at::text as at, kind_label, result, yes, no, abstain from votes where lthing = ${lthing} and doc_nr = ${nr} order by voted_at, id`;
+  return {
+    lthing, nr, type: d.type, issued: d.issued, htmlUrl: d.html_url, pdfUrl: d.pdf_url,
+    matter: d.matter_cls && d.matter_nr !== null ? { cls: d.matter_cls, nr: d.matter_nr, title: d.title } : null,
+    votes: votes.map((v) => ({ id: v.id, at: v.at, kind: v.kind_label, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+  };
+}
+
+// ---------------------------------------------------------------- efnisflokkur and committee pages
+
+export interface ListedMatter { lthing: number; cls: string; nr: number; title: string; type: string | null; status: string | null }
+
+export async function topicPage(sql: Sql, id: number): Promise<{ id: number; name: string; parent: string | null; description: string | null; matters: ListedMatter[] } | null> {
+  const [e] = await sql<{ name: string; parent_name: string | null; description: string | null }[]>`select name, parent_name, description from efnisflokkar where id = ${id}`;
+  if (!e) return null;
+  const matters = await sql<{ lthing: number; cls: string; nr: number; title: string; type_label: string | null; status_text: string | null }[]>`
+    select m.lthing, m.cls, m.nr, m.title, m.type_label, m.status_text from matter_efnisflokkar x
+    join matters m on (m.lthing, m.cls, m.nr) = (x.lthing, x.cls, x.nr)
+    where x.efnisflokkur_id = ${id} order by m.lthing desc, m.nr limit 500`;
+  return { id, name: e.name, parent: e.parent_name, description: e.description, matters: matters.map((m) => ({ lthing: m.lthing, cls: m.cls, nr: m.nr, title: m.title, type: m.type_label, status: m.status_text })) };
+}
+
+export interface CommitteeMatter extends ListedMatter { due: string | null; requests: number; submissions: number }
+
+export async function committeePage(sql: Sql, id: number): Promise<{ id: number; name: string; matters: CommitteeMatter[] } | null> {
+  const [c] = await sql<{ name: string }[]>`select name from committees where id = ${id}`;
+  if (!c) return null;
+  const rows = await sql<{ lthing: number; cls: string; nr: number; title: string; type_label: string | null; status_text: string | null; due: string | null; requests: number; submissions: number }[]>`
+    with mm as (
+      select lthing, cls, nr, max(due) as due, count(*)::int as requests from consultation_requests where committee_id = ${id} group by 1, 2, 3
+      union
+      select lthing, cls, nr, null, 0 from submissions where committee_id = ${id} group by 1, 2, 3
+    ), agg as (select lthing, cls, nr, max(due) as due, max(requests) as requests from mm group by 1, 2, 3)
+    select a.lthing, a.cls, a.nr, m.title, m.type_label, m.status_text, a.due::text, a.requests,
+           (select count(*)::int from submissions s where (s.lthing, s.cls, s.nr) = (a.lthing, a.cls, a.nr)) as submissions
+    from agg a join matters m on (m.lthing, m.cls, m.nr) = (a.lthing, a.cls, a.nr)
+    order by a.due desc nulls last, a.lthing desc, a.nr desc limit 500`;
+  return { id, name: c.name, matters: rows.map((r) => ({ lthing: r.lthing, cls: r.cls, nr: r.nr, title: r.title, type: r.type_label, status: r.status_text, due: r.due, requests: r.requests, submissions: r.submissions })) };
+}
+
+// ---------------------------------------------------------------- the whole debate on a matter (print view) and its feed
+
+export interface TranscriptSpeech { id: string; started: string; date: string; memberName: string; party: string | null; type: string; debate: string; paragraphs: string[] }
+
+export async function matterTranscript(sql: Sql, lthing: number, cls: string, nr: number, max = 400): Promise<TranscriptSpeech[]> {
+  const rows = await sql<{ id: string; started: string; speech_date: string; member_id: number; member_name: string; type: string; debate: string; paras: string[] }[]>`
+    select s.id, s.started::text, s.speech_date::text, s.member_id, s.member_name, s.type, s.debate,
+           array(select text from paragraphs p where p.speech_id = s.id order by seq) as paras
+    from speeches s where s.lthing = ${lthing} and s.matter_cls = ${cls} and s.matter_nr = ${nr} and s.text_state = 'done'
+    order by s.started limit ${max}`;
+  const parties = await partiesFor(sql, rows.map((r) => ({ speechId: r.id, memberId: r.member_id, date: r.speech_date })));
+  return rows.map((r) => ({ id: r.id, started: r.started, date: r.speech_date, memberName: r.member_name, party: parties.get(r.id) ?? null, type: r.type, debate: r.debate, paragraphs: r.paras }));
+}
+
+export async function matterFeed(sql: Sql, lthing: number, cls: string, nr: number) {
+  const [speeches, votes, docs] = await Promise.all([
+    sql<{ id: string; started: string; member_name: string; type: string; text: string | null }[]>`
+      select s.id, s.started::text, s.member_name, s.type, (select text from paragraphs where speech_id = s.id order by seq limit 1) as text
+      from speeches s where s.lthing = ${lthing} and s.matter_cls = ${cls} and s.matter_nr = ${nr} and s.text_state = 'done'
+      order by s.started desc limit 30`,
+    sql<{ id: number; at: string; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null }[]>`
+      select id, voted_at::text as at, kind_label, result, yes, no, abstain from votes
+      where lthing = ${lthing} and cls = ${cls} and nr = ${nr} and voted_at is not null order by voted_at desc limit 30`,
+    sql<{ nr: number; type: string; issued: string; html_url: string | null }[]>`
+      select nr, type, issued::text, html_url from documents
+      where lthing = ${lthing} and matter_cls = ${cls} and matter_nr = ${nr} and issued is not null order by issued desc limit 30`,
+  ]);
+  return { speeches, votes, docs };
+}

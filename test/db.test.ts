@@ -98,7 +98,7 @@ describe("db", () => {
     const hits = await sql`select speech_id, seq from paragraphs where search_vector @@ to_tsquery('simple', ${q})`;
     expect(hits.length).toBeGreaterThan(0);
     const info = await sql`select lemma_is_version, raw_sha256, word_count from speeches where text_state = 'done' limit 1`;
-    expect(info[0]!.lemma_is_version).toMatch(/^lemma-is@0\.12\.0\+/);
+    expect(info[0]!.lemma_is_version).toMatch(/^lemma-is@0\.13\.0\+/);
     expect(info[0]!.raw_sha256).toHaveLength(64);
     expect(info[0]!.word_count).toBeGreaterThan(0);
   });

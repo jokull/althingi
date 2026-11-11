@@ -28,12 +28,14 @@ export async function corpusBlock(sql: Sql) {
 
 export interface SearchArgs {
   q: string; member_id?: number; party_id?: number; date_from?: string; date_to?: string; lthing?: number;
-  speech_type?: string; office?: string; debate?: string[]; capacity?: string; matter?: string; sort?: "relevance" | "newest";
+  speech_type?: string; office?: string; debate?: string[]; capacity?: string; matter?: string; sort?: "relevance" | "newest" | "oldest";
   limit?: number; cursor?: string;
 }
 
-function whyEmpty(q: string, parsed: ReturnType<typeof parseQuery>, filtered: boolean): string[] {
+function whyEmpty(q: string, parsed: ReturnType<typeof parseQuery>, filtered: boolean, range?: { from: string | null; to: string | null; dateFrom?: string; dateTo?: string }): string[] {
   const why: string[] = [];
+  if (range?.dateFrom && range.to && range.dateFrom > range.to) why.push("date_range_after_last_speech_in_corpus");
+  if (range?.dateTo && range.from && range.dateTo < range.from) why.push("date_range_before_first_speech_in_corpus");
   if (!q.trim()) why.push("empty_query");
   else if (parsed.empty) why.push("only_stopwords_or_numbers");
   if (parsed.numbers.length) why.push("numbers_must_be_within_8_tokens_of_a_query_word");
@@ -47,17 +49,26 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
   const m = a.matter?.match(/^([abAB])\/(\d{1,5})$/);
   const limit = Math.min(Math.max(a.limit ?? 10, 1), 100);
   const compact = limit > 25;
-  const r = await search(sql, {
+  const base = {
     q: a.q, memberId: a.member_id, partyId: a.party_id, dateFrom: a.date_from, dateTo: a.date_to, lthing: a.lthing,
     type: a.speech_type, office: a.office, debate: a.debate, capacity: a.capacity,
     matterCls: m ? m[1]!.toUpperCase() : undefined, matterNr: m ? Number(m[2]) : undefined,
-    sort: a.sort, limit: Math.min(limit, 25), currentLthing: ctx.currentLthing, cursor: a.cursor,
-  });
+    sort: a.sort, currentLthing: ctx.currentLthing,
+  };
+  // the engine pages 25 speeches at a time; a larger `limit` is served by following the cursor here
+  const r = await search(sql, { ...base, limit: Math.min(limit, 25), cursor: a.cursor, withTotal: !a.cursor });
+  while (r.hits.length < limit && r.nextCursor) {
+    const more = await search(sql, { ...base, limit: Math.min(limit - r.hits.length, 25), cursor: r.nextCursor });
+    r.hits.push(...more.hits);
+    r.nextCursor = more.nextCursor;
+  }
   const parties = await partiesFor(sql, r.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
   const filtered = Boolean(a.member_id || a.party_id || a.date_from || a.date_to || a.lthing || a.speech_type || a.office || a.debate || a.capacity || a.matter);
+  const corpus = await corpusBlock(sql);
   return {
-    corpus: await corpusBlock(sql),
+    corpus,
     query: { text: a.q, interpreted_as: r.query.description, dropped_stopwords: r.query.parsed.dropped, numbers: r.query.parsed.numbers },
+    ...(r.total !== undefined ? { total: r.totalCapped ? `${r.total}+` : r.total, total_counts: "speeches with at least one matching paragraph, all pages" } : {}),
     hits: r.hits.map((h) => ({
       speech_id: h.speechId, date: h.date, started: h.started, time: fmtTime(h.started),
       member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null },
@@ -71,7 +82,7 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
     })),
     matter_cards: r.matterCards.map((c) => ({ lthing: c.lthing, class: c.cls, nr: c.nr, title: c.title, url: `${SITE}/mal/${c.lthing}/${c.cls.toLowerCase()}/${c.nr}` })),
     next_cursor: r.nextCursor,
-    ...(r.hits.length === 0 ? { why: whyEmpty(a.q, r.query.parsed, filtered) } : {}),
+    ...(r.hits.length === 0 ? { why: whyEmpty(a.q, r.query.parsed, filtered, { from: corpus.text_dates.from, to: corpus.text_dates.to, dateFrom: a.date_from, dateTo: a.date_to }) } : {}),
     derived: false,
   };
 }
@@ -167,17 +178,20 @@ export async function getMember(ctx: Ctx, a: { member_id?: number; name?: string
   };
 }
 
-export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; nr?: number; date?: string; limit?: number }) {
+export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; nr?: number; date?: string; doc_nr?: number; after_id?: number; limit?: number }) {
   const cls = (a.class ?? "A").toUpperCase();
-  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null }[]>`
-    select id, nr, cls, voted_at::text as at, kind_label, method, result, yes, no, abstain from votes
+  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null }[]>`
+    select id, nr, cls, voted_at::text as at, kind_label, method, result, yes, no, abstain, doc_nr from votes
     where lthing = ${a.lthing}
       ${a.nr !== undefined ? ctx.sql`and cls = ${cls} and nr = ${a.nr}` : ctx.sql``}
       ${a.date ? ctx.sql`and voted_at::date = ${a.date}` : ctx.sql``}
-    order by voted_at, id limit ${Math.min(a.limit ?? 50, 200)}`;
+      ${a.doc_nr !== undefined ? ctx.sql`and doc_nr = ${a.doc_nr}` : ctx.sql``}
+      ${a.after_id !== undefined ? ctx.sql`and id > ${a.after_id}` : ctx.sql``}
+    order by id limit ${Math.min(a.limit ?? 50, 200)}`;
   return {
     corpus: await corpusBlock(ctx.sql),
-    votes: rows.map((v) => ({ id: v.id, matter: { lthing: a.lthing, class: v.cls, nr: v.nr }, at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    votes: rows.map((v) => ({ id: v.id, matter: { lthing: a.lthing, class: v.cls, nr: v.nr }, document_nr: v.doc_nr, at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+    next_after_id: rows.length === Math.min(a.limit ?? 50, 200) ? rows[rows.length - 1]!.id : null,
     ballots_note: "Atkvæði einstakra þingmanna eru ekki enn í safninu; hér eru samtölur.",
     derived: false,
   };

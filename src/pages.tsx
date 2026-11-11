@@ -4,7 +4,7 @@ import type { Child } from "hono/jsx";
 import { raw } from "hono/html";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import type { DayPage, MatterPage, MemberPage, PartyPage, SpeechPage } from "./queries.ts";
+import type { CommitteeMatter, DayPage, DocPage, ListedMatter, MatterExtras, MatterPage, MemberPage, PartyPage, SpeechPage, TranscriptSpeech } from "./queries.ts";
 import type { SearchResult, SpeechHit } from "./search.ts";
 import type { Suggestion } from "./suggest.ts";
 
@@ -148,7 +148,7 @@ export const Layout = ({ title, desc, canonical, q, jsonld, wide, children }: La
       <main id="main" class={wide ? "page wide" : "page"}>{children}</main>
       <footer class="foot">
         <div>
-          <p>Ræður frá 2005 (XML-öld). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a></p>
+          <p>Ræður frá 2005 (XML-öld). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/um#ordskyringar">Orðskýringar</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a></p>
           <p>Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.</p>
         </div>
       </footer>
@@ -175,6 +175,15 @@ export interface SearchView {
   partyList?: { id: number; name: string; seats: number }[];
   entities?: EntityResult;
   tab?: Kind | "raedur" | "allt";
+  /** the question as typed, when parts of it were read as filters (see intent.ts) */
+  asked?: string;
+  interpreted?: string[];
+  /** an offered (never applied) filter when the keywords contain a known member, party or matter */
+  refine?: { href: string; label: string };
+  /** last date with speech text, and the first */
+  corpusTo?: string | null;
+  /** display names for filter chips */
+  memberName?: string;
 }
 
 const Hit = ({ h, party }: { h: SpeechHit; party: string | null | undefined }) => (
@@ -354,9 +363,11 @@ const Tabs = ({ v }: { v: SearchView }) => {
 const Filters = ({ v }: { v: SearchView }) => {
   const u = new URLSearchParams(v.baseQuery);
   const on = (k: string, val: string) => u.get(k) === val;
-  const types: [string, string][] = [["ræða", "Ræður"], ["andsvar", "Andsvör"], ["flutningsræða", "Flutningsræður"]];
+  const types: [string, string][] = [["ræða", "Ræður"], ["andsvar", "Andsvör"], ["flutningsræða", "Flutningsræður"], ["svar", "Svör ráðherra"], ["um fundarstjórn", "Fundarstjórn"]];
   const active: { label: string; key: string }[] = [];
-  if (u.get("thm")) active.push({ label: "Einn þingmaður", key: "thm" });
+  if (u.get("thm")) active.push({ label: v.memberName ?? "Einn þingmaður", key: "thm" });
+  if (u.get("tegund") && !types.some(([t]) => t === u.get("tegund"))) active.push({ label: u.get("tegund")!, key: "tegund" });
+  if (u.get("hlutverk")) active.push({ label: u.get("hlutverk")!, key: "hlutverk" });
   if (u.get("mal")) active.push({ label: `Innan máls ${u.get("mal")}`, key: "mal" });
   if (u.get("thing")) active.push({ label: `${u.get("thing")}. þing`, key: "thing" });
   if (u.get("fra")) active.push({ label: `frá ${fmtDate(u.get("fra")!)}`, key: "fra" });
@@ -366,8 +377,9 @@ const Filters = ({ v }: { v: SearchView }) => {
   return (
     <div class="filters" role="group" aria-label="Síur">
       <span class="seg" role="group" aria-label="Röðun">
-        <a href={qs(v.baseQuery, { nyjast: null })} aria-current={!u.get("nyjast") ? "true" : undefined}>Mikilvægast</a>
-        <a href={qs(v.baseQuery, { nyjast: "1" })} aria-current={u.get("nyjast") ? "true" : undefined}>Nýjast</a>
+        {v.q.trim() && <a href={qs(v.baseQuery, { nyjast: null })} aria-current={!u.get("nyjast") ? "true" : undefined}>Mikilvægast</a>}
+        <a href={qs(v.baseQuery, { nyjast: "1" })} aria-current={u.get("nyjast") && u.get("nyjast") !== "elst" ? "true" : undefined}>Nýjast</a>
+        <a href={qs(v.baseQuery, { nyjast: "elst" })} aria-current={u.get("nyjast") === "elst" ? "true" : undefined}>Elst</a>
       </span>
       {types.map(([val, label]) => (
         <a class="chip" href={qs(v.baseQuery, { tegund: on("tegund", val) ? null : val })} aria-current={on("tegund", val) ? "true" : undefined}>{label}</a>
@@ -393,7 +405,13 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
   const tab = v.tab ?? "allt";
   const strong = e ? e.thingmenn.filter((m) => m.strong) : [];
   const weak = e ? e.thingmenn.filter((m) => !m.strong) : [];
+  // a query that mixes a name with topic words is rewritten by intent.ts before it gets here, so this only fires for names
   const nameMiss = !!e && strong.length === 0 && personLike(v.q) && (weak.length > 0 || /(son|dóttir)$/iu.test(v.q.trim()));
+  const years = r.query.parsed.numbers.filter((x) => /^(19|20)\d{2}$/.test(x) && v.corpusFrom && Number(x) < Number(v.corpusFrom.slice(0, 4)));
+  const u = new URLSearchParams(v.baseQuery);
+  const after = v.corpusTo && u.get("fra") && u.get("fra")! > v.corpusTo;
+  const before = v.corpusFrom && u.get("til") && u.get("til")! < v.corpusFrom;
+  const words = r.query.parsed.parts.filter((x) => x.kind === "word");
   const top = e && tab === "allt" ? topResult(e, v.q) : null;
   const showHits = tab === "allt" || tab === "raedur";
   const order: Kind[] = ["thingmenn", "flokkar", "mal", "nefndir", "log", "efni", "umsagnir", "atkvaedi"];
@@ -402,10 +420,14 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
     : [];
   const empty = r.hits.length === 0 && (!e || KINDS.every((k) => e[k.id].length === 0));
   return (
-    <Layout title={`${v.q} – leit í ræðum Alþingis`} q={v.q} canonical={`/leit?q=${encodeURIComponent(v.q)}`} wide>
+    <Layout title={`${v.asked ?? v.q} – leit í ræðum Alþingis`} q={v.asked ?? v.q} canonical={`/leit?q=${encodeURIComponent(v.asked ?? v.q)}`} wide>
       <div class="sr-head">
-        <h1 class="sr-q">{v.q ? <>„{v.q}“</> : "Leit"}</h1>
-        {r.query.description && (
+        <h1 class="sr-q">{v.asked ? <>„{v.asked}“</> : v.q ? <>„{v.q}“</> : "Leit"}</h1>
+        {v.interpreted && v.interpreted.length > 0 && (
+          <p class="sr-how">Lesið sem: {v.interpreted.join(" · ")}{v.q.trim() ? <> · orð: <span class="interp">{r.query.description || v.q}</span></> : null} · <a href={`/leit?q=${encodeURIComponent(v.asked ?? v.q)}&ordrett=1`}>Leita orðrétt í staðinn</a></p>
+        )}
+        {v.refine && <p class="sr-how">Sía: <a href={v.refine.href}>{v.refine.label}</a></p>}
+        {!v.interpreted && r.query.description && (
           <p class="sr-how">
             Leitað að: <span class="interp">{r.query.description}</span>
             {parsed.dropped.length > 0 && <> · slepptum: {parsed.dropped.join(", ")}</>}
@@ -413,6 +435,7 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
         )}
       </div>
       <Tabs v={v} />
+      {glossaryHit(v.asked ?? v.q) && (() => { const g = glossaryHit(v.asked ?? v.q)!; return <p class="notice notice-soft"><strong>{g[0]}</strong> ({g[1]}): {g[2]} <a href="/um#ordskyringar">Fleiri orðskýringar</a></p>; })()}
 
       {nameMiss && (
         <div class="notice" role="status">
@@ -446,7 +469,7 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
           )}
           <section class="hits" aria-label="Ræður">
             <div class="hits-h">
-              <h2>Ræður</h2>
+              <h2>Ræður{r.total !== undefined && r.total > 0 && <span class="n"> {r.totalCapped ? `${n(r.total)}+` : n(r.total)}</span>}</h2>
               {r.hits.length > 0 && <span class="hits-x"><a href={`/leit/atom?${v.baseQuery}`} hx-boost="false">Fylgjast með (Atom)</a> · <a href={`/leit.csv?${v.baseQuery}`} hx-boost="false" download>Sækja CSV</a></span>}
             </div>
             {(r.hits.length > 0 || /(^|&)(tegund|flokkur|nyjast|thm|mal|thing|fra|til|embaetti|umraeda|hlutverk)=/.test(v.baseQuery)) && <Filters v={v} />}
@@ -457,9 +480,14 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
                 ))}
               </div>
             )}
+            {years.length > 0 && r.hits.length > 0 && <p class="notice notice-soft">Ræður frá {years.join(", ")} eru ekki í safninu (það nær aftur til {fmtDate(v.corpusFrom!)}); hér er leitað að ártalinu í textanum.</p>}
             {r.hits.length === 0 ? (
               <div class="empty-state">
                 <p class="es-t"><strong>Engar niðurstöður{empty ? "" : " í ræðum"}.</strong></p>
+                {after && <p>Nýjustu ræður í safninu eru frá {fmtDate(v.corpusTo!)}; ræður eftir það hafa ekki verið sóttar enn. <a href={`/dagur/${v.corpusTo}`}>Síðasti þingdagur í safninu</a> · <a href={qs(v.baseQuery, { fra: null, til: null })}>sama leit án dagsetninga</a></p>}
+                {before && <p>Ræður fyrir {fmtDate(v.corpusFrom!)} eru ekki komnar í safnið. <a href={qs(v.baseQuery, { fra: null, til: null })}>Sama leit án dagsetninga</a></p>}
+                {!after && !before && years.length > 0 && <p>Ræður frá {years.join(", ")} eru ekki í safninu enn (það nær aftur til {fmtDate(v.corpusFrom!)}).</p>}
+                {words.length > 1 && <p>Öll orðin þurfa að koma fyrir í sömu málsgrein. Prófaðu eitt í einu: {words.map((w, i) => <>{i > 0 && " · "}<a href={qs(v.baseQuery, { q: w.text })}>{w.text}</a></>)}</p>}
                 {!nameMiss && <p><Coverage v={v} /></p>}
                 <ul>
                   <li>Leitin nær til ræðna frá 2005{v.corpusFrom ? ` (safnið sem er sótt nú nær aftur til ${fmtDate(v.corpusFrom)})` : ""}.</li>
@@ -559,7 +587,7 @@ const VoteBar = ({ yes, no, abstain }: { yes: number | null; no: number | null; 
   );
 };
 
-export const MatterPageView = ({ m }: { m: MatterPage }) => {
+export const MatterPageView = ({ m, x }: { m: MatterPage; x?: MatterExtras }) => {
   const url = matterUrl(m.lthing, m.cls, m.nr);
   const byStage = new Map<string, MatterPage["speeches"]>();
   for (const s of m.speeches) {
@@ -573,15 +601,34 @@ export const MatterPageView = ({ m }: { m: MatterPage }) => {
         <h1>{m.title}</h1>
         {m.subtitle && <p class="lede">{m.subtitle}</p>}
         {m.statusText && <p><span class={`status ${statusTone(m.statusText)}`}><span class="sr">Staða: </span>{m.statusText}</span></p>}
+        <p class="sp-links">
+          {m.speechCount > 0 && <a href={`${url}/umraeda`}>Öll umræðan á einni síðu</a>}
+          <a href={`${url}/atom`} hx-boost="false">Fylgjast með málinu (Atom)</a>
+        </p>
       </header>
       {m.cls === "B" && <p class="notice notice-soft">B-mál: titill úr ræðuskrá; engin þingskjöl eða atkvæðagreiðslur fylgja.</p>}
       {m.cls === "A" && !m.detailFetched && <p class="notice notice-soft">Upplýsingar um stöðu máls, skjöl og atkvæðagreiðslur hafa ekki verið sóttar enn.</p>}
-      {(m.topics.length > 0 || m.laws.length > 0 || m.links.length > 0) && (
+      {(m.topics.length > 0 || m.laws.length > 0 || m.links.length > 0 || (x && (x.committees.length > 0 || x.rapporteurs.length > 0))) && (
         <dl class="kv">
-          {m.topics.length > 0 && <div><dt>Efnisflokkar</dt><dd class="chips">{m.topics.map((t) => <a class="chip" href={`/leit?q=${encodeURIComponent(t.name)}&t=mal`}>{t.name}</a>)}</dd></div>}
+          {m.topics.length > 0 && <div><dt>Efnisflokkar</dt><dd class="chips">{m.topics.map((t) => <a class="chip" href={`/efni/${t.id}`}>{t.name}</a>)}</dd></div>}
           {m.laws.length > 0 && <div><dt>Breytir lögum</dt><dd>{m.laws.map((l, i) => <>{i > 0 && ", "}<a href={`/log/${l.year}/${l.nr}`}>lög nr. {l.nr}/{l.year}</a></>)}</dd></div>}
+          {x && x.committees.length > 0 && <div><dt>Nefnd</dt><dd>{x.committees.map((c, i) => <>{i > 0 && ", "}<a href={`/nefnd/${c.id}`}>{c.name}</a></>)}</dd></div>}
+          {x && x.rapporteurs.length > 0 && <div><dt>Framsögumenn nefndar</dt><dd>{x.rapporteurs.map((r, i) => <>{i > 0 && ", "}<a href={`/thingmadur/${r.memberId}`}>{r.name}</a></>)}</dd></div>}
           {m.links.length > 0 && <div><dt>Tengd mál</dt><dd>{m.links.map((l, i) => <>{i > 0 && ", "}<a href={matterUrl(l.lthing, l.cls, l.nr)}>{l.title ?? `${l.nr}. mál`} ({l.lthing}. þing)</a></>)}</dd></div>}
         </dl>
+      )}
+
+      {x && x.timeline.length > 1 && (
+        <section id="ferill">
+          <h2>Ferill málsins</h2>
+          <ol class="srows">
+            {x.timeline.map((e) => (
+              <li>{e.href
+                ? <a class="srow srow-2" href={e.href}><time class="srow-t">{shortDate(e.at)}</time><span class="srow-w">{e.label}</span><span class="srow-k">{e.kind}</span></a>
+                : <span class="srow srow-2"><time class="srow-t">{shortDate(e.at)}</time><span class="srow-w">{e.label}</span><span class="srow-k">{e.kind}</span></span>}</li>
+            ))}
+          </ol>
+        </section>
       )}
 
       {m.documents.length > 0 && (
@@ -591,7 +638,7 @@ export const MatterPageView = ({ m }: { m: MatterPage }) => {
             <thead><tr><th class="num">Nr.</th><th>Tegund</th><th>Útbýtt</th><th><span class="sr">Tengill</span></th></tr></thead>
             <tbody>
               {m.documents.map((d) => (
-                <tr><td class="num">{d.nr}</td><td>{d.type}</td><td class="mut">{d.issued ? fmtDate(d.issued) : ""}</td><td class="end">{d.htmlUrl && <a href={d.htmlUrl} rel="noopener">althingi.is</a>}</td></tr>
+                <tr><td class="num">{d.nr}</td><td>{d.type}</td><td class="mut">{d.issued ? fmtDate(d.issued) : ""}</td><td class="end"><a href={`/thingskjal/${m.lthing}/${d.nr}`}>Skjal</a>{d.htmlUrl && <> · <a href={d.htmlUrl} rel="noopener">althingi.is</a></>}</td></tr>
               ))}
             </tbody>
           </table></div>
@@ -621,6 +668,11 @@ export const MatterPageView = ({ m }: { m: MatterPage }) => {
           <details><summary>Sýna umsagnabeiðnir</summary>
             <div class="table-wrap"><table><tbody>{m.consultations.map((c) => <tr><td>{c.recipient}</td><td class="mut">{c.committee}</td></tr>)}</tbody></table></div>
           </details>
+          {x && x.submissions.length > 0 && (
+            <details open={x.submissions.length <= 25}><summary>Erindi sem bárust ({x.submissions.length})</summary>
+              <div class="table-wrap"><table><tbody>{x.submissions.map((s) => <tr><td>{s.pdfUrl ? <a href={s.pdfUrl} rel="noopener">{s.sender}</a> : s.sender}</td><td class="mut">{s.kind ?? ""}</td><td class="mut nowrap">{s.received ? shortDate(s.received) : ""}</td></tr>)}</tbody></table></div>
+            </details>
+          )}
         </section>
       )}
 
@@ -884,6 +936,10 @@ export const AboutPage = () => (
       <p>Ræðutexti er til frá 2005. Eldri ræður (1991–2004) eru aðeins skráðar í ræðuskrá, textinn er ekki sóttur og því ekki leitarbær. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 2005.</p>
       <h2>Hvað er áætlað</h2>
       <p>Tengsl sem ekki eru gefin upp í gögnunum (til dæmis hvaða ræðu andsvar svarar) eru merkt sem áætluð. Framíköll eru birt en ekki leitarbær.</p>
+      <h2 id="ordskyringar">Orðskýringar</h2>
+      <dl class="kv gloss">
+        {GLOSSARY.map(([is, en, d]) => <div><dt>{is} <span class="mut">· {en}</span></dt><dd>{d}</dd></div>)}
+      </dl>
       <h2>Flýtilyklar</h2>
       <p><kbd>/</kbd> fer í leitarreitinn. Í tillögum færa <kbd>↑</kbd> og <kbd>↓</kbd> á milli og <kbd>Enter</kbd> opnar.</p>
       <h2>Persónuvernd</h2>
@@ -898,3 +954,128 @@ export const NotFound = ({ what }: { what: string }) => (
     <div class="doc"><h1>Fannst ekki</h1><p class="lede">{what}</p><p><a class="btn" href="/">Á forsíðu</a></p></div>
   </Layout>
 );
+
+// ---------------------------------------------------------------- document, topic, committee, transcript
+
+export const DocPageView = ({ d }: { d: DocPage }) => (
+  <Layout title={`Þingskjal ${d.nr} á ${d.lthing}. þingi – ${d.type}`} canonical={`/thingskjal/${d.lthing}/${d.nr}`}>
+    <header class="page-head">
+      <p class="crumbs">Þingskjal {d.nr} á {d.lthing}. þingi <span class="tag">{d.type}</span></p>
+      <h1>{d.matter?.title ?? `Þingskjal ${d.nr}`}</h1>
+      <p class="lede">{d.issued ? `Útbýtt ${fmtDate(d.issued)}` : ""}{d.matter && <> · <a href={matterUrl(d.lthing, d.matter.cls, d.matter.nr)}>{d.matter.nr}. mál á {d.lthing}. þingi</a></>}</p>
+    </header>
+    <p class="notice notice-soft">Texti þingskjala er ekki enn í þessu safni. {d.htmlUrl && <a href={d.htmlUrl} rel="noopener">Lesa skjalið á althingi.is</a>}{d.pdfUrl && <> · <a href={d.pdfUrl} rel="noopener">PDF</a></>}</p>
+    {d.votes.length > 0 && (
+      <section id="atkvaedi">
+        <h2>Atkvæðagreiðslur um skjalið <span class="n">{d.votes.length}</span></h2>
+        <div class="table-wrap"><table class="votes">
+          <thead><tr><th>Tími</th><th>Um hvað</th><th class="num">Já</th><th class="num">Nei</th><th class="num">Hjá</th><th>Niðurstaða</th></tr></thead>
+          <tbody>{d.votes.map((v) => <tr><td class="mut nowrap">{v.at ? `${shortDate(v.at)} ${fmtTime(v.at)}` : ""}</td><td>{v.kind}</td><td class="num">{v.yes ?? "–"}</td><td class="num">{v.no ?? "–"}</td><td class="num">{v.abstain ?? "–"}</td><td>{v.result ?? ""}</td></tr>)}</tbody>
+        </table></div>
+        <p class="hint">Atkvæði einstakra þingmanna bætast við síðar.</p>
+      </section>
+    )}
+  </Layout>
+);
+
+const MatterRows = ({ ms, extra }: { ms: ListedMatter[]; extra?: (m: ListedMatter) => string }) => (
+  <div class="klist">
+    {ms.map((m) => (
+      <a class="erow k-mal" href={matterUrl(m.lthing, m.cls, m.nr)}>
+        <span class="erow-b"><span class="erow-t">{m.title}</span>
+          <span class="erow-m">{m.nr}. mál á {m.lthing}. þingi{m.type ? ` · ${m.type}` : ""}{m.status ? ` · ${m.status}` : ""}{extra ? extra(m) : ""}</span></span>
+      </a>
+    ))}
+  </div>
+);
+
+export const TopicPageView = ({ t }: { t: { id: number; name: string; parent: string | null; description: string | null; matters: ListedMatter[] } }) => {
+  const laws = t.matters.filter((m) => /lög frá Alþingi/i.test(m.status ?? ""));
+  return (
+    <Layout title={`${t.name} – mál í efnisflokknum`} canonical={`/efni/${t.id}`}>
+      <header class="page-head">
+        <p class="crumbs">Efnisflokkur{t.parent ? ` · ${t.parent}` : ""}</p>
+        <h1>{t.name}</h1>
+        {t.description && <p class="lede">{t.description}</p>}
+        <p class="mut">{t.matters.length} mál{laws.length ? `, þar af ${laws.length} samþykkt sem lög` : ""}.</p>
+      </header>
+      {t.matters.length === 0 && <p class="empty">Engin mál í safninu í þessum flokki (enn).</p>}
+      <MatterRows ms={t.matters} />
+    </Layout>
+  );
+};
+
+export const CommitteePageView = ({ c, today }: { c: { id: number; name: string; matters: CommitteeMatter[] }; today: string }) => {
+  const open = c.matters.filter((m) => m.due && m.due >= today);
+  const rest = c.matters.filter((m) => !(m.due && m.due >= today));
+  const ex = (m: ListedMatter) => { const x = m as CommitteeMatter; return `${x.due ? ` · frestur ${fmtDate(x.due)}` : ""} · ${x.requests} beiðnir · ${x.submissions} erindi`; };
+  return (
+    <Layout title={`${c.name} – umsagnir og frestir`} canonical={`/nefnd/${c.id}`}>
+      <header class="page-head">
+        <p class="crumbs">Fastanefnd</p>
+        <h1>{c.name}</h1>
+        <p class="mut">{c.matters.length} mál með umsagnabeiðnum eða erindum.</p>
+      </header>
+      <section>
+        <h2>Opnir umsagnafrestir <span class="n">{open.length}</span></h2>
+        {open.length === 0 && <p class="empty">Enginn umsagnafrestur er opinn í gögnunum sem eru komin inn.</p>}
+        <MatterRows ms={open} extra={ex} />
+      </section>
+      {rest.length > 0 && <section><h2>Eldri mál <span class="n">{rest.length}</span></h2><MatterRows ms={rest} extra={ex} /></section>}
+    </Layout>
+  );
+};
+
+export const TranscriptView = ({ m, speeches }: { m: MatterPage; speeches: TranscriptSpeech[] }) => {
+  let stage = "";
+  return (
+    <Layout title={`Umræðan um ${m.nr}. mál – ${m.title}`} canonical={`${matterUrl(m.lthing, m.cls, m.nr)}/umraeda`}>
+      <article class="speech transcript">
+        <header class="page-head">
+          <p class="crumbs"><a href={matterUrl(m.lthing, m.cls, m.nr)}>{m.nr}. mál á {m.lthing}. þingi</a></p>
+          <h1>{m.title}</h1>
+          <p class="lede">Öll umræðan í tímaröð: {speeches.length} ræður{m.speechCount > speeches.length ? ` af ${m.speechCount}` : ""}. Prentvænt; framíköll eru ekki með.</p>
+        </header>
+        {speeches.map((s) => {
+          const st = debateLabel(s.debate) ?? "Aðrar ræður";
+          const head = st !== stage ? (stage = st, <h2>{st}</h2>) : null;
+          return (
+            <>
+              {head}
+              <section class="tr-sp" id={s.id}>
+                <h3><a href={speechUrl(s.id)}>{s.memberName}</a>{s.party ? ` (${s.party})` : ""} <span class="mut">· {s.type} · {fmtDateTime(s.started)}</span></h3>
+                <div class="prose">{s.paragraphs.map((p) => <p>{p}</p>)}</div>
+              </section>
+            </>
+          );
+        })}
+      </article>
+    </Layout>
+  );
+};
+
+/** "hvað er andsvar", "hvað þýðir nál." -> the glossary entry, if one matches */
+export function glossaryHit(q: string): [string, string, string] | null {
+  const m = q.trim().toLocaleLowerCase("is").match(/^(?:hvað|hvaða)\s+(?:er|eru|þýðir|þýða|merkir|merkja|táknar)\s+(?:að\s+)?(?:„|")?(.+?)(?:“|")?\??$/);
+  if (!m) return null;
+  const w = m[1]!.replace(/[?.]+$/, "");
+  return GLOSSARY.find(([is]) => is.toLocaleLowerCase("is").split(/[ ,()/]+/).some((x) => x && x.replace(/\.$/, "") === w.replace(/\.$/, "")) || is.toLocaleLowerCase("is").startsWith(w)) ?? null;
+}
+
+/** One-paragraph glossary of the terms every result page uses (persona P10: a teacher and voter). */
+export const GLOSSARY: [string, string, string][] = [
+  ["ræða", "speech", "Ræða þingmanns eða ráðherra í umræðu um mál."],
+  ["andsvar", "reply", "Stutt svar (allt að 2 mín.) við ræðu annars þingmanns, strax á eftir henni; ræðumaður má svara aftur."],
+  ["flutningsræða", "opening speech", "Fyrsta ræða um mál, flutt af þeim sem leggur það fram (ráðherra eða flutningsmanni)."],
+  ["um fundarstjórn forseta", "point of order", "Athugasemd við stjórn fundarins, ekki um efni málsins."],
+  ["1., 2. og 3. umræða", "first/second/third reading", "Frumvarp er rætt þrisvar: 1. umræða um meginefni, síðan fer það til nefndar; 2. umræða um nefndarálit og breytingartillögur; 3. umræða og lokaatkvæðagreiðsla."],
+  ["þingmál (mál)", "matter / item of business", "Allt sem þingið fjallar um: frumvörp, tillögur, fyrirspurnir. A-mál eru þingmál; B-mál eru dagskrárliðir eins og störf þingsins."],
+  ["frv. (frumvarp)", "bill", "Tillaga að nýjum lögum eða lagabreytingu."],
+  ["þáltill. (þingsályktunartillaga)", "parliamentary resolution (draft)", "Tillaga um ályktun Alþingis, ekki lög."],
+  ["þskj. (þingskjal)", "parliamentary document", "Hvert skjal í máli fær númer: frumvarp, nefndarálit, breytingartillaga, svar."],
+  ["nál. (nefndarálit)", "committee report", "Álit nefndar á máli eftir umfjöllun; meiri- og minnihluti skila oft hvor sínu."],
+  ["brtt. (breytingartillaga)", "amendment", "Tillaga um breytingu á frumvarpi eða tillögu."],
+  ["fsp. (fyrirspurn)", "parliamentary question", "Spurning þingmanns til ráðherra, svarað munnlega í þingsal eða skriflega."],
+  ["umsögn / erindi", "submission", "Álit sem nefnd berst frá stofnunum, félögum og almenningi um mál."],
+  ["varamaður", "substitute member", "Tekur sæti þingmanns sem er í leyfi („með varamann“)."],
+];

@@ -170,3 +170,15 @@ Parallel lanes: {3} ∥ {4}; {5} ∥ {6} ∥ {8}; {12} ∥ {10}. Crawl lane is s
 2. **Paid/early-access model key** (WP14): Jev signup, or confirm using the existing Gemini key under the $5/$20 caps.
 3. Optional: an external uptime monitor account (UptimeRobot free) for `/healthz` — only meaningful after item 1, since Access blocks external probes; until then alerts come only from the mini itself.
 (Alþingi email: already sent — await the reply, no action.)
+
+## Search box is keyword-first (2026-11-11)
+
+Owner decision: people type keywords into search fields; natural-language questions belong to agent harnesses (Claude, ChatGPT) that call the MCP tools with keywords + structured filters. The web search therefore searches the query as typed and never rewrites it into filters. When the keywords contain a known member, party or matter, the page only offers a one-click filter ("Sía: …"). `src/intent.ts` stays as the entity detector for that offer; its question-filler and relative-date handling is no longer applied to web queries. The MCP `search_speeches` description tells agents to send keywords and use filters.
+
+## lemma-is is tuned by hill climbing (2026-11-11)
+
+Owner decision: lemma-is changes are small recorded experiments, each blind-judged by a `fable` agent on the althingi
+corpus (A/B: two local restores, one reindexed with the candidate; `scripts/ab-search.ts`; strict P@5 rubric), with the
+verdict, decision and rejected directions written to `~/Code/lemma-is/EXPERIMENTS.md`. Fixes are batched; a release is
+cut only for a confident batch. Balance rules over special cases (curated lists for the long tail), and prefer fixing on
+the althingi side (query weighting, parts weight) when the problem lives there.

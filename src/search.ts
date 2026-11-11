@@ -26,7 +26,9 @@ export interface SearchParams {
   /** decoded tegflm label, e.g. "ráðherra" */
   capacity?: string;
   limit?: number;
-  sort?: "relevance" | "newest";
+  sort?: "relevance" | "newest" | "oldest";
+  /** also compute the number of matching speeches (capped at TOTAL_CAP) */
+  withTotal?: boolean;
   /** the running session; gets a small recency boost */
   currentLthing?: number;
   /** opaque keyset cursor from a previous page */
@@ -69,11 +71,17 @@ export interface SearchResult {
   /** matters whose TITLE matches every query word (e.g. "fjárlög 2026"), current session first; shown above the hits */
   matterCards: MatterCard[];
   nextCursor: string | null;
+  /** matching speeches when requested: exact up to TOTAL_CAP, else TOTAL_CAP with `totalCapped` */
+  total?: number;
+  totalCapped?: boolean;
+  /** no words to search: the hits are the filtered speeches, newest first */
+  browse?: boolean;
   /** the query as understood: shown to the user and returned by the MCP explain tool */
   query: { description: string; parsed: ParsedQuery };
 }
 
 const MAX_LIMIT = 25;
+export const TOTAL_CAP = 10_000;
 const enc = (c: unknown[]) => Buffer.from(JSON.stringify(c)).toString("base64url");
 function dec(s: string): [number, string, string] {
   const c = JSON.parse(Buffer.from(s, "base64url").toString());
@@ -140,10 +148,16 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const exactBoost = parsed.parts
     .filter((x) => x.kind === "phrase" && x.text)
     .map((x) => sql`case when p.text ilike ${"%" + x.text.replace(/[%_\\]/g, "\\$&") + "%"} then 1.5 else 1.0 end`);
-  if (parsed.empty || (!recall && !phrase)) return { hits: [], matterCards: [], nextCursor: null, query: explained };
+  const filtered = p.memberId !== undefined || !!p.type || p.lthing !== undefined || !!p.dateFrom || !!p.dateTo ||
+    (!!p.matterCls && p.matterNr !== undefined) || p.partyId !== undefined || !!p.office || !!p.debate?.length || !!p.capacity;
+  // no words but filters ("Bergþór Ólason andsvar", "forsætisráðherra síðustu viku"): list the filtered speeches
+  const browse = (!recall && !phrase) && filtered && parsed.numbers.length === 0;
+  if (!browse && (parsed.empty || (!recall && !phrase))) return { hits: [], matterCards: [], nextCursor: null, query: explained };
 
   const limit = Math.min(Math.max(p.limit ?? 10, 1), MAX_LIMIT);
-  const newest = p.sort === "newest";
+  const oldest = p.sort === "oldest";
+  const newest = p.sort === "newest" || (browse && !oldest);
+  const byTime = newest || oldest;
   const cur = p.cursor ? dec(p.cursor) : null;
   const current = p.currentLthing ?? 0;
 
@@ -154,8 +168,27 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const W = sql`'{0.3,0.2,0.4,1.0}'::float4[]`;
   // normalisation flag 1 (log length). Flag 0 was tried and judged a net regression (docs/EVAL-phase0.md v4: fewer relevant
   // hits, q02/q19 lost precision): long paragraphs with one passing mention then beat short substantive ones.
-  const rank = rq ? sql`ts_rank_cd(${W}, p.search_vector, ${rq}, 1)` : sql`ts_rank_cd(${W}, p.seq_vector, ${pq!}, 1)`;
+  const rank = rq ? sql`ts_rank_cd(${W}, p.search_vector, ${rq}, 1)` : pq ? sql`ts_rank_cd(${W}, p.seq_vector, ${pq}, 1)` : sql`1.0`;
   const titleBoost = rq ? sql`case when m.title_vector @@ ${rq} then 1.3 else 1.0 end` : sql`1.0`;
+  // the WHERE clause, shared by the page query and the total count (a fresh fragment per use)
+  const where = () => sql`
+        ${rq ? sql`and p.search_vector @@ ${rq}` : sql``}
+        ${pq ? sql`and p.seq_vector @@ ${pq}` : sql``}
+        ${browse ? sql`and p.seq = 0` : sql``}
+        ${p.memberId !== undefined ? sql`and s.member_id = ${p.memberId}` : sql``}
+        ${p.type ? sql`and s.type = ${p.type}` : sql``}
+        ${p.lthing !== undefined ? sql`and s.lthing = ${p.lthing}` : sql``}
+        ${p.dateFrom ? sql`and s.speech_date >= ${p.dateFrom}` : sql``}
+        ${p.dateTo ? sql`and s.speech_date <= ${p.dateTo}` : sql``}
+        ${p.matterCls && p.matterNr !== undefined ? sql`and s.matter_cls = ${p.matterCls} and s.matter_nr = ${p.matterNr}` : sql``}
+        ${p.partyId !== undefined ? sql`and exists (
+            select 1 from seats st
+            where st.member_id = s.member_id and st.party_id = ${p.partyId} and st.kind in ('þingmaður', 'varamaður')
+              and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31'))` : sql``}
+        ${p.office ? sql`and s.office ilike ${p.office.replace(/[%_\\]/g, "\\$&") + "%"}` : sql``}
+        ${p.debate?.length ? sql`and s.debate = any(${p.debate})` : sql``}
+        ${p.capacity ? sql`and s.speaker_capacity = ${p.capacity}` : sql``}
+        ${prox ? sql`and p.seq_vector @@ to_tsquery('simple', ${prox})` : sql``}`;
 
   const tDb = performance.now();
   const rows = await sql<
@@ -181,23 +214,7 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
       from paragraphs p
       join speeches s on s.id = p.speech_id
       left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
-      where true
-        ${rq ? sql`and p.search_vector @@ ${rq}` : sql``}
-        ${pq ? sql`and p.seq_vector @@ ${pq}` : sql``}
-        ${p.memberId !== undefined ? sql`and s.member_id = ${p.memberId}` : sql``}
-        ${p.type ? sql`and s.type = ${p.type}` : sql``}
-        ${p.lthing !== undefined ? sql`and s.lthing = ${p.lthing}` : sql``}
-        ${p.dateFrom ? sql`and s.speech_date >= ${p.dateFrom}` : sql``}
-        ${p.dateTo ? sql`and s.speech_date <= ${p.dateTo}` : sql``}
-        ${p.matterCls && p.matterNr !== undefined ? sql`and s.matter_cls = ${p.matterCls} and s.matter_nr = ${p.matterNr}` : sql``}
-        ${p.partyId !== undefined ? sql`and exists (
-            select 1 from seats st
-            where st.member_id = s.member_id and st.party_id = ${p.partyId} and st.kind in ('þingmaður', 'varamaður')
-              and s.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31'))` : sql``}
-        ${p.office ? sql`and s.office ilike ${p.office.replace(/[%_\\]/g, "\\$&") + "%"}` : sql``}
-        ${p.debate?.length ? sql`and s.debate = any(${p.debate})` : sql``}
-        ${p.capacity ? sql`and s.speaker_capacity = ${p.capacity}` : sql``}
-        ${prox ? sql`and p.seq_vector @@ to_tsquery('simple', ${prox})` : sql``}
+      where true ${where()}
     ),
     ranked as (
       select h.*, row_number() over (partition by speech_id order by score desc, seq) as rn,
@@ -210,18 +227,28 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
         ${cur
           ? newest
             ? sql`and (started, speech_id) < (${cur[1]}::timestamp, ${cur[2]})`
-            : sql`and (score, started, speech_id) < (${cur[0]}::float8, ${cur[1]}::timestamp, ${cur[2]})`
+            : oldest
+              ? sql`and (started, speech_id) > (${cur[1]}::timestamp, ${cur[2]})`
+              : sql`and (score, started, speech_id) < (${cur[0]}::float8, ${cur[1]}::timestamp, ${cur[2]})`
           : sql``}
-      ${newest ? sql`order by started desc, speech_id desc` : sql`order by score desc, started desc, speech_id desc`}
+      ${newest ? sql`order by started desc, speech_id desc` : oldest ? sql`order by started, speech_id` : sql`order by score desc, started desc, speech_id desc`}
       limit ${limit + 1}
     )
     select r.*, t.lemma as tok_lemma, t.start as tok_start, t.len as tok_len
     from ranked r join best b on b.speech_id = r.speech_id
     left join paragraph_tokens t on t.speech_id = r.speech_id and t.seq = r.seq
     where r.rn <= 2
-    ${newest ? sql`order by b.started desc, r.speech_id desc, r.rn` : sql`order by b.score desc, b.started desc, r.speech_id desc, r.rn`}`;
+    ${newest ? sql`order by b.started desc, r.speech_id desc, r.rn` : oldest ? sql`order by b.started, r.speech_id, r.rn` : sql`order by b.score desc, b.started desc, r.speech_id desc, r.rn`}`;
 
   const dbMs = performance.now() - tDb;
+  let total: number | undefined;
+  if (p.withTotal && !p.cursor) {
+    const [c] = await sql<{ n: number }[]>`
+      select count(*)::int as n from (
+        select distinct p.speech_id from paragraphs p join speeches s on s.id = p.speech_id
+        where true ${where()} limit ${TOTAL_CAP + 1}) x`;
+    total = c?.n ?? 0;
+  }
   const cards = rq
     ? await sql<{ lthing: number; cls: string; nr: number; title: string }[]>`
         select lthing, cls, nr, title from matters m
@@ -250,6 +277,11 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
       bySpeech.set(r.speech_id, h);
     }
     // fast path: stored tokens. Fallback (rare): lemma-is, e.g. when the match was a non-best candidate reading.
+    if (browse) {
+      const t = r.text.length > 320 ? `${r.text.slice(0, 320).replace(/\s+\S*$/, "")} …` : r.text;
+      h.paragraphs.push({ seq: r.seq, score: r.score, snippets: [{ text: t, segments: [{ text: t, highlight: false }], score: 0, start: 0, end: t.length } as Snippet] });
+      continue;
+    }
     const fast = r.tok_lemma && r.tok_start && r.tok_len
       ? snippetFromTokens(r.text, { lemma: r.tok_lemma, start: r.tok_start, len: r.tok_len }, wanted)
       : null;
@@ -258,12 +290,14 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const all = [...bySpeech.values()];
   const page = all.slice(0, limit);
   const last = page[page.length - 1];
-  const total = performance.now() - tStart;
+  const elapsed = performance.now() - tStart;
   return {
-    timing: { dbMs, appMs: total - dbMs },
+    timing: { dbMs, appMs: elapsed - dbMs },
     query: explained,
     matterCards: [...cards],
     nextCursor: all.length > limit && last ? enc([last.score, last._startedTxt, last.speechId]) : null,
     hits: page.map(({ _startedTxt, ...h }) => h),
+    ...(total !== undefined ? { total: Math.min(total, TOTAL_CAP), totalCapped: total > TOTAL_CAP } : {}),
+    ...(browse ? { browse: true } : {}),
   };
 }

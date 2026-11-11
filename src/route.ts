@@ -18,9 +18,9 @@ export function route(q: string, currentLthing: number): Route | null {
   if ((m = s.match(/^(?:lög(?:\s+nr\.?)?\s+)?(\d{1,3})\/((?:19|20)\d{2})$/))) {
     return { kind: "law", path: `/log/${m[2]}/${Number(m[1])}`, label: `lög nr. ${Number(m[1])}/${m[2]}` };
   }
-  // þskj. 421 | þingskjal 421 | þskj. 157/421
-  if ((m = s.match(/^þ(?:skj|ingskjal)\.?\s*(?:(\d{1,3})\/)?(\d{1,4})$/))) {
-    const lthing = m[1] ? Number(m[1]) : currentLthing;
+  // þskj. 421 | þingskjal 421 | þskj. 157/421 | þskj. 421 á 157. þingi
+  if ((m = s.match(/^þ(?:skj|ingskjal)\.?\s*(?:(\d{1,3})\/)?(\d{1,4})(?:\s+á\s+(\d{1,3})\.\s*(?:þingi|löggjafarþingi|lþ\.?))?$/))) {
+    const lthing = m[1] ? Number(m[1]) : m[3] ? Number(m[3]) : currentLthing;
     return { kind: "document", path: `/thingskjal/${lthing}/${Number(m[2])}`, label: `þingskjal ${Number(m[2])} á ${lthing}. þingi` };
   }
   // 157/b/307 | 157/a/300 | 157/300

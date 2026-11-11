@@ -10,8 +10,13 @@ export async function suggest(sql: Sql, q: string): Promise<Suggestion[]> {
   const out: Suggestion[] = [];
   for (const part of parsed.parts) {
     if (part.kind !== "word") continue;
-    const known = await sql`select 1 from vocab where word = any(${[...part.lemmas, ...(part.allOf ?? []).flat()]}) limit 1`;
+    // "known" is checked against the live index, not the vocab view: vocab is a materialized view that is only as fresh
+    // as its last refresh, and a stale one told users "orkuskortur finnst ekki í safninu" above eight hits.
+    const lex = [...part.lemmas, ...(part.allOf ?? []).flat()];
+    const tq = lex.map((l) => `'${l.replace(/'/g, "''").replace(/\\/g, "\\\\")}'`).join(" | ");
+    const known = await sql`select 1 from vocab where word = any(${lex}) limit 1`;
     if (known.length) continue;
+    if (tq && (await sql`select 1 from paragraphs where search_vector @@ to_tsquery('simple', ${tq}) limit 1`).length) continue;
     const word = part.lemmas[0] ?? "";
     const near = await sql<{ word: string }[]>`
       select word from vocab
