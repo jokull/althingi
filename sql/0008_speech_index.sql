@@ -93,7 +93,8 @@ begin
   return n;
 end $$;
 
--- Seats changed for these members: re-resolve party-on-the-date (a HOT update: no index touches the vector function).
+-- Seats changed for these members: re-resolve party-on-the-date. Only rows whose party actually changes are written
+-- (party_id is indexed, so each such row re-evaluates speech_vec: ~3 ms, rare).
 create or replace function speech_index_reparty(member_ids int[]) returns int language plpgsql as $$
 declare n int;
 begin
@@ -170,6 +171,10 @@ end $$;
 
 -- get_speech lists the replies to a speech: without this it is an index scan over all of speeches (50 ms)
 create index concurrently if not exists speeches_reply_to on speeches (reply_to_id) where reply_to_id is not null;
+-- /nyjast/atom and "newest speeches" lists: a seq scan + sort of speeches otherwise (77 ms)
+create index concurrently if not exists speeches_done_started on speeches (started desc) where text_state = 'done';
+-- get_sitting / list_sittings: speeches of one sitting (was a bitmap on lthing + filter on fundur, 65 ms per list)
+create index concurrently if not exists speeches_sitting on speeches (lthing, fundur, started);
 
 -- the row must exist from the first request on (the web layer reads it, never computes it)
 select corpus_state_refresh();

@@ -142,7 +142,7 @@ mattering: the 2 s timeout is a safety net, not a budget.
 
 | Item | Disk | Write amplification | Staleness |
 |---|---|---|---|
-| `paragraph_index` + `speech_index` | 276 MB + 240 MB (heaps 50 + 40 MB; GINs 157 + 140 MB; btrees) | one row per paragraph and per speech (+ GIN postings) per ingested speech, in the same transaction; `speech_vec` re-aggregates the speech once | none for new text; party/member fixes ≤ 1 poll |
+| `paragraph_index` + `speech_index` | 276 MB + 240 MB (heaps 50 + 40 MB; GINs 157 + 140 MB; btrees) | one row per paragraph and per speech (+ GIN postings) per ingested speech, in the same transaction; `speech_vec` re-aggregates the speech once (~3 ms). `post --quick` re-derives the whole current session every poll: ~8 s now, ~40 s when the session reaches 12k speeches (narrow to stale + today's rows if that ever matters) | none for new text; party/member fixes ≤ 1 poll |
 | `corpus_state` | 1 row | one statement per `post` | ≤ 30 min on sitting days (counts only) |
 | In-process LRU | ≤ 500 results in RAM | — | until the next `post` (version bump) |
 | Candidate cap | — | — | semantic: common words rank within recent sessions unless filtered |
@@ -274,6 +274,15 @@ What the numbers say:
   caches off on purpose). Targets met for pages, aggregates, state, filtered and date-ranged search; **not met** for
   the first cold ranking of a word with > 1,500 candidates (0.2–0.8 s) and for phrases of common words
   (`"hér á landi"` 1.6 s: the phrase GIN needs a positional recheck of every candidate in the window).
+- Phrases are the one shape still over the web role's 2 s timeout when cold: `"hér á landi"` measured 1.8 s
+  with the window already narrowed to the running session (9,420 GIN candidates, every one a positional recheck =
+  one `paragraphs` heap page; 6,050 rejected). A quarter-size window for phrase queries (`RANK_CAP / 4`) is in
+  place; a narrower one would need day-level windows. A narrow positional index does not help: the recheck has to
+  read the positions. Rare-word phrases are fast; the MCP pool (8 s) is unaffected; repeats are cached.
+- Two more small indexes came out of spot-checking plans with `enable_seqscan` off: `speeches_done_started`
+  (`/nyjast/atom` was a 77 ms seq scan + sort) and `speeches_sitting` (`list_sittings` counted each sitting's
+  speeches through the `lthing` index, 65 ms). Re-sorting the capped set by id before the ranking lookups (physical
+  order) was tried and kept but did not measurably change the cold numbers.
 - Going below that floor is not a query-shape problem any more: it needs the ranked candidates resident in memory
   (a larger `shared_buffers`, or fewer tenants on the box: not available), a leaner ranking vector (a reindex),
   or warming the LRU with popular queries at deploy (`scripts/bench.ts` could do it; deferred).

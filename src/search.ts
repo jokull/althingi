@@ -288,7 +288,10 @@ async function searchUncached(sql: Sql, p: SearchParams, version: number): Promi
         .reduce((a, s) => a + s.done, 0);
       est = est * (inRange / state.speechesDone);
     }
-    const w = rankWindow(est, state.sessions, state.speechesDone, oldest);
+    // a phrase candidate costs a positional recheck (one paragraphs page each) before anything is ranked, so its
+    // window is a quarter of the cap: "hér á landi" was 1.6 s with the full cap, i.e. a 2 s web timeout under load
+    const hasPhrase = parsed.parts.some((x) => x.kind === "phrase");
+    const w = rankWindow(est, state.sessions, state.speechesDone, oldest, hasPhrase ? RANK_CAP / 4 : RANK_CAP);
     if (w.from && (!from || w.from > from)) { from = w.from; window = { from, to: null, capped: false }; }
     if (w.to && (!to || w.to < to)) { to = w.to; window = { from: null, to, capped: false }; }
   }
@@ -374,7 +377,9 @@ async function searchUncached(sql: Sql, p: SearchParams, version: number): Promi
       ),
       stats as (select count(distinct speech_id)::int as total, count(*)::int as n_cand from filtered),
       -- the cap keeps the most substantive candidates (static score), newest first among equals
-      capped as (select * from filtered ${byTime ? sql`` : sql`order by q desc nulls last, speech_id desc, seq limit ${RANK_CAP}`}),
+      -- the cap keeps the most substantive candidates; the kept set is then re-sorted by id so the pkey lookups into
+      -- paragraphs walk the heap in physical order (ids are the physical order, correlation -0.9998)
+      capped as (select * from ${byTime ? sql`filtered` : sql`(select * from filtered order by q desc nulls last, speech_id desc, seq limit ${RANK_CAP}) x order by speech_id desc, seq`}),
       scored as (
         ${byTime
           ? sql`select f.*, 1.0::float8 as score from capped f`
