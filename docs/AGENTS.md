@@ -29,7 +29,7 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
 - **Version and sessions:** 2025-11-25, stateless, `enableJsonResponse: true`. We send no notifications or progress, so SSE adds nothing, and plain JSON works with curl and is safe behind the tunnel. Move to the v2 SDK later: its `createMcpHandler` with `legacy: 'stateless'` serves both protocol generations from one factory.
 - **HTTP methods on `/mcp`:**
   - POST only.
-  - `GET` with `Accept: text/html` returns the connect page. Any other GET, and DELETE, returns 405 with `Allow: POST, OPTIONS`. Before this change, the live GET hung, because the transport opened a standalone SSE stream.
+  - `GET` without `Accept: text/event-stream` (browsers, htmx, curl) returns the connect page. A GET asking for SSE, and DELETE, returns 405 with `Allow: POST, OPTIONS`. Before this change, the live GET hung, because the transport opened a standalone SSE stream.
 - **No auth:**
   - Never 401, never `WWW-Authenticate`.
   - `/.well-known/oauth-protected-resource*` and `/.well-known/oauth-authorization-server` stay 404, and tests assert it.

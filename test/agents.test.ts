@@ -57,6 +57,7 @@ describe("mcp transport without auth", () => {
     const page = await get("/mcp", { accept: "text/html,application/xhtml+xml" });
     expect(page.status).toBe(200);
     expect(await page.text()).toContain("https://althingi.solberg.is/mcp");
+    expect((await get("/mcp", { "hx-request": "true", accept: "*/*" })).status).toBe(200); // boosted footer link
     const sse = await get("/mcp", { accept: "text/event-stream" });
     expect(sse.status).toBe(405);
     expect(sse.headers.get("allow")).toContain("POST");

@@ -501,7 +501,9 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   app.all("/mcp", async (c) => {
     c.header("Cache-Control", "no-store");
     if (c.req.method === "GET" || c.req.method === "HEAD") {
-      if ((c.req.header("accept") ?? "").includes("text/html")) return html(c, <McpPage />);
+      // MCP clients ask for an SSE stream with Accept: text/event-stream; everything else (browsers, htmx-boosted links
+      // that send */*, curl) gets the connect page
+      if (!(c.req.header("accept") ?? "").includes("text/event-stream")) return html(c, <McpPage />);
       return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed: this server is stateless and offers no SSE stream. POST JSON-RPC to /mcp." }, id: null }, 405, { Allow: "POST, OPTIONS" });
     }
     if (c.req.method !== "POST") return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server, no sessions to delete)." }, id: null }, 405, { Allow: "POST, OPTIONS" });
