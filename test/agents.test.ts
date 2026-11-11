@@ -4,7 +4,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createApp, ROBOTS } from "../src/web.tsx";
 import { serverJson } from "../src/agent-docs.ts";
-import { VERSION } from "../src/mcp.ts";
+import { buildServer, VERSION } from "../src/mcp.ts";
+import { retrySuggestions } from "../src/mcp-tools.ts";
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { Sql } from "../src/db.ts";
 import { seed, type Seeded } from "./seed.ts";
 
 let s: Seeded | null = null;
@@ -194,6 +199,95 @@ describe("mcp tools for agents", () => {
     expect(ps).toEqual(["debate_on_topic", "member_record"]);
     const p = (await rpc("prompts/get", { name: "debate_on_topic", arguments: { topic: "fishing fees" } })).json.result;
     expect(p.messages[0].content.text).toContain("search_speeches");
+  });
+});
+
+describe("tool results follow MCP 2025-11-25 structured output", () => {
+  // one valid call per tool (a new tool must be added here), plus variants that take other branches of the shape
+  const calls = (x: Seeded): [string, object][] => [
+    ["search_speeches", { q: x.word }], ["search_speeches", { q: "hvalkjötsframleiðsla" }], ["search_speeches", { q: x.word, limit: 30 }],
+    ["get_speech", { speech_id: x.speechId }], ["get_context", { speech_id: x.speechId, mgr: 1 }],
+    ["get_matter", { lthing: 157, nr: 300 }], ["get_member", { member_id: 633 }], ["get_member", { name: "Þórunn" }],
+    ["list_votes", { lthing: 157, nr: 300 }], ["get_vote", { vote_id: x.voteId }], ["member_votes", { member_id: 633 }],
+    ["get_law", { year: 1991, nr: 34, include_text: true }], ["get_law", { title: "lög" }],
+    ["get_sitting", { lthing: 157, fundur: 40 }], ["list_sittings", { lthing: 157 }],
+    ...(["year", "member", "party", "speech_type", "lthing"] as const).map((g): [string, object] => ["aggregate", { metric: "speeches", group_by: g }]),
+    ["aggregate", { metric: "words", group_by: "year", q: x.word }],
+    ["first_use", { q: x.word }], ["explain_query", { q: x.word }], ["list_sessions", {}],
+    ["search", { query: x.word }], ["fetch", { id: `/raeda/${x.speechId}` }],
+  ];
+
+  test("every tool: structuredContent validates against its outputSchema and the text content is the same JSON", async () => {
+    if (!s) return;
+    const tools = (await rpc("tools/list")).json.result.tools as { name: string; outputSchema: object }[];
+    const ajv = new AjvJsonSchemaValidator();
+    const plan = calls(s);
+    expect(tools.map((t) => t.name).filter((n) => !plan.some(([c]) => c === n))).toEqual([]);
+    for (const [name, args] of plan) {
+      const r = await call(name, args);
+      expect({ name, args, isError: r.isError ?? false }).toEqual({ name, args, isError: false });
+      const v = ajv.getValidator(tools.find((t) => t.name === name)!.outputSchema as never)(r.structuredContent);
+      expect({ name, args, error: v.errorMessage }).toEqual({ name, args, error: undefined });
+      expect(r.content).toHaveLength(1);
+      expect(JSON.parse(r.content[0]!.text!)).toEqual(r.structuredContent);
+    }
+  });
+
+  test("error results: isError with parseable {error, hint} text and no structuredContent", async () => {
+    if (!s) return;
+    for (const [name, args] of [["get_vote", { vote_id: 1 }], ["get_matter", { lthing: 157, nr: 999999 }], ["fetch", { id: "/nope" }], ["get_law", { year: 1800, nr: 1 }]] as const) {
+      const r = await call(name, args);
+      expect(r.isError).toBe(true);
+      expect(r.structuredContent).toBeUndefined();
+      const body = JSON.parse(r.content[0]!.text!);
+      expect(typeof body.error).toBe("string");
+      expect(typeof body.hint).toBe("string");
+    }
+  });
+});
+
+describe("failures never surface raw Postgres errors", () => {
+  /** A pool stand-in whose every query fails like Postgres would. */
+  const failing = (code: string, message: string) => (() => { throw Object.assign(new Error(message), { code }); }) as unknown as Sql;
+  const connectTo = async (sql: Sql) => {
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "t", version: "0" });
+    await Promise.all([buildServer(sql, 158).connect(a), client.connect(b)]);
+    return client;
+  };
+
+  test("statement timeout: isError 'timeout' with an actionable hint and ready-made retry calls", async () => {
+    const client = await connectTo(failing("57014", "canceling statement due to statement timeout"));
+    const args = { q: "veiðigjald", date_from: "2005-01-01", date_to: "2025-12-31" };
+    const r = await client.callTool({ name: "search_speeches", arguments: args }) as { isError: boolean; content: { text: string }[] };
+    expect(r.isError).toBe(true);
+    expect(r.content[0]!.text).not.toContain("canceling statement");
+    const body = JSON.parse(r.content[0]!.text);
+    expect(body.error).toBe("timeout");
+    expect(body.hint).toContain("date_from");
+    expect(body.retry).toContainEqual({ tool: "search_speeches", arguments: { q: "veiðigjald", date_from: "2025-01-01", date_to: "2025-12-31" }, why: expect.any(String) });
+    expect(body.retry).toContainEqual(expect.objectContaining({ tool: "aggregate", arguments: { metric: "speeches", group_by: "year", ...args } }));
+    await client.close();
+  });
+
+  test("any other database error: isError 'internal_error', no Postgres text", async () => {
+    const client = await connectTo(failing("53300", "sorry, too many clients already"));
+    for (const name of ["get_matter", "search", "fetch"]) {
+      const args = name === "get_matter" ? { lthing: 157, nr: 300 } : name === "search" ? { query: "x" } : { id: "/mal/157/a/300" };
+      const r = await client.callTool({ name, arguments: args }) as { isError: boolean; content: { text: string }[] };
+      expect(r.isError).toBe(true);
+      expect(r.content[0]!.text).not.toContain("too many clients");
+      expect(JSON.parse(r.content[0]!.text).error).toBe("internal_error");
+    }
+    await client.close();
+  });
+
+  test("retry suggestions: one year of the range, the per-year count, a session; within-year ranges are not re-cut", () => {
+    expect(retrySuggestions("aggregate", { metric: "speeches", group_by: "party", q: "x" }, "2026-11-10").map((r) => r.arguments))
+      .toEqual([{ metric: "speeches", group_by: "party", q: "x", date_from: "2026-01-01", date_to: "2026-12-31" }, { metric: "speeches", group_by: "party", q: "x", lthing: "<session number from list_sessions>" }]);
+    const one = retrySuggestions("search_speeches", { q: "x", date_from: "2020-03-01", date_to: "2020-05-01", lthing: 150 }, null);
+    expect(one.map((r) => r.tool)).toEqual(["aggregate"]);
+    expect(retrySuggestions("get_matter", { lthing: 1, nr: 2 }, null)).toEqual([{ tool: "get_matter", arguments: { lthing: 1, nr: 2 }, why: expect.any(String) }]);
   });
 });
 

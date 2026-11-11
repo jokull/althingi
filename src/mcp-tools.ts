@@ -547,3 +547,51 @@ export async function listSittings(ctx: Ctx, a: { lthing: number; date_from?: st
     order by s.fundur desc limit ${Math.min(a.limit ?? 50, 200)}`;
   return { lthing: a.lthing, sittings: rows.map((r) => ({ ...r, day_url: r.starts ? `${SITE}/dagur/${r.starts.slice(0, 10)}` : null })), derived: false };
 }
+
+// ---------------------------------------------------------------- failures: never a raw Postgres message to the agent
+
+const TEXT_TOOLS = new Set(["search_speeches", "aggregate", "first_use", "topic_timeline", "search"]);
+
+/** Concrete smaller calls to try after a timeout: one year of the range, the per-year count to choose that year, one session. */
+export function retrySuggestions(tool: string, args: Record<string, unknown>, lastDate: string | null): { tool: string; arguments: Record<string, unknown>; why: string }[] {
+  if (!TEXT_TOOLS.has(tool)) return [{ tool, arguments: args, why: "Retry once; the database was busy." }];
+  const q = (args.q ?? args.query) as string | undefined;
+  const from = args.date_from as string | undefined, to = args.date_to as string | undefined;
+  const y = Number((to ?? lastDate ?? new Date().toISOString()).slice(0, 4));
+  const name = tool === "search" ? "search_speeches" : tool;
+  const base: Record<string, unknown> = tool === "search" ? { q } : { ...args, cursor: undefined };
+  const out: { tool: string; arguments: Record<string, unknown>; why: string }[] = [];
+  if (!(from && to && from.slice(0, 4) === to.slice(0, 4))) {
+    const yFrom = from && from > `${y}-01-01` ? from : `${y}-01-01`;
+    const yTo = to && to < `${y}-12-31` ? to : `${y}-12-31`;
+    out.push({ tool: name, arguments: { ...base, date_from: yFrom, date_to: yTo }, why: "The same call over one year (the last year of the range)." });
+  }
+  if (q && name !== "aggregate") {
+    out.push({ tool: "aggregate", arguments: { metric: "speeches", group_by: "year", q, date_from: from, date_to: to }, why: "Speeches per year for this query; then search the years that matter one at a time." });
+  }
+  if (args.lthing === undefined) out.push({ tool: name, arguments: { ...base, lthing: "<session number from list_sessions>" }, why: "Or restrict to one session (löggjafarþing)." });
+  return out.map((s) => ({ ...s, arguments: Object.fromEntries(Object.entries(s.arguments).filter(([, v]) => v !== undefined)) }));
+}
+
+/** A thrown error inside a tool, as an actionable isError payload. Postgres details go to the log, not the agent. */
+export async function toolFailure(ctx: Ctx, tool: string, args: Record<string, unknown>, e: unknown) {
+  const err = e as { code?: string; message?: string } | null;
+  const timeout = err?.code === "57014"; // query_canceled: the MCP pool's statement_timeout
+  console.error(JSON.stringify({ mcp_tool_error: tool, code: err?.code ?? null, message: String(err?.message ?? e).slice(0, 300) }));
+  let detail: CorpusDetail | null = null, corpus: string | undefined;
+  try { detail = await corpusDetail(ctx.sql); corpus = await corpusBlock(ctx.sql); } catch { /* the database itself may be down */ }
+  if (timeout) {
+    return {
+      error: "timeout",
+      hint: "The query hit the server's time limit; this says nothing about whether matching speeches exist. Narrow date_from/date_to (one year at a time), add lthing (see list_sessions), or run aggregate(group_by='year', q) first to find the years with hits. The `retry` calls are ready to use.",
+      retry: retrySuggestions(tool, args, detail?.text_dates.to ?? null),
+      ...(corpus ? { corpus } : {}),
+    };
+  }
+  return {
+    error: "internal_error",
+    hint: "The server could not answer this call (not a statement about the data). Retry once; if it fails again, narrow the arguments or use another tool.",
+    retry: [{ tool, arguments: args, why: "Retry once." }],
+    ...(corpus ? { corpus } : {}),
+  };
+}

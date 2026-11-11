@@ -33,19 +33,19 @@ const out = (data: unknown) => {
 
 // ---- output schemas: the stable top-level shape (nested objects keep their documented keys; extra keys are allowed)
 const corpus = z.string().describe("One line: which sessions/dates have speech text. 'Never'/'first'/totals only hold within it.");
-const corpusDetail = z.object({ text_from: z.string(), speeches_with_text: z.number(), sessions_with_text: z.array(z.number()), text_dates: z.object({ from: z.string().nullable(), to: z.string().nullable() }), note: z.string() })
+const corpusDetail = z.looseObject({ text_from: z.string(), speeches_with_text: z.number(), sessions_with_text: z.array(z.number()), text_dates: z.looseObject({ from: z.string().nullable(), to: z.string().nullable() }), note: z.string() })
   .describe("The full corpus boundary (list_sessions, first_use, zero-hit searches)");
-const member = z.object({ id: z.number().nullable(), name: z.string().nullable(), party_at_date: z.string().nullable().optional() });
-const matterRef = z.object({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string().nullable().optional() });
-const byParty = z.array(z.object({ party: z.string(), counts: z.record(z.string(), z.number()) })).describe("Ballots per party (party on the vote date)");
+const member = z.looseObject({ id: z.number().nullable(), name: z.string().nullable(), party_at_date: z.string().nullable().optional() });
+const matterRef = z.looseObject({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string().nullable().optional() });
+const byParty = z.array(z.looseObject({ party: z.string(), counts: z.record(z.string(), z.number()) })).describe("Ballots per party (party on the vote date)");
 const url = z.string().describe("Citable page on althingi.solberg.is (append .md for Markdown)");
 
 const SEARCH_OUT = {
-  corpus, corpus_detail: corpusDetail.optional(), query: z.object({ text: z.string(), interpreted_as: z.string() }),
+  corpus, corpus_detail: corpusDetail.optional(), query: z.looseObject({ text: z.string(), interpreted_as: z.string() }),
   total: z.union([z.number(), z.string()]).optional().describe("Speeches matching over all pages; '10000+' when capped"),
-  hits: z.array(z.object({
+  hits: z.array(z.looseObject({
     speech_id: z.string(), date: z.string(), started: z.string(), member, speech_type: z.string(), matter: matterRef.nullable(),
-    paragraphs: z.array(z.object({ mgr: z.number(), text: z.string(), url })), url, althingi_url: z.string().nullable(),
+    paragraphs: z.array(z.looseObject({ mgr: z.number(), text: z.string(), url })), url, althingi_url: z.string().nullable(),
   })),
   matter_cards: z.array(matterRef), next_cursor: z.string().nullable(), why: z.array(z.string()).optional(), derived: z.boolean(),
 };
@@ -59,6 +59,11 @@ const INSTRUCTIONS = [
 
 export function buildServer(sql: Sql, currentLthing: number): McpServer {
   const ctx = { sql, currentLthing };
+  /** Every tool body runs through here: a thrown error (statement timeout, lost connection) becomes an actionable
+   *  isError payload with retry calls (T.toolFailure), never the raw Postgres message the SDK would pass on. */
+  const run = async (tool: string, args: object, f: () => Promise<unknown>) => {
+    try { return out(await f()); } catch (e) { return out(await T.toolFailure(ctx, tool, args as Record<string, unknown>, e)); }
+  };
   const s = new McpServer(
     { name: "althingi-search", title: "Alþingi — ræður, mál, atkvæði", version: VERSION, websiteUrl: SITE },
     { instructions: INSTRUCTIONS, capabilities: { tools: {}, resources: {}, prompts: {} } },
@@ -80,53 +85,53 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       sort: z.enum(["relevance", "newest", "oldest"]).optional(), limit: z.number().int().min(1).max(100).optional().describe("Default 10; above 25 results are compacted"),
       cursor: z.string().optional().describe("next_cursor from the previous page"),
     },
-    outputSchema: SEARCH_OUT, annotations: ro,
-  }, async (a) => out(await T.searchSpeeches(ctx, a)));
+    outputSchema: z.looseObject(SEARCH_OUT), annotations: ro,
+  }, (a) => run("search_speeches", a, () => T.searchSpeeches(ctx, a)));
 
   s.registerTool("get_speech", {
     title: "Get a speech",
     description: "Full text of one speech (paragraphs numbered as in the url anchors #mgr-N), speaker, party at date, matter, reply_to / replies (andsvar chains), audio/video links, a ready cite string and the source revision hash. Long speeches are paged: pass from=next_from.",
     inputSchema: { speech_id: z.string().regex(/^rad\d{8}T\d{6}$/).describe("e.g. rad20180306T163325"), from: z.number().int().min(1).optional(), to: z.number().int().min(1).optional() },
-    outputSchema: {
-      speech: z.object({ id: z.string(), url, citation: z.string(), member, matter: matterRef.nullable(), reply_to: z.object({ speech_id: z.string(), inferred: z.boolean() }).nullable(), provisional: z.boolean() }),
-      paragraphs: z.array(z.object({ mgr: z.number(), text: z.string(), interjections: z.array(z.string()) })), paragraphs_total: z.number(), next_from: z.number().nullable(),
-    },
+    outputSchema: z.looseObject({
+      speech: z.looseObject({ id: z.string(), url, citation: z.string(), member, matter: matterRef.nullable(), reply_to: z.looseObject({ speech_id: z.string(), inferred: z.boolean() }).nullable(), provisional: z.boolean() }),
+      paragraphs: z.array(z.looseObject({ mgr: z.number(), text: z.string(), interjections: z.array(z.string()) })), paragraphs_total: z.number(), next_from: z.number().nullable(),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getSpeech(ctx, a)));
+  }, (a) => run("get_speech", a, () => T.getSpeech(ctx, a)));
 
   s.registerTool("get_context", {
     title: "Get a paragraph with context",
     description: "A paragraph and its neighbours (window 0-5) with a precise citation: the evidence package for a quote. Use the mgr from a search hit.",
     inputSchema: { speech_id: z.string().regex(/^rad\d{8}T\d{6}$/), mgr: z.number().int().min(1).describe("Paragraph number (1-based)"), window: z.number().int().min(0).max(5).optional() },
-    outputSchema: { speech_id: z.string(), url, citation: z.string(), member, paragraphs: z.array(z.object({ mgr: z.number(), text: z.string(), is_target: z.boolean() })) },
+    outputSchema: z.looseObject({ speech_id: z.string(), url, citation: z.string(), member, paragraphs: z.array(z.looseObject({ mgr: z.number(), text: z.string(), is_target: z.boolean() })) }),
     annotations: ro,
-  }, async (a) => out(await T.getContext(ctx, a)));
+  }, (a) => run("get_context", a, () => T.getContext(ctx, a)));
 
   s.registerTool("get_matter", {
     title: "Get a matter (þingmál)",
     description: "One bill/resolution/question: status (derived from sitting events or the final vote when Alþingi left it empty: status_source), sponsors (flutningsmenn), committee rapporteurs, topics, laws it amends, related matters, documents (þingskjöl), vote summaries (ids for get_vote; is_final marks the vote on the whole bill/resolution, with a per-party tally), sitting events (debate closed, passed as law), consultation counts and an index of its speeches. B-mál have no documents or votes. Example: 300. mál á 157. þingi -> lthing=157, nr=300.",
     inputSchema: { lthing: z.number().int().describe("Session number, e.g. 157"), class: cls.optional(), nr: z.number().int().describe("Matter number within the session") },
-    outputSchema: {
-      corpus, matter: z.object({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string(), subtitle: z.string().nullable(), status: z.string().nullable(), status_source: z.string().nullable(), url, althingi_url: z.string() }),
-      sponsors: z.array(z.object({ order: z.number(), member: z.object({ id: z.number(), name: z.string().nullable() }).nullable(), office: z.string().nullable() })),
-      votes: z.array(z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), yes: z.number().nullable(), no: z.number().nullable(), abstain: z.number().nullable(), is_final: z.boolean(), by_party: byParty.optional() })),
+    outputSchema: z.looseObject({
+      corpus, matter: z.looseObject({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string(), subtitle: z.string().nullable(), status: z.string().nullable(), status_source: z.string().nullable(), url, althingi_url: z.string() }),
+      sponsors: z.array(z.looseObject({ order: z.number(), member: z.looseObject({ id: z.number(), name: z.string().nullable() }).nullable(), office: z.string().nullable() })),
+      votes: z.array(z.looseObject({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), yes: z.number().nullable(), no: z.number().nullable(), abstain: z.number().nullable(), is_final: z.boolean(), by_party: byParty.optional() })),
       final_vote_id: z.number().nullable(),
-      documents: z.array(z.object({ nr: z.number(), type: z.string() })), speeches: z.object({ total: z.number(), index: z.array(z.object({ id: z.string() })) }),
-    },
+      documents: z.array(z.looseObject({ nr: z.number(), type: z.string() })), speeches: z.looseObject({ total: z.number(), index: z.array(z.looseObject({ id: z.string() })) }),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getMatter(ctx, a)));
+  }, (a) => run("get_matter", a, () => T.getMatter(ctx, a)));
 
   s.registerTool("get_member", {
     title: "Get a member of parliament",
     description: "Seat history with party, constituency and dates ('með varamann' = on leave, not sitting) and recent speeches. Look up by member_id or by name (fuzzy; several matches return `candidates` to choose from).",
     inputSchema: { member_id: z.number().int().optional(), name: z.string().min(3).optional().describe("Full or partial name, Icelandic letters, e.g. 'Þórunn Sveinbjarnardóttir'") },
-    outputSchema: {
-      corpus: corpus.optional(), member: z.object({ id: z.number(), name: z.string(), url, althingi_url: z.string(), speeches_in_corpus: z.number() }).optional(),
-      seats: z.array(z.object({ lthing: z.number(), kind: z.string(), party: z.string().nullable(), sitting: z.boolean() })).optional(),
-      candidates: z.array(z.object({ id: z.number(), name: z.string() })).optional(),
-    },
+    outputSchema: z.looseObject({
+      corpus: corpus.optional(), member: z.looseObject({ id: z.number(), name: z.string(), url, althingi_url: z.string(), speeches_in_corpus: z.number() }).optional(),
+      seats: z.array(z.looseObject({ lthing: z.number(), kind: z.string(), party: z.string().nullable(), sitting: z.boolean() })).optional(),
+      candidates: z.array(z.looseObject({ id: z.number(), name: z.string() })).optional(),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getMember(ctx, a)));
+  }, (a) => run("get_member", a, () => T.getMember(ctx, a)));
 
   s.registerTool("list_votes", {
     title: "List votes",
@@ -137,21 +142,21 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       after_id: z.number().int().optional().describe("Paging: pass next_after_id from the previous call"),
       limit: z.number().int().min(1).max(200).optional(),
     },
-    outputSchema: { votes: z.array(z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), matter: matterRef })), next_after_id: z.number().nullable() },
+    outputSchema: z.looseObject({ votes: z.array(z.looseObject({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), matter: matterRef })), next_after_id: z.number().nullable() }),
     annotations: ro,
-  }, async (a) => out(await T.listVotes(ctx, a)));
+  }, (a) => run("list_votes", a, () => T.listVotes(ctx, a)));
 
   s.registerTool("get_vote", {
     title: "Get a vote with every member's ballot",
     description: "One vote (atkvæðagreiðsla): result, counts, the matter and document, and each member's ballot with party on the vote date, plus a per-party tally. Choices are verbatim Icelandic with an English gloss: já (yes), nei (no), greiðir ekki atkvæði (abstains), boðaði fjarvist (reported absence), fjarverandi (absent).",
     inputSchema: { vote_id: z.number().int().describe("From get_matter.votes[].id, list_votes or member_votes") },
-    outputSchema: {
-      vote: z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), matter: matterRef, url, althingi_url: z.string() }),
-      ballots: z.array(z.object({ member: z.object({ id: z.number(), name: z.string().nullable(), party_at_date: z.string().nullable() }), choice: z.string(), choice_en: z.string().nullable() })),
+    outputSchema: z.looseObject({
+      vote: z.looseObject({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), matter: matterRef, url, althingi_url: z.string() }),
+      ballots: z.array(z.looseObject({ member: z.looseObject({ id: z.number(), name: z.string().nullable(), party_at_date: z.string().nullable() }), choice: z.string(), choice_en: z.string().nullable() })),
       by_party: byParty, ballots_total: z.number(),
-    },
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getVote(ctx, a)));
+  }, (a) => run("get_vote", a, () => T.getVote(ctx, a)));
 
   s.registerTool("member_votes", {
     title: "How a member voted",
@@ -161,12 +166,12 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       choice: z.enum(["já", "nei", "greiðir ekki atkvæði", "boðaði fjarvist", "fjarverandi"]).optional(),
       before_id: z.number().int().optional(), limit: z.number().int().min(1).max(200).optional(),
     },
-    outputSchema: {
-      member: z.object({ id: z.number(), name: z.string(), url }), tally: z.array(z.object({ choice: z.string(), n: z.number() })),
-      votes: z.array(z.object({ vote_id: z.number(), at: z.string().nullable(), about: z.string(), choice: z.string(), matter: matterRef })), next_before_id: z.number().nullable(),
-    },
+    outputSchema: z.looseObject({
+      member: z.looseObject({ id: z.number(), name: z.string(), url }), tally: z.array(z.looseObject({ choice: z.string(), n: z.number() })),
+      votes: z.array(z.looseObject({ vote_id: z.number(), at: z.string().nullable(), about: z.string(), choice: z.string(), matter: matterRef })), next_before_id: z.number().nullable(),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.memberVotes(ctx, a)));
+  }, (a) => run("member_votes", a, () => T.memberVotes(ctx, a)));
 
   s.registerTool("get_law", {
     title: "Get a law (lög) from the law collection",
@@ -175,36 +180,36 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       year: z.number().int().min(1800).max(2100).optional(), nr: z.number().int().optional(), title: z.string().min(3).optional().describe("Words of the title, e.g. 'fjárfestingu erlendra aðila'"),
       article: z.string().optional().describe("Article number, e.g. '3' or '3. gr.'; returns its text"), include_text: z.boolean().optional().describe("Return article text (about 20 KB; articles_truncated says if more)"),
     },
-    outputSchema: {
-      law: z.object({ year: z.number(), nr: z.number(), id: z.string(), title: z.string().nullable(), in_force: z.string().nullable(), url, althingi_url: z.string() }).optional(),
-      articles_index: z.array(z.object({ article: z.string(), heading: z.string().nullable() })).optional(),
-      articles: z.array(z.object({ article: z.string(), heading: z.string().nullable(), text: z.string() })).optional(),
-      candidates: z.array(z.object({ year: z.number(), nr: z.number(), title: z.string() })).optional(),
-    },
+    outputSchema: z.looseObject({
+      law: z.looseObject({ year: z.number(), nr: z.number(), id: z.string(), title: z.string().nullable(), in_force: z.string().nullable(), url, althingi_url: z.string() }).optional(),
+      articles_index: z.array(z.looseObject({ article: z.string(), heading: z.string().nullable() })).optional(),
+      articles: z.array(z.looseObject({ article: z.string(), heading: z.string().nullable(), text: z.string() })).optional(),
+      candidates: z.array(z.looseObject({ year: z.number(), nr: z.number(), title: z.string() })).optional(),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getLaw(ctx, a)));
+  }, (a) => run("get_law", a, () => T.getLaw(ctx, a)));
 
   s.registerTool("get_sitting", {
     title: "Get a sitting (þingfundur) and its agenda",
     description: "One plenary sitting: start/end, the agenda (dagskrá) with matters, events (debate closed, bill passed as law, postponed) and the speeches in order. Find by lthing+fundur, or by date.",
     inputSchema: { lthing: z.number().int().optional(), fundur: z.number().int().optional().describe("Sitting number in the session"), date: iso.optional() },
-    outputSchema: {
-      sitting: z.object({ lthing: z.number(), fundur: z.number(), starts: z.string().nullable(), ends: z.string().nullable() }).optional(),
-      agenda: z.array(z.object({ seq: z.number(), title: z.string().nullable() })).optional(),
-      events: z.array(z.object({ at: z.string(), kind: z.string() })).optional(),
-      speeches: z.array(z.object({ id: z.string(), started: z.string(), url })).optional(),
-      candidates: z.array(z.object({ lthing: z.number(), fundur: z.number() })).optional(),
-    },
+    outputSchema: z.looseObject({
+      sitting: z.looseObject({ lthing: z.number(), fundur: z.number(), starts: z.string().nullable(), ends: z.string().nullable() }).optional(),
+      agenda: z.array(z.looseObject({ seq: z.number(), title: z.string().nullable() })).optional(),
+      events: z.array(z.looseObject({ at: z.string(), kind: z.string() })).optional(),
+      speeches: z.array(z.looseObject({ id: z.string(), started: z.string(), url })).optional(),
+      candidates: z.array(z.looseObject({ lthing: z.number(), fundur: z.number() })).optional(),
+    }),
     annotations: ro,
-  }, async (a) => out(await T.getSitting(ctx, a)));
+  }, (a) => run("get_sitting", a, () => T.getSitting(ctx, a)));
 
   s.registerTool("list_sittings", {
     title: "List sittings of a session",
     description: "Sittings (þingfundir) of one session, newest first, with agenda and speech counts.",
     inputSchema: { lthing: z.number().int(), date_from: iso.optional(), date_to: iso.optional(), limit: z.number().int().min(1).max(200).optional() },
-    outputSchema: { lthing: z.number(), sittings: z.array(z.object({ fundur: z.number(), starts: z.string().nullable(), items: z.number(), speeches: z.number() })) },
+    outputSchema: z.looseObject({ lthing: z.number(), sittings: z.array(z.looseObject({ fundur: z.number(), starts: z.string().nullable(), items: z.number(), speeches: z.number() })) }),
     annotations: ro,
-  }, async (a) => out(await T.listSittings(ctx, a)));
+  }, (a) => run("list_sittings", a, () => T.listSittings(ctx, a)));
 
   s.registerTool("aggregate", {
     title: "Count speeches or words",
@@ -214,64 +219,63 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       q: z.string().max(200).optional(), date_from: iso.optional(), date_to: iso.optional(), lthing: z.number().int().optional(),
       speech_type: z.string().optional(), member_id: z.number().int().optional(), substantive_only: z.boolean().optional().describe("Skip points of order and the presiding officer"),
     },
-    outputSchema: { corpus, metric: z.string(), group_by: z.string(), buckets: z.array(z.object({ key: z.string(), value: z.number() })), caveats: z.array(z.string()) },
+    outputSchema: z.looseObject({ corpus, metric: z.string(), group_by: z.string(), buckets: z.array(z.looseObject({ key: z.string(), value: z.number() })), caveats: z.array(z.string()) }),
     annotations: ro,
-  }, async (a) => out(await T.aggregate(ctx, a)));
+  }, (a) => run("aggregate", a, () => T.aggregate(ctx, a)));
 
   s.registerTool("first_use", {
     title: "First use of a word or phrase",
     description: "Earliest paragraphs matching a query plus a speeches-per-year strip. 'First' means first in the text corpus (from session 131, October 2004), see `corpus_detail`.",
     inputSchema: { q: z.string().min(1).max(200), limit: z.number().int().min(1).max(20).optional() },
-    outputSchema: { corpus, corpus_detail: corpusDetail, earliest: z.array(z.object({ speech_id: z.string(), mgr: z.number(), started: z.string(), text: z.string(), url })), speeches_per_year: z.array(z.object({ year: z.number(), speeches: z.number() })), caveat: z.string() },
+    outputSchema: z.looseObject({ corpus, corpus_detail: corpusDetail, earliest: z.array(z.looseObject({ speech_id: z.string(), mgr: z.number(), started: z.string(), text: z.string(), url })), speeches_per_year: z.array(z.looseObject({ year: z.number(), speeches: z.number() })), caveat: z.string() }),
     annotations: ro,
-  }, async (a) => out(await T.firstUse(ctx, a)));
+  }, (a) => run("first_use", a, () => T.firstUse(ctx, a)));
 
   s.registerTool("explain_query", {
     title: "Explain how a query is interpreted",
     description: "Shows the lemma groups, phrase chains, dropped stopwords and numbers behind a query, so you can verify what a search actually matched.",
     inputSchema: { q: z.string().min(1).max(200) },
-    outputSchema: { query: z.string(), interpreted_as: z.string(), dropped_stopwords: z.array(z.string()), notes: z.array(z.string()) },
+    outputSchema: z.looseObject({ query: z.string(), interpreted_as: z.string(), dropped_stopwords: z.array(z.string()), notes: z.array(z.string()) }),
     annotations: ro,
-  }, async (a) => out(await T.explainQuery(ctx, a)));
+  }, (a) => run("explain_query", a, () => T.explainQuery(ctx, a)));
 
   s.registerTool("list_sessions", {
     title: "List sessions and what text is available",
     description: "Sessions (löggjafarþing) with their dates and how many speeches have text, are pending, or are index-only (before session 131, October 2004). Call this first to learn the corpus boundary.",
     inputSchema: {},
-    outputSchema: { corpus, corpus_detail: corpusDetail, sessions: z.array(z.object({ lthing: z.number(), starts: z.string().nullable(), ends: z.string().nullable(), speeches_with_text: z.number(), text_complete: z.boolean() })) },
+    outputSchema: z.looseObject({ corpus, corpus_detail: corpusDetail, sessions: z.array(z.looseObject({ lthing: z.number(), starts: z.string().nullable(), ends: z.string().nullable(), speeches_with_text: z.number(), text_complete: z.boolean() })) }),
     annotations: ro,
-  }, async () => out(await T.listSessions(ctx)));
+  }, () => run("list_sessions", {}, () => T.listSessions(ctx)));
 
   // ---- the generic pair ChatGPT (deep research, company knowledge) and other connectors look for
   s.registerTool("search", {
     title: "Search (generic)",
     description: "Generic search for connectors that expect search/fetch: speeches (lemma-aware Icelandic keywords) plus members, matters and laws whose names match. Returns ids to pass to `fetch`. Prefer search_speeches for filters.",
     inputSchema: { query: z.string().min(1).max(200).describe("Icelandic keywords, a name, or '300. mál'") },
-    outputSchema: { results: z.array(z.object({ id: z.string(), title: z.string(), url: z.string() })) },
+    outputSchema: z.looseObject({ results: z.array(z.looseObject({ id: z.string(), title: z.string(), url: z.string() })) }),
     annotations: ro,
-  }, async ({ query }) => {
+  }, ({ query }) => run("search", { query }, async () => {
     const [sp, ent] = await Promise.all([T.searchSpeeches(ctx, { q: query, limit: 10 }), searchEntities(sql, query, currentLthing, 3)]);
     const results = [
       ...[...ent.thingmenn, ...ent.mal, ...ent.log, ...ent.flokkar].map((e) => ({ id: canonicalPath(e.href), title: e.title, url: `${SITE}${e.href}` })),
       ...sp.hits.map((h) => ({ id: `/raeda/${h.speech_id}`, title: `${h.member.name ?? ""}, ${h.speech_type} ${h.date}${h.matter?.title ? ` – ${h.matter.title}` : ""}: ${h.paragraphs[0]?.text.slice(0, 160) ?? ""}`, url: h.url })),
     ];
-    const data = { results };
-    return { content: [{ type: "text" as const, text: JSON.stringify(data) }], structuredContent: data };
-  });
+    return { results };
+  }));
 
   s.registerTool("fetch", {
     title: "Fetch a document (generic)",
     description: "Full Markdown of one page by id from `search` (or any althingi.solberg.is URL/path): a speech (/raeda/<id>), matter (/mal/<lthing>/a/<nr>), member (/thingmadur/<id>), law (/log/<year>/<nr>), day (/dagur/YYYY-MM-DD), party or document.",
     inputSchema: { id: z.string().min(2).max(300).describe("e.g. /raeda/rad20180306T163325, /mal/157/a/300, https://althingi.solberg.is/log/1991/34") },
-    outputSchema: { id: z.string(), title: z.string(), text: z.string(), url: z.string(), metadata: z.record(z.string(), z.string()).nullable(), truncated: z.boolean().optional() },
+    outputSchema: z.looseObject({ id: z.string(), title: z.string(), text: z.string(), url: z.string(), metadata: z.record(z.string(), z.string()).nullable(), truncated: z.boolean().optional() }),
     annotations: ro,
-  }, async ({ id }) => {
+  }, ({ id }) => run("fetch", { id }, async () => {
     const d = await renderMd(sql, id, currentLthing);
-    if (!d) return out({ error: "not_found", hint: "Use an id from `search`, or a path like /raeda/rad20180306T163325, /mal/157/a/300, /thingmadur/633, /log/1991/34." });
+    if (!d) return ({ error: "not_found", hint: "Use an id from `search`, or a path like /raeda/rad20180306T163325, /mal/157/a/300, /thingmadur/633, /log/1991/34." });
     const text = capMd(d.markdown, `${SITE}${d.path}`);
     const data = { id: d.path, title: d.title, text, url: `${SITE}${d.path}`, metadata: d.althingi_url ? { althingi_url: d.althingi_url, format: "text/markdown" } : { format: "text/markdown" }, ...(text !== d.markdown ? { truncated: true } : {}) };
-    return { content: [{ type: "text" as const, text: JSON.stringify(data) }], structuredContent: data };
-  });
+    return data;
+  }));
 
   // ---- resources: the Markdown page behind every citable https URL, as templates (the corpus is too big to list)
   const md = (name: string, title: string, tpl: string, description: string) =>
