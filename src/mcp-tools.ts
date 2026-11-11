@@ -253,8 +253,8 @@ export async function getMember(ctx: Ctx, a: { member_id?: number; name?: string
 
 export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; nr?: number; date?: string; doc_nr?: number; after_id?: number; limit?: number }) {
   const cls = (a.class ?? "A").toUpperCase();
-  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null }[]>`
-    select id, nr, cls, voted_at::text as at, kind_label, method, result, yes, no, abstain, doc_nr, html_url from votes
+  const rows = await ctx.sql<{ id: number; nr: number; cls: string; at: string | null; kind_label: string; method: string | null; method_code: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null }[]>`
+    select id, nr, cls, voted_at::text as at, kind_label, method, method_code, result, yes, no, abstain, doc_nr, html_url from votes
     where lthing = ${a.lthing}
       ${a.nr !== undefined ? ctx.sql`and cls = ${cls} and nr = ${a.nr}` : ctx.sql``}
       ${a.date ? ctx.sql`and voted_at::date = ${a.date}` : ctx.sql``}
@@ -266,7 +266,7 @@ export async function listVotes(ctx: Ctx, a: { lthing: number; class?: string; n
       id: v.id, althingi_url: votePageUrl(v.id, v.html_url),
       matter: { lthing: a.lthing, class: v.cls, nr: v.nr, althingi_url: matterPageUrl(a.lthing, v.cls, v.nr) },
       document_nr: v.doc_nr, document_althingi_url: v.doc_nr === null ? null : documentPageUrl(a.lthing, v.doc_nr),
-      at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain })),
+      at: v.at, about: v.kind_label, method: v.method, ...resultFields(v), yes: v.yes, no: v.no, abstain: v.abstain })),
     next_after_id: rows.length === Math.min(a.limit ?? 50, 200) ? rows[rows.length - 1]!.id : null,
     ballots_note: "Counts only here; call get_vote(vote_id) for each member's ballot, or member_votes for one member's record. althingi_url has the official page.",
     derived: false,
@@ -455,6 +455,12 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
 
 // ---------------------------------------------------------------- votes per member (ballots), laws, sittings
 
+/** result (derived when Alþingi left it empty, flagged), result_en: the same on every tool that shows a vote. */
+const resultFields = (v: { method: string | null; method_code: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null }) => {
+  const r = voteResult(v);
+  return { result: r.result, result_en: r.result ? RESULT_EN[r.result] ?? null : null, ...(r.result_derived ? { result_derived: true } : {}) };
+};
+
 const CHOICE_EN: Record<string, string> = {
   "já": "yes", nei: "no", "greiðir ekki atkvæði": "abstains (present, not voting)", "boðaði fjarvist": "reported absence", fjarverandi: "absent",
 };
@@ -467,8 +473,8 @@ const site = {
 /** One vote with every member's ballot (verbatim Icelandic choice + English gloss) and party on the vote date. */
 export async function getVote(ctx: Ctx, a: { vote_id: number }) {
   const { sql } = ctx;
-  const [v] = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; d: string | null; kind_label: string; method: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null; title: string | null }[]>`
-    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.voted_at::date::text as d, v.kind_label, v.method, v.result, v.yes, v.no, v.abstain, v.doc_nr, v.html_url, m.title
+  const [v] = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; d: string | null; kind_label: string; method: string | null; method_code: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; doc_nr: number | null; html_url: string | null; title: string | null }[]>`
+    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.voted_at::date::text as d, v.kind_label, v.method, v.method_code, v.result, v.yes, v.no, v.abstain, v.doc_nr, v.html_url, m.title
     from votes v left join matters m on (m.lthing, m.cls, m.nr) = (v.lthing, v.cls, v.nr) where v.id = ${a.vote_id}`;
   if (!v) return { error: "vote_not_found", hint: "Vote ids come from get_matter.votes[].id, list_votes or member_votes.", vote_id: a.vote_id };
   const ballots = await sql<{ member_id: number; name: string | null; choice: string; party: string | null }[]>`
@@ -488,7 +494,7 @@ export async function getVote(ctx: Ctx, a: { vote_id: number }) {
   }
   return {
     vote: {
-      id: v.id, at: v.at, about: v.kind_label, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain,
+      id: v.id, at: v.at, about: v.kind_label, method: v.method, ...resultFields(v), yes: v.yes, no: v.no, abstain: v.abstain,
       matter: { lthing: v.lthing, class: v.cls, nr: v.nr, title: v.title, url: site.matter(v.lthing, v.cls, v.nr), althingi_url: matterPageUrl(v.lthing, v.cls, v.nr) },
       document_nr: v.doc_nr, document_althingi_url: v.doc_nr === null ? null : documentPageUrl(v.lthing, v.doc_nr),
       url: `${site.matter(v.lthing, v.cls, v.nr)}#atkvaedi`, althingi_url: votePageUrl(v.id, v.html_url),
@@ -510,8 +516,8 @@ export async function memberVotes(ctx: Ctx, a: { member_id: number; lthing?: num
   const cls = (a.class ?? "A").toUpperCase();
   const [m] = await sql<{ name: string }[]>`select name from members where id = ${a.member_id}`;
   if (!m) return { error: "member_not_found", hint: "Resolve the member with get_member (by name) first.", member_id: a.member_id };
-  const rows = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; kind_label: string; result: string | null; yes: number | null; no: number | null; abstain: number | null; choice: string; title: string | null; html_url: string | null }[]>`
-    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.kind_label, v.result, v.yes, v.no, v.abstain, b.choice, mt.title, v.html_url
+  const rows = await sql<{ id: number; lthing: number; cls: string; nr: number; at: string | null; kind_label: string; method: string | null; method_code: string | null; result: string | null; yes: number | null; no: number | null; abstain: number | null; choice: string; title: string | null; html_url: string | null }[]>`
+    select v.id, v.lthing, v.cls, v.nr, v.voted_at::text as at, v.kind_label, v.method, v.method_code, v.result, v.yes, v.no, v.abstain, b.choice, mt.title, v.html_url
     from ballots b join votes v on v.id = b.vote_id left join matters mt on (mt.lthing, mt.cls, mt.nr) = (v.lthing, v.cls, v.nr)
     where b.member_id = ${a.member_id}
       ${a.lthing !== undefined ? sql`and v.lthing = ${a.lthing}` : sql``}
@@ -528,7 +534,7 @@ export async function memberVotes(ctx: Ctx, a: { member_id: number; lthing?: num
     member: { id: a.member_id, name: m.name, url: site.member(a.member_id), althingi_url: memberPageUrl(a.member_id) },
     tally: tally.map((t) => ({ choice: t.choice, choice_en: CHOICE_EN[t.choice] ?? null, n: t.n })),
     votes: rows.map((r) => ({
-      vote_id: r.id, at: r.at, about: r.kind_label, result: r.result, yes: r.yes, no: r.no, abstain: r.abstain,
+      vote_id: r.id, at: r.at, about: r.kind_label, ...resultFields(r), yes: r.yes, no: r.no, abstain: r.abstain,
       choice: r.choice, choice_en: CHOICE_EN[r.choice] ?? null,
       matter: { lthing: r.lthing, class: r.cls, nr: r.nr, title: r.title, url: site.matter(r.lthing, r.cls, r.nr) },
       althingi_url: votePageUrl(r.id, r.html_url),

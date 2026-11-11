@@ -118,6 +118,15 @@ describe("mcp tools for agents", () => {
     expect(yes.member.id).toBe(633);
     expect(yes.choice_en).toBe("yes");
     expect(r.by_party.length).toBeGreaterThan(0);
+    // a counted vote without Alþingi's result gets the derived one, as in get_matter
+    const [orig] = await s.sql<{ result: string | null; yes: number | null; no: number | null; method: string | null }[]>`select result, yes, no, method from votes where id = ${s.voteId}`;
+    await s.sql`update votes set result = null, yes = 2, no = 1, method = 'atkvæðagreiðslukerfi' where id = ${s.voteId}`;
+    try {
+      expect((await call("get_vote", { vote_id: s.voteId })).structuredContent.vote).toMatchObject({ result: "samþykkt", result_en: "passed", result_derived: true });
+      expect((await call("member_votes", { member_id: 633 })).structuredContent.votes[0]).toMatchObject({ result: "samþykkt", result_derived: true });
+    } finally {
+      await s.sql`update votes set result = ${orig!.result}, yes = ${orig!.yes}, no = ${orig!.no}, method = ${orig!.method} where id = ${s.voteId}`;
+    }
     const miss = await call("get_vote", { vote_id: 1 });
     expect(miss.isError).toBe(true);
     expect(JSON.parse(miss.content[0]!.text!).hint).toContain("get_matter");
