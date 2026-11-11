@@ -45,11 +45,14 @@ export interface SpeechHit {
   speechId: string;
   date: string;
   started: string;
-  memberId: number;
+  /** null: dump-only speaker not resolved to a member id yet (abbreviation-only) */
+  memberId: number | null;
   memberName: string;
   speechType: string;
   debate: string;
   matter: { lthing: number; cls: string; nr: number; title: string | null } | null;
+  /** text is Alþingi's provisional version (raedur_bradabirgda) */
+  provisional: boolean;
   /** score of the best paragraph (after boosts) */
   score: number;
   matchingParagraphs: number;
@@ -194,14 +197,15 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
   const rows = await sql<
     {
       speech_id: string; seq: number; text: string; score: number; speech_date: string; started: Date; started_txt: string;
-      member_id: number; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
-      lthing: number; title: string | null; rn: number; n_par: number;
+      member_id: number | null; member_name: string; type: string; debate: string; matter_cls: string | null; matter_nr: number | null;
+      lthing: number; title: string | null; rn: number; n_par: number; provisional: boolean;
       tok_lemma: string[] | null; tok_start: number[] | null; tok_len: number[] | null;
     }[]
   >`
     with hits as (
       select p.speech_id, p.seq, p.text, s.speech_date::text, s.started, s.started::text as started_txt,
-             s.member_id, s.member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
+             s.member_id, coalesce(s.member_name, s.speaker_abbr, '') as member_name, s.type, s.debate, s.matter_cls, s.matter_nr, s.lthing, m.title,
+             s.provisional,
              (${rank}
                * case s.type when 'ræða' then 1.0 when 'flutningsræða' then 1.0 when 'svar' then 1.0
                              when 'andsvar' then 0.8 when 'grein fyrir atkvæði' then 0.6
@@ -272,6 +276,7 @@ export async function search(sql: Sql, p: SearchParams): Promise<SearchResult> {
         speechId: r.speech_id, date: r.speech_date, started: r.started_txt, _startedTxt: r.started_txt,
         memberId: r.member_id, memberName: r.member_name, speechType: r.type, debate: r.debate,
         matter: r.matter_cls && r.matter_nr !== null ? { lthing: r.lthing, cls: r.matter_cls, nr: r.matter_nr, title: r.title } : null,
+        provisional: r.provisional ?? false,
         score: r.score, matchingParagraphs: Number(r.n_par), paragraphs: [],
       };
       bySpeech.set(r.speech_id, h);

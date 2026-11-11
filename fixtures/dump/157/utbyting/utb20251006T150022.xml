@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="UtbytingThingskjala"?>
+<gerðabók xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd">
+  <umsýsla lgþ="157" fundur="12" dags="2025-10-06" tími="2025-10-06T15:00:22" />
+  <útbýting>
+    <skjal nr="161" tegund="stjfrv." embætti="fél.- og húsnrh." dags="2025-10-04">
+      <flm skst="IngS" embætti="fél.- og húsnrh." />
+      <mál nr="155" />
+      <titill>almannatryggingar</titill>
+    </skjal>
+    <skjal nr="160" tegund="stjfrv." embætti="mennta- og barnamrh." dags="2025-10-04">
+      <flm skst="GIK" embætti="mennta- og barnamrh." />
+      <mál nr="154" />
+      <titill>framhaldsskólar</titill>
+    </skjal>
+    <skjal nr="154" tegund="frv.">
+      <flm skst="ÁLÞ" />
+      <flm skst="JBÓ" />
+      <flm skst="KÁB" />
+      <flm skst="LRM" />
+      <flm skst="RÞI" />
+      <flm skst="SHP" />
+      <flm skst="SigurjÞ" />
+      <mál nr="150" />
+      <titill>aðför og nauðungarsala</titill>
+    </skjal>
+    <skjal nr="156" tegund="svar" embætti="fjmrh.">
+      <flm skst="DMK" embætti="fjmrh." />
+      <mál nr="93" />
+      <titill>bætur og málskostnaður vegna starfsmannahalds ríkisins</titill>
+    </skjal>
+    <skjal nr="157" tegund="þáltill.">
+      <flm skst="EBB" />
+      <flm skst="GrímG" />
+      <flm skst="PawB" />
+      <flm skst="ÁLÞ" />
+      <flm skst="LRM" />
+      <flm skst="SigurjÞ" />
+      <flm skst="ÁBH" />
+      <flm skst="ÞórP" />
+      <flm skst="SER" />
+      <mál nr="152" />
+      <titill>dreifing starfa</titill>
+    </skjal>
+    <skjal nr="162" tegund="stjtill." embætti="utanrrh.">
+      <flm skst="ÞKG" embætti="utanrrh." />
+      <mál nr="156" />
+      <titill>fríverslunarsamningur milli EFTA-ríkjanna og Úkraínu o.fl.</titill>
+    </skjal>
+    <skjal nr="159" tegund="frv.">
+      <flm skst="LRM" />
+      <flm skst="SigurjÞ" />
+      <flm skst="EBB" />
+      <flm skst="EÁs" />
+      <flm skst="KÞS" />
+      <mál nr="153" />
+      <titill>veiðar í fiskveiðilandhelgi Íslands og stjórn fiskveiða</titill>
+    </skjal>
+    <skjal nr="158" tegund="svar" embætti="utanrrh.">
+      <flm skst="ÞKG" embætti="utanrrh." />
+      <mál nr="123" />
+      <titill>þjónustugjöld</titill>
+    </skjal>
+    <skjal nr="155" tegund="þáltill.">
+      <flm skst="IngD" />
+      <flm skst="BergÓ" />
+      <flm skst="KGH" />
+      <flm skst="NMG" />
+      <flm skst="SDG" />
+      <flm skst="SÁA" />
+      <flm skst="SMás" />
+      <flm skst="ÞorgS" />
+      <mál nr="151" />
+      <titill>öryggis og varnarmál</titill>
+    </skjal>
+  </útbýting>
+</gerðabók>

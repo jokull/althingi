@@ -72,7 +72,7 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
     hits: r.hits.map((h) => ({
       speech_id: h.speechId, date: h.date, started: h.started, time: fmtTime(h.started),
       member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null },
-      speech_type: h.speechType, debate: h.debate,
+      speech_type: h.speechType, debate: h.debate, provisional: h.provisional,
       matter: h.matter ? { lthing: h.matter.lthing, class: h.matter.cls, nr: h.matter.nr, title: h.matter.title, url: `${SITE}/mal/${h.matter.lthing}/${h.matter.cls.toLowerCase()}/${h.matter.nr}` } : null,
       score: Math.round(h.score * 1000) / 1000, matching_paragraphs: h.matchingParagraphs,
       paragraphs: h.paragraphs.slice(0, compact ? 1 : 2).map((p) => ({
@@ -111,6 +111,8 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
       member: { id: s.memberId, name: s.memberName, party_at_date: s.party }, office: s.office, capacity: s.capacity,
       matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title } : null,
       audio_url: s.audioUrl, video_url: s.vodUrl, word_count: s.wordCount,
+      provisional: s.provisional, // true: Alþingi's provisional text (bráðabirgðatexti); replaced when the final arrives
+      text_source: s.textSource,
       prev_in_matter: s.prevId, next_in_matter: s.nextId, // same matter, by time: strong link
       citation: citation(s),
       revision: { raw_sha256: rev?.raw_sha256 ?? null, fetched_at: rev?.fetched_at ?? null, lemma_is_version: rev?.lemma_is_version ?? null },

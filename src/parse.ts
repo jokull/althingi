@@ -331,6 +331,34 @@ export interface MatterDetail {
   consultations: { roundId: number; requested: string | null; due: string | null; recipient: string; committeeId: number | null; committee: string | null }[];
   submissions: { id: number; sender: string; committeeId: number | null; kindCode: string | null; kind: string | null; received: string | null; sent: string | null; pdfUrl: string | null }[];
   rapporteurs: { memberId: number; name: string }[];
+  /** <ræður>: the matter's speeches with member ids (incl. non-MP ministers). No <vod> here (docs/INGEST.md §9). */
+  speeches: SpeechIndexEntry[];
+}
+
+/** Matter detail's <ræður> block. Shape differs from ræðulisti: ids in attributes, no date/matter children. */
+export function parseDetailSpeeches(root: El, matter: { lthing: number; cls: string; nr: number; title: string }): SpeechIndexEntry[] {
+  return kids(kid(root, "ræður"), "ræða").map((r): SpeechIndexEntry => {
+    const rm = text(kid(r, "ráðherra")), fo = text(kid(r, "forsetiAlþingis")), fr = text(kid(r, "framsögumaðurNefndarálits"));
+    const hasRole = (n: string) => kid(r, n) !== undefined;
+    const roleKind = hasRole("ráðherra") ? "ráðherra" : hasRole("forsetiAlþingis") ? "forseti" : hasRole("framsögumaðurNefndarálits") ? "framsögumaður" : null;
+    const urls = kid(r, "slóðir");
+    const u = (n: string) => text(kid(urls, n)) || null;
+    const xmlUrl = u("xml");
+    const started = text(kid(r, "ræðahófst"));
+    const id = xmlUrl?.match(ID_FROM_URL)?.[1] ?? null;
+    const type = text(kid(r, "tegundræðu"));
+    return {
+      id, era: "xml", sourceUrl: null,
+      memberId: int(attr(r, "þingmaður")) ?? int(attr(kid(r, "nafn"), "id")) ?? -1, memberName: text(kid(r, "nafn")),
+      roleKind, roleTitle: rm || fo || fr || null,
+      date: /^\d{4}-\d{2}-\d{2}/.test(started) ? started.slice(0, 10) : null,
+      lthing: int(attr(r, "þingnúmer")) ?? matter.lthing, fundur: int(attr(r, "fundarnúmer")),
+      started, ended: text(kid(r, "ræðulauk")) || null, type, debate: text(kid(r, "umræða")),
+      isSpeech: type !== "útbýting þingskjala",
+      matter: { nr: matter.nr, cls: matter.cls, title: matter.title },
+      xmlUrl, htmlUrl: u("html"), sgmlUrl: null, audioUrl: u("hljóð"), vodUrl: u("vod"),
+    };
+  });
 }
 
 export function parseMatterDetail(xml: string): MatterDetail {
@@ -398,13 +426,15 @@ export function parseMatterDetail(xml: string): MatterDetail {
     memberId: int(attr(f, "id")) ?? -1, name: text(kid(f, "nafn")),
   }));
 
+  const head = { lthing: int(attr(m, "þingnúmer")) ?? -1, cls: attr(m, "málsflokkur") ?? "A", nr: int(attr(m, "málsnúmer")) ?? -1, title: text(kid(m, "málsheiti")) };
   return {
-    lthing: int(attr(m, "þingnúmer")) ?? -1, cls: attr(m, "málsflokkur") ?? "A", nr: int(attr(m, "málsnúmer")) ?? -1,
-    title: text(kid(m, "málsheiti")), subtitle: text(kid(m, "efnisgreining")) || null,
+    lthing: head.lthing, cls: head.cls, nr: head.nr,
+    title: head.title, subtitle: text(kid(m, "efnisgreining")) || null,
     typeCode: attr(type, "málstegund") ?? null, typeLabel: text(kid(type, "heiti")) || null,
     statusText: text(kid(m, "staðamáls")) || null, questionTo: text(kid(m, "fyrirspurntil")) || null,
     laws: descendants(kid(root, "breytingaráLögum"), "lögTilBreytinga").map((l) => ({ year: int(attr(l, "ár")) ?? -1, nr: int(attr(l, "númer")) ?? -1 })),
     links, topics, documents, votes, consultations, submissions, rapporteurs,
+    speeches: parseDetailSpeeches(root, head),
   };
 }
 

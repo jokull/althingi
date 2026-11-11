@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<?dctm xml_app="Lidaskjal"?>
+<gerðabók xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd" xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <umsýsla lgþ="157" fundur="4">
+    <mál nr="1" málsflokkur="A" málstegund="l" umr="1f">
+      <málsheiti>fjárlög 2026</málsheiti>
+      <undirtitill />
+      <flm skst="DMK" embætti="fjmrh." />
+      <þskj tegund="stjfrv." nr="1" />
+    </mál>
+  </umsýsla>
+  <liðaskjal atkvæðagreiðsla="false" tími="2025-09-12T13:00:54">
+    <þingræða skst="AMöll" tími="2025-09-12T13:01:33" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:02:15" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="RGuðb" tími="2025-09-12T13:06:53" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:09:44" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="RGuðb" tími="2025-09-12T13:11:58" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:13:32" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="SGuðm" tími="2025-09-12T13:14:50" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:17:17" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="SGuðm" tími="2025-09-12T13:18:53" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:20:24" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="BergÓ" tími="2025-09-12T13:21:38" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:23:03" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="BergÓ" tími="2025-09-12T13:25:00" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:26:23" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T13:27:51" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:30:06" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T13:32:26" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:33:34" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="BergÓ" tími="2025-09-12T13:35:04" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:37:15" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="BergÓ" tími="2025-09-12T13:39:25" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="AMöll" tími="2025-09-12T13:40:58" embætti="heilbrrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T13:42:32" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T13:47:51" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T13:50:04" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T13:52:38" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T13:54:09" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="GE" tími="2025-09-12T13:55:53" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T13:58:03" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="GE" tími="2025-09-12T14:00:19" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:01:38" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="IngD" tími="2025-09-12T14:02:51" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:05:17" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="IngD" tími="2025-09-12T14:07:47" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:09:17" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JBÓ" tími="2025-09-12T14:10:54" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:12:16" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="EÁs" tími="2025-09-12T14:14:53" tegr="R" tegflm="F" frhr="0" />
+    <þingræða skst="JBÓ" tími="2025-09-12T14:15:02" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:15:50" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T14:17:05" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:19:25" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="ÓA" tími="2025-09-12T14:22:09" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:23:20" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="IngD" tími="2025-09-12T14:24:15" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:26:12" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="IngD" tími="2025-09-12T14:28:36" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="EÁs" tími="2025-09-12T14:30:13" tegr="R" tegflm="F" frhr="0" />
+    <þingræða skst="JPJ" tími="2025-09-12T14:30:23" embætti="umhv.- og loftslrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:32:27" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JPZ" tími="2025-09-12T14:37:53" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:40:19" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JPZ" tími="2025-09-12T14:42:43" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:44:13" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="GAS" tími="2025-09-12T14:45:45" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:47:57" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="GAS" tími="2025-09-12T14:50:10" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:51:27" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="MRK" tími="2025-09-12T14:52:46" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:55:03" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="MRK" tími="2025-09-12T14:57:19" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T14:58:39" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JPZ" tími="2025-09-12T15:00:06" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T15:02:44" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="JPZ" tími="2025-09-12T15:05:04" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="GIK" tími="2025-09-12T15:06:25" embætti="mennta- og barnamrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="DMK" tími="2025-09-12T15:07:46" embætti="fjmrh." tegr="R" tegflm="R" frhr="0" />
+    <þingræða skst="VilÁ" tími="2025-09-12T15:10:03" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="DBE" tími="2025-09-12T15:20:34" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="IngÞ" tími="2025-09-12T15:24:30" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="BergÓ" tími="2025-09-12T15:32:31" tegr="R" tegflm="Þ" frhr="0" />
+    <þingræða skst="DMK" tími="2025-09-12T15:43:20" embætti="fjmrh." tegr="R" tegflm="R" frhr="0" />
+    <atkvæðagreiðsla nr="68143" þskj="1" tegskjals="stjfrv." tími="2025-09-12T15:48:02" birtaatkvæði="nei" nefnd="fl" aðferð="G">
+      <niðurstaða já="0" nei="0" fjarverandi="0" greiðaekkiatkvæði="0" samfel="S" samhljóða="já" />
+    </atkvæðagreiðsla>
+  </liðaskjal>
+</gerðabók>

@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="Lidaskjal"?>
+<ns:gerðabók xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd" xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:ns="http://skema.althingi.is/skema">
+  <ns:umsýsla fundur="20" lgþ="157">
+    <ns:mál málsflokkur="B" málstegund="ab" nr="121" umr="*">
+      <ns:málsheiti>ab</ns:málsheiti>
+    </ns:mál>
+  </ns:umsýsla>
+  <ns:liðaskjal atkvæðagreiðsla="false" tími="2025-10-16T11:37:56">
+    <ns:atkvæðagreiðsla aðferð="S" birtaatkvæði="nei" nr="68295" tegskjals="stjfrv." tími="2025-10-16T11:38:23" þskj="49">
+      <ns:um tegatkvgr="af">
+        <ns:mgr>1. og 2. dagskrármáls.</ns:mgr>
+      </ns:um>
+      <ns:niðurstaða fjarverandi="19" greiðaekkiatkvæði="1" já="43" nei="0" samfel="S" samhljóða="nei" />
+      <ns:atkv gildi="já" skst="AMöll" />
+      <ns:atkv gildi="já" skst="ArnaJ" />
+      <ns:atkv gildi="já" skst="BergÓ" />
+      <ns:atkv gildi="fjarverandi" skst="BHar" />
+      <ns:atkv gildi="já" skst="DagH" />
+      <ns:atkv gildi="já" skst="DBE" />
+      <ns:atkv gildi="já" skst="DME" />
+      <ns:atkv gildi="já" skst="EBB" />
+      <ns:atkv gildi="já" skst="EÁs" />
+      <ns:atkv gildi="já" skst="EyjÁ" />
+      <ns:atkv gildi="já" skst="GrímG" />
+      <ns:atkv gildi="fjarverandi" skst="GE" />
+      <ns:atkv gildi="já" skst="GÞÞ" />
+      <ns:atkv gildi="já" skst="GAS" />
+      <ns:atkv gildi="fjarverandi" skst="GIK" />
+      <ns:atkv gildi="já" skst="GHaf" />
+      <ns:atkv gildi="já" skst="HHL" />
+      <ns:atkv gildi="já" skst="HKF" />
+      <ns:atkv gildi="já" skst="HildS" />
+      <ns:atkv gildi="fjarverandi" skst="IngS" />
+      <ns:atkv gildi="fjarverandi" skst="IngD" />
+      <ns:atkv gildi="fjarverandi" skst="IIsak" />
+      <ns:atkv gildi="já" skst="IngÞ" />
+      <ns:atkv gildi="já" skst="JGH" />
+      <ns:atkv gildi="já" skst="JPJ" />
+      <ns:atkv gildi="já" skst="JGnarr" />
+      <ns:atkv gildi="já" skst="JGunn" />
+      <ns:atkv gildi="fjarverandi" skst="JPZ" />
+      <ns:atkv gildi="já" skst="JBÓ" />
+      <ns:atkv gildi="já" skst="KGH" />
+      <ns:atkv gildi="fjarverandi" skst="KÁB" />
+      <ns:atkv gildi="já" skst="KÞS" />
+      <ns:atkv gildi="já" skst="KFrost" />
+      <ns:atkv gildi="fjarverandi" skst="LRM" />
+      <ns:atkv gildi="fjarverandi" skst="LE" />
+      <ns:atkv gildi="fjarverandi" skst="MRK" />
+      <ns:atkv gildi="já" skst="NMG" />
+      <ns:atkv gildi="já" skst="NTF" />
+      <ns:atkv gildi="já" skst="PawB" />
+      <ns:atkv gildi="já" skst="RÞI" />
+      <ns:atkv gildi="fjarverandi" skst="RGuðb" />
+      <ns:atkv gildi="fjarverandi" skst="SGuðm" />
+      <ns:atkv gildi="já" skst="SDG" />
+      <ns:atkv gildi="já" skst="SER" />
+      <ns:atkv gildi="já" skst="SÁA" />
+      <ns:atkv gildi="fjarverandi" skst="SigurjÞ" />
+      <ns:atkv gildi="já" skst="SHP" />
+      <ns:atkv gildi="fjarverandi" skst="SIJ" />
+      <ns:atkv gildi="já" skst="SÖH" />
+      <ns:atkv gildi="já" skst="SSB" />
+      <ns:atkv gildi="já" skst="SMás" />
+      <ns:atkv gildi="já" skst="SVS" />
+      <ns:atkv gildi="greiðir_ekki_atkv" skst="VilÁ" />
+      <ns:atkv gildi="já" skst="VíðR" />
+      <ns:atkv gildi="já" skst="ÁBH" />
+      <ns:atkv gildi="já" skst="ÁLÞ" />
+      <ns:atkv gildi="já" skst="ÓA" />
+      <ns:atkv gildi="fjarverandi" skst="ÞorbG" />
+      <ns:atkv gildi="fjarverandi" skst="ÞKG" />
+      <ns:atkv gildi="fjarverandi" skst="ÞorgS" />
+      <ns:atkv gildi="já" skst="ÞórP" />
+      <ns:atkv gildi="fjarverandi" skst="ÞórdG" />
+      <ns:atkv gildi="já" skst="ÞSv" />
+    </ns:atkvæðagreiðsla>
+  </ns:liðaskjal>
+</ns:gerðabók>

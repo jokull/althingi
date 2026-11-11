@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="Lidaskjal"?>
+<gerðabók xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd">
+  <umsýsla lgþ="157" fundur="13">
+    <mál nr="137" málsflokkur="A" málstegund="b" umr="0">
+      <málsheiti>eignarhald 20 stærstu útgerðarfélaga landsins í íslensku atvinnulífi</málsheiti>
+      <flm skst="DBE" />
+      <flm skst="ArnaJ" />
+      <flm skst="ÁBH" />
+      <flm skst="EÁs" />
+      <flm skst="KÞS" />
+      <flm skst="ÁLÞ" />
+      <flm skst="LRM" />
+      <flm skst="SigurjÞ" />
+      <flm skst="SGuðm" />
+      <flm skst="JGnarr" />
+      <flm skst="GrímG" />
+      <flm skst="IngÞ" />
+      <flm skst="GE" />
+      <þskj tegund="beiðni um skýrslu" nr="140" />
+    </mál>
+  </umsýsla>
+  <liðaskjal atkvæðagreiðsla="true" tími="2025-10-07T14:04:45">
+    <atkvæðagreiðsla nr="68227" þskj="140" tegskjals="beiðni um skýrslu" tími="2025-10-07T14:05:48" birtaatkvæði="nei" aðferð="S" nefnd="atvvrh.">
+      <um tegatkvgr="bn" />
+      <niðurstaða já="37" nei="0" fjarverandi="26" greiðaekkiatkvæði="0" samfel="S" samhljóða="Já" />
+      <atkv skst="AMöll" gildi="fjarverandi" />
+      <atkv skst="AMJ" gildi="já" />
+      <atkv skst="ArnaJ" gildi="já" />
+      <atkv skst="BergÓ" gildi="já" />
+      <atkv skst="BHar" gildi="já" />
+      <atkv skst="DagH" gildi="fjarverandi" />
+      <atkv skst="DBE" gildi="já" />
+      <atkv skst="DME" gildi="já" />
+      <atkv skst="EBB" gildi="fjarverandi" />
+      <atkv skst="EÁs" gildi="já" />
+      <atkv skst="EyjÁ" gildi="fjarverandi" />
+      <atkv skst="GrímG" gildi="já" />
+      <atkv skst="GE" gildi="já" />
+      <atkv skst="GÞÞ" gildi="fjarverandi" />
+      <atkv skst="GAS" gildi="já" />
+      <atkv skst="GIK" gildi="fjarverandi" />
+      <atkv skst="GHaf" gildi="já" />
+      <atkv skst="HHL" gildi="fjarverandi" />
+      <atkv skst="HKF" gildi="fjarverandi" />
+      <atkv skst="HildS" gildi="fjarverandi" />
+      <atkv skst="IngS" gildi="fjarverandi" />
+      <atkv skst="IngD" gildi="fjarverandi" />
+      <atkv skst="IIsak" gildi="fjarverandi" />
+      <atkv skst="IngÞ" gildi="já" />
+      <atkv skst="JGH" gildi="fjarverandi" />
+      <atkv skst="JPJ" gildi="fjarverandi" />
+      <atkv skst="JGnarr" gildi="já" />
+      <atkv skst="JGunn" gildi="já" />
+      <atkv skst="JPZ" gildi="já" />
+      <atkv skst="JBÓ" gildi="já" />
+      <atkv skst="KGH" gildi="já" />
+      <atkv skst="KÁB" gildi="já" />
+      <atkv skst="KÞS" gildi="já" />
+      <atkv skst="KFrost" gildi="já" />
+      <atkv skst="LRM" gildi="já" />
+      <atkv skst="LE" gildi="fjarverandi" />
+      <atkv skst="MRK" gildi="já" />
+      <atkv skst="NMG" gildi="fjarverandi" />
+      <atkv skst="NTF" gildi="fjarverandi" />
+      <atkv skst="PawB" gildi="já" />
+      <atkv skst="RÞI" gildi="já" />
+      <atkv skst="RGuðb" gildi="já" />
+      <atkv skst="SGuðm" gildi="já" />
+      <atkv skst="SDG" gildi="fjarverandi" />
+      <atkv skst="SÁA" gildi="já" />
+      <atkv skst="SigurjÞ" gildi="já" />
+      <atkv skst="SHP" gildi="fjarverandi" />
+      <atkv skst="SIJ" gildi="fjarverandi" />
+      <atkv skst="SÖH" gildi="já" />
+      <atkv skst="SSB" gildi="já" />
+      <atkv skst="SMás" gildi="já" />
+      <atkv skst="SVS" gildi="já" />
+      <atkv skst="VilÁ" gildi="fjarverandi" />
+      <atkv skst="VíðR" gildi="fjarverandi" />
+      <atkv skst="ÁBH" gildi="já" />
+      <atkv skst="ÁLÞ" gildi="fjarverandi" />
+      <atkv skst="ÓA" gildi="já" />
+      <atkv skst="ÞorbG" gildi="fjarverandi" />
+      <atkv skst="ÞKG" gildi="fjarverandi" />
+      <atkv skst="ÞorgS" gildi="já" />
+      <atkv skst="ÞórP" gildi="já" />
+      <atkv skst="ÞórdG" gildi="fjarverandi" />
+      <atkv skst="ÞSv" gildi="já" />
+    </atkvæðagreiðsla>
+  </liðaskjal>
+</gerðabók>

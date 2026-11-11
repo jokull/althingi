@@ -189,9 +189,9 @@ export interface SearchView {
 const Hit = ({ h, party }: { h: SpeechHit; party: string | null | undefined }) => (
   <article class="hit">
     <header class="hit-h">
-      <a class="who" href={`/thingmadur/${h.memberId}`}>{h.memberName}</a>
+      {h.memberId === null ? <span class="who">{h.memberName}</span> : <a class="who" href={`/thingmadur/${h.memberId}`}>{h.memberName}</a>}
       {party && <Party name={party} />}
-      <span class="hit-when">{h.speechType} · <a href={speechUrl(h.speechId)}><time datetime={h.started.replace(" ", "T")}>{fmtDateTime(h.started)}</time></a></span>
+      <span class="hit-when">{h.speechType}{h.provisional ? " · bráðabirgðatexti" : ""} · <a href={speechUrl(h.speechId)}><time datetime={h.started.replace(" ", "T")}>{fmtDateTime(h.started)}</time></a></span>
     </header>
     {h.matter && (
       <a class="hit-matter" href={matterUrl(h.matter.lthing, h.matter.cls, h.matter.nr)}>{h.matter.title ?? `${h.matter.nr}. mál`}</a>
@@ -531,8 +531,8 @@ export const SpeechPageView = ({ s }: { s: SpeechPage }) => {
           <div class="who-line">
             <Avatar name={s.memberName} party={s.party} size="l" />
             <div>
-              <h1><a href={`/thingmadur/${s.memberId}`}>{s.memberName}</a></h1>
-              <p class="who-m">{s.party && <Party name={s.party} />}{s.office && <> · {s.office}</>}{s.capacity && s.capacity !== "þingmaður" && <> · {s.capacity}</>}</p>
+              <h1>{s.memberId === null ? s.memberName : <a href={`/thingmadur/${s.memberId}`}>{s.memberName}</a>}</h1>
+              <p class="who-m">{s.memberId === null && <>skammstöfun í ræðuskrá; ekki enn tengd þingmanni</>}{s.party && <Party name={s.party} />}{s.office && <> · {s.office}</>}{s.capacity && s.capacity !== "þingmaður" && <> · {s.capacity}</>}</p>
             </div>
           </div>
           <p class="sp-meta">
@@ -540,6 +540,7 @@ export const SpeechPageView = ({ s }: { s: SpeechPage }) => {
             {deb && <span class="tag">{deb}</span>}
             <time datetime={s.started.replace(" ", "T")}>{fmtDateTime(s.started)}{s.ended ? `–${fmtTime(s.ended)}` : ""}</time>
             {s.wordCount ? <span>{n(s.wordCount)} orð</span> : null}
+            {s.provisional && <span>bráðabirgðatexti: lokatexti Alþingis hefur ekki borist</span>}
           </p>
           <p class="sp-links">
             <a href={`/dagur/${s.date}`}>Allur þingdagurinn</a>

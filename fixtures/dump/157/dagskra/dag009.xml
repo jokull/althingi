@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="Dagskrarskjal"?>
+<gerðabók xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd">
+  <umsýsla lgþ="157" fundur="9" tími="2025-09-22T15:00:00" />
+  <dagskrá>
+    <fundurhefst tími="2025-09-22T15:00:00" />
+    <dagskrárliður>
+      <mál málstegund="ft" nr="39" málsflokkur="B" />
+      <titill>óundirbúinn fyrirspurnatími</titill>
+      <undirliður>
+        <mál málstegund="ft" nr="40" málsflokkur="B" />
+        <titill>framlög til endurhæfingar og þjónustusamningur við Heilsustofnun NLFÍ </titill>
+      </undirliður>
+      <undirliður>
+        <mál málstegund="ft" nr="41" málsflokkur="B" />
+        <titill>samningar við sérfræðinga á Sjúkrahúsinu á Akureyri</titill>
+      </undirliður>
+      <undirliður>
+        <mál málstegund="ft" nr="42" málsflokkur="B" />
+        <titill>leit að olíu og gasi við Ísland</titill>
+      </undirliður>
+      <undirliður>
+        <mál málstegund="ft" nr="43" málsflokkur="B" />
+        <titill>afstaða félags- og húsnæðismálaráðherra til inngöngu í Evrópusambandið</titill>
+      </undirliður>
+    </dagskrárliður>
+    <dagskrárliður>
+      <mál málstegund="l" nr="106" málsflokkur="A" umr="1">
+        <flm embaett="fél.- og húsnrh." skst="IngS" />
+        <þskj nr="106" tegund="stjfrv." />
+      </mál>
+      <titill>samningur Sameinuðu þjóðanna um réttindi fatlaðs fólks</titill>
+    </dagskrárliður>
+    <dagskrárliður>
+      <mál málstegund="l" nr="107" málsflokkur="A" umr="1">
+        <flm embaett="fél.- og húsnrh." skst="IngS" />
+        <þskj nr="107" tegund="stjfrv." />
+      </mál>
+      <titill>fjöleignarhús</titill>
+    </dagskrárliður>
+    <dagskrárliður>
+      <mál málstegund="l" nr="108" málsflokkur="A" umr="1">
+        <flm embaett="fél.- og húsnrh." skst="IngS" />
+        <þskj nr="108" tegund="stjfrv." />
+      </mál>
+      <titill>húsaleigulög</titill>
+    </dagskrárliður>
+  </dagskrá>
+</gerðabók>

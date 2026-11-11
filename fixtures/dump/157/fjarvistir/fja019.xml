@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="Fjarvistarleyfi"?>
+<gerðabók xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd">
+  <umsýsla lgþ="157" fundur="19" dags="2025-10-16" tími="2025-10-16T10:30:00" />
+  <fjarvistarleyfi>
+    <þm skst="IngD" embætti="" />
+    <þm skst="KFrost" embætti="forsrh." />
+    <þm skst="LE" embætti="mennrh." />
+  </fjarvistarleyfi>
+</gerðabók>

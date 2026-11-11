@@ -3,9 +3,12 @@ import type { Sql } from "./db.ts";
 
 export interface SpeechPage {
   id: string; lthing: number; date: string; started: string; ended: string | null; type: string; debate: string;
-  memberId: number; memberName: string; party: string | null; roleKind: string | null; office: string | null; capacity: string | null;
+  /** null = dump-only speaker not resolved yet: memberName is then the abbreviation */
+  memberId: number | null; memberName: string; party: string | null; roleKind: string | null; office: string | null; capacity: string | null;
   matter: { lthing: number; cls: string; nr: number; title: string | null } | null;
   audioUrl: string | null; vodUrl: string | null; wordCount: number | null; textState: string;
+  /** Alþingi's provisional text (bráðabirgðatexti), replaced when the final arrives */
+  provisional: boolean; textSource: string | null;
   paragraphs: { seq: number; text: string; interjections: string[] }[];
   prevId: string | null; nextId: string | null;
 }
@@ -26,13 +29,14 @@ export async function partyAt(sql: Sql, memberId: number, date: string): Promise
 export async function speechPage(sql: Sql, id: string): Promise<SpeechPage | null> {
   const [s] = await sql<{
     id: string; lthing: number; speech_date: string; started: string; ended: string | null; type: string; debate: string;
-    member_id: number; member_name: string; role_kind: string | null; office: string | null; speaker_capacity: string | null;
+    member_id: number | null; member_name: string; role_kind: string | null; office: string | null; speaker_capacity: string | null;
     matter_cls: string | null; matter_nr: number | null; title: string | null; audio_url: string | null; vod_url: string | null;
-    word_count: number | null; text_state: string; fundur: number | null;
+    word_count: number | null; text_state: string; fundur: number | null; provisional: boolean; text_source: string | null;
   }[]>`
-    select s.id, s.lthing, s.speech_date::text, s.started::text, s.ended::text, s.type, s.debate, s.member_id, s.member_name,
+    select s.id, s.lthing, s.speech_date::text, s.started::text, s.ended::text, s.type, s.debate, s.member_id,
+           coalesce(s.member_name, s.speaker_abbr, '') as member_name,
            s.role_kind, s.office, s.speaker_capacity, s.matter_cls, s.matter_nr, m.title, s.audio_url, s.vod_url,
-           s.word_count, s.text_state, s.fundur
+           s.word_count, s.text_state, s.fundur, s.provisional, s.text_source
     from speeches s left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
     where s.id = ${id}`;
   if (!s) return null;
@@ -49,10 +53,11 @@ export async function speechPage(sql: Sql, id: string): Promise<SpeechPage | nul
     : [];
   return {
     id: s.id, lthing: s.lthing, date: s.speech_date, started: s.started, ended: s.ended, type: s.type, debate: s.debate,
-    memberId: s.member_id, memberName: s.member_name, party: await partyAt(sql, s.member_id, s.speech_date),
+    memberId: s.member_id, memberName: s.member_name, party: s.member_id === null ? null : await partyAt(sql, s.member_id, s.speech_date),
     roleKind: s.role_kind, office: s.office, capacity: s.speaker_capacity,
     matter: s.matter_cls && s.matter_nr !== null ? { lthing: s.lthing, cls: s.matter_cls, nr: s.matter_nr, title: s.title } : null,
     audioUrl: s.audio_url, vodUrl: s.vod_url, wordCount: s.word_count, textState: s.text_state,
+    provisional: s.provisional, textSource: s.text_source,
     paragraphs, prevId: nb.find((x) => x.dir === "prev")?.id ?? null, nextId: nb.find((x) => x.dir === "next")?.id ?? null,
   };
 }
@@ -168,7 +173,7 @@ export async function corpusStats(sql: Sql): Promise<{ speeches: number; from: s
 }
 
 /** Party on the speech date for many speeches at once (one query). Map key = speech id. */
-export async function partiesFor(sql: Sql, items: { speechId: string; memberId: number; date: string }[]): Promise<Map<string, string | null>> {
+export async function partiesFor(sql: Sql, items: { speechId: string; memberId: number | null; date: string }[]): Promise<Map<string, string | null>> {
   const out = new Map<string, string | null>();
   if (!items.length) return out;
   const rows = await sql<{ sid: string; party: string | null }[]>`

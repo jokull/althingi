@@ -402,6 +402,8 @@ export async function upsertMatterDetail(sql: Sql, d: MatterDetail, lemmatize: (
     for (const c of d.consultations) if (c.committeeId !== null && c.committee) seen.set(c.committeeId, c.committee);
     if (seen.size) await tx`insert into committees ${tx([...seen].map(([id, name]) => ({ id, name })))} on conflict (id) do nothing`;
   });
+  // the <ræður> block: member ids for every speaker (non-MP ministers included) -> speeches + sightings
+  if (d.speeches?.length) await upsertSpeechIndex(sql, d.speeches, lemmatize, "matter-detail");
 }
 
 /** A-mál of a session whose detail has not been fetched yet, in matter-number order. */

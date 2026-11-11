@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?dcmt xml_app="AdalmennTakaSaeti"?>
+<gerðabók xmlns="http://skema.althingi.is/skema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_gerdabok.xsd">
+  <umsýsla lgþ="157" fundur="9" dags="2025-09-22" />
+  <aðalmennTakaSætiÁNý>
+    <þm skst="GÞÞ" embætti="" />
+    <þm skst="IngÞ" embætti="2vfors." />
+    <þm skst="SigurjÞ" embætti="" />
+  </aðalmennTakaSætiÁNý>
+</gerðabók>

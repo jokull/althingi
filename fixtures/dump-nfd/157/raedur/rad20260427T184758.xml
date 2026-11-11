@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- synthetic fixture: skst decomposed to NFD to test abbreviation normalisation -->
+<?dctm xml_app="Raeduskjal"?>
+<ns:ræða frhr="0" id="r2026-04-27T18:47:58" skst="ÁLÞ" tegflm="Þ" tegr="A" xsi:schemaLocation="http://skema.althingi.is/skema http://skema.althingi.is/skema/althingi_raedur.xsd" xmlns:ns="http://skema.althingi.is/skema" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!-- 2026-04-27 18:49:22 -->
+
+  <ns:umsýsla fundur="100" lgþ="157" tími="2026-04-27T18:47:58">
+    <ns:mál málsflokkur="A" málstegund="s" nr="629">
+      <ns:málsheiti>utanríkis- og alþjóðamál 2025</ns:málsheiti>
+    </ns:mál>
+  </ns:umsýsla>
+
+  <ns:ræðutexti>
+    <ns:mgr>Virðulegi forseti. Ég var náttúrlega að ræða einmitt um það að við
+    erum með fulltrúa mjög víða og það skipti máli að vera með þá fulltrúa sem
+    við erum með í alþjóðlegu samstarfi og það er það sem ég var að ræða þar.
+    Það skiptir máli. Ég var svo heppin í fyrra að fá að fara til
+    Bandaríkjanna og kynnast aðeins starfsemi Sameinuðu þjóðanna og ýmislegt
+    fleira. Það opnar augu manns fyrir ansi mörgu þegar maður fer að skoða
+    þetta beint í æð. Hvað varðar mína afstöðu þá veit ég ekki hvort þjóðin
+    eigi endilega heimtingu á að fá að vita. Ég minni á það að ég á nú bara
+    eitt atkvæði í þessari þjóðaratkvæðagreiðslu, eins og allir aðrir. Mitt
+    atkvæði mun ekki breyta öllu. Það fer bara þeim megin sem það fellur og er
+    bara eitt atkvæði þar og ég tel ekki að það muni breyta öllu. Ég held ekki
+    heldur að fólk muni breyta sínum skoðunum og sínu atkvæði <ns:bjalla/>
+    eftir því hvernig ég ákveð að gera það. Kjósendur Flokks fólksins ganga
+    bara frjálsir til þessara kosninga <ns:bjalla/> og þurfa ekkert endilega
+    að vera að fara eftir því sem þingmenn flokksins segja í þessum
+    efnum.</ns:mgr>
+  </ns:ræðutexti>
+</ns:ræða>
