@@ -448,3 +448,38 @@ export function parseCommittees(xml: string): CommitteeRow[] {
     firstLthing: int(text(kid(kid(n, "tímabil"), "fyrstaþing"))),
   }));
 }
+
+// ---------------------------------------------------------------- session lists: documents and votes (one request each)
+
+export interface DocumentRow { lthing: number; nr: number; issued: string | null; type: string; htmlUrl: string | null; pdfUrl: string | null; xmlUrl: string | null }
+
+/** thingskjol/?lthing=N: every document id + type + links of a session (no matter link: that comes from matter detail). */
+export function parseDocumentList(xml: string): DocumentRow[] {
+  return kids(parseXml(xml), "þingskjal").map((d) => {
+    const u = kid(d, "slóð");
+    return {
+      lthing: int(attr(d, "þingnúmer")) ?? -1, nr: int(attr(d, "skjalsnúmer")) ?? -1, issued: text(kid(d, "útbýting")) || null,
+      type: text(kid(d, "skjalategund")), htmlUrl: text(kid(u, "html")) || null, pdfUrl: text(kid(u, "pdf")) || null, xmlUrl: text(kid(u, "xml")) || null,
+    };
+  }).filter((d) => d.nr >= 0 && d.lthing >= 0);
+}
+
+export interface VoteRow extends Omit<MatterDetail["votes"][number], never> { lthing: number; cls: string; nr: number; fundur: number | null; htmlUrl: string | null }
+
+/** atkvaedagreidslur/?lthing=N | ?dagur=YYYYMMDD: vote summaries (superset of the dump's: includes "kom ekki til atkvæðagreiðslu"). */
+export function parseVoteList(xml: string): VoteRow[] {
+  return kids(parseXml(xml), "atkvæðagreiðsla").map((v) => {
+    const sum = kid(v, "samantekt");
+    const kind = kid(v, "tegund");
+    const cnt = (n: string) => int(text(kid(kid(sum, n), "fjöldi")));
+    return {
+      id: int(attr(v, "atkvæðagreiðslunúmer")) ?? -1, lthing: int(attr(v, "þingnúmer")) ?? -1, cls: attr(v, "málsflokkur") ?? "A",
+      nr: int(attr(v, "málsnúmer")) ?? -1, fundur: int(text(kid(v, "fundur"))),
+      votedAt: text(kid(v, "tími")) || null, kindCode: attr(kind, "tegund") ?? null, kindLabel: text(kind),
+      docNr: int(attr(kid(v, "þingskjal"), "skjalsnúmer")),
+      method: text(kid(sum, "aðferð")) || null, result: text(kid(sum, "afgreiðsla")) || null,
+      yes: cnt("já"), no: cnt("nei"), abstain: cnt("greiðirekkiatkvæði") ?? cnt("sátuhjá"),
+      htmlUrl: text(kid(kid(v, "nánar"), "html")) || null,
+    };
+  }).filter((v) => v.id >= 0 && v.lthing >= 0 && v.nr >= 0);
+}

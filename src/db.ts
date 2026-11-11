@@ -411,3 +411,47 @@ export async function matterDetailQueue(sql: Sql, lthing: number, limit: number)
   return sql<{ nr: number }[]>`
     select nr from matters where lthing = ${lthing} and cls = 'A' and detail_fetched_at is null order by nr limit ${limit}`;
 }
+
+// ---------------------------------------------------------------- session lists (service L1)
+
+/** thingskjol list: ids, types, links. Never overwrites a matter link; only changed rows are written. */
+export async function upsertDocumentList(sql: Sql, rows: import("./parse.ts").DocumentRow[]): Promise<number> {
+  const data = uniqBy(rows, (r) => `${r.lthing}/${r.nr}`).map((r) => ({
+    lthing: r.lthing, nr: r.nr, type: r.type, issued: r.issued, html_url: r.htmlUrl, pdf_url: r.pdfUrl, xml_url: r.xmlUrl, source: "service",
+  }));
+  let n = 0;
+  await inChunks(data, async (c) => {
+    n += (await sql`
+      insert into documents ${sql(c)}
+      on conflict (lthing, nr) do update set type = excluded.type, issued = coalesce(excluded.issued, documents.issued),
+        html_url = coalesce(excluded.html_url, documents.html_url), pdf_url = coalesce(excluded.pdf_url, documents.pdf_url),
+        xml_url = coalesce(excluded.xml_url, documents.xml_url)
+      where (documents.type, documents.issued, documents.html_url, documents.pdf_url, documents.xml_url)
+        is distinct from (excluded.type, coalesce(excluded.issued, documents.issued), coalesce(excluded.html_url, documents.html_url),
+                          coalesce(excluded.pdf_url, documents.pdf_url), coalesce(excluded.xml_url, documents.xml_url))`).count;
+  });
+  return n;
+}
+
+/** Vote summaries from a list: the service's labels win, the dump's counts are kept when present (docs/INGEST.md §2). */
+export async function upsertVoteList(sql: Sql, rows: import("./parse.ts").VoteRow[]): Promise<number> {
+  const data = uniqBy(rows, (r) => String(r.id)).map((v) => ({
+    id: v.id, lthing: v.lthing, cls: v.cls, nr: v.nr, voted_at: v.votedAt, kind_code: v.kindCode, kind_label: v.kindLabel,
+    doc_nr: v.docNr, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, source: "service",
+  }));
+  let n = 0;
+  await inChunks(data, async (c) => {
+    n += (await sql`
+      insert into votes ${sql(c)}
+      on conflict (id) do update set kind_code = excluded.kind_code, kind_label = excluded.kind_label,
+        method = coalesce(excluded.method, votes.method), result = coalesce(excluded.result, votes.result),
+        voted_at = coalesce(votes.voted_at, excluded.voted_at), doc_nr = coalesce(votes.doc_nr, excluded.doc_nr),
+        yes = coalesce(votes.yes, excluded.yes), no = coalesce(votes.no, excluded.no), abstain = coalesce(votes.abstain, excluded.abstain)
+      where (votes.kind_code, votes.kind_label) is distinct from (excluded.kind_code, excluded.kind_label)
+         or (excluded.method is not null and votes.method is distinct from excluded.method)
+         or (excluded.result is not null and votes.result is distinct from excluded.result)
+         or (votes.voted_at is null and excluded.voted_at is not null) or (votes.doc_nr is null and excluded.doc_nr is not null)
+         or (votes.yes is null and excluded.yes is not null)`).count;
+  });
+  return n;
+}
