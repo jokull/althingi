@@ -16,7 +16,7 @@
 import { parseArgs } from "node:util";
 import { type LockName, type Sql, connect, finishRun, migrate, startRun, tryLock } from "../src/db.ts";
 import { derive, unresolvedSpeakers } from "../src/derive.ts";
-import { type Filter, type StepResult, dumpMisc, dumpSittings, dumpSpeeches, hashDrop } from "../src/dump-ingest.ts";
+import { type Filter, PARSER_REV, type StepResult, dumpMisc, dumpSittings, dumpSpeeches, hashDrop } from "../src/dump-ingest.ts";
 import { Blocked, RateLimited } from "../src/fetcher.ts";
 import { post } from "../src/post.ts";
 import { runService } from "../src/service.ts";
@@ -75,7 +75,9 @@ async function status() {
   console.table(await sql`select lthing, count(*)::int speeches, count(*) filter (where text_state = 'done')::int done,
     count(*) filter (where member_id is null)::int unresolved, count(*) filter (where provisional)::int provisional
     from speeches group by 1 order by 1 desc limit 12`);
-  console.table(await sql`select dir, count(*)::int files, count(*) filter (where parsed_at is null)::int queued from dump_files group by 1 order by 1`);
+  // directories without a parser (lestrarsalur, thingmalaskra, spoluskjol) are hashed and kept raw: never "queued"
+  console.table(await sql`select dir, count(*)::int files, count(*) filter (where parsed_at is null and dir = any(${Object.keys(PARSER_REV)}))::int queued
+    from dump_files group by 1 order by 1`);
   console.table(await sql`select id, kind, started, finished, status, requests, files, rows from ingest_runs order by id desc limit 8`);
   log(`unresolved speakers: ${await unresolvedSpeakers(sql)}`);
 }
