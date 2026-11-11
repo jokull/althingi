@@ -52,7 +52,8 @@ Sitemap: https://althingi.solberg.is/sitemap.xml
 
 const iso = (s: string | undefined): string | undefined => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
 
-export interface AppOpts { mcpRate?: RateOpts }
+/** mcpSql: a separate pool for /mcp with a longer statement timeout (agents wait; web pages must not). */
+export interface AppOpts { mcpRate?: RateOpts; mcpSql?: Sql }
 
 export function createApp(sql: Sql, opts: AppOpts = {}) {
   const app = new Hono();
@@ -521,7 +522,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     // No IPs. Body is read from a clone so the transport still gets the stream.
     const t0 = Date.now();
     const peek = await c.req.raw.clone().json().catch(() => null) as unknown;
-    const res = await handleMcp(c, sql, (await current()).lthing);
+    const res = await handleMcp(c, opts.mcpSql ?? sql, (await current()).lthing);
     if (process.env.MCP_LOG !== "0") {
       for (const m of (Array.isArray(peek) ? peek : [peek]) as { method?: string; params?: { name?: string; arguments?: unknown; clientInfo?: { name?: string; version?: string } } }[]) {
         if (!m?.method) continue;
