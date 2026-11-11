@@ -108,10 +108,19 @@ const ref = (q: QueuedFile) => `${q.lthing}/${q.dir}/${q.name.trim()}`;
  * A different final sha rewrites the text, keeps the old sha in speech_revisions and sets revised_at.
  * A provisional text never replaces a final, and is replaced by any final.
  */
-export async function dumpSpeeches(sql: Sql, f: Filter = {}, log: (s: string) => void = () => {}, opts: { limit?: number } = {}): Promise<StepResult> {
+/** Worker shard of a speech file, keyed by its timestamp stem so a final and a provisional twin share one worker. */
+export function speechShard(name: string, n: number): number {
+  const stem = /(\d{8}T\d{6})/.exec(name)?.[1] ?? name;
+  let h = 0;
+  for (let i = 0; i < stem.length; i++) h = (h * 31 + stem.charCodeAt(i)) >>> 0;
+  return h % n;
+}
+
+export async function dumpSpeeches(sql: Sql, f: Filter = {}, log: (s: string) => void = () => {}, opts: { limit?: number; shard?: { i: number; n: number } } = {}): Promise<StepResult> {
   const r = result();
   const ver = lemmaVersion();
-  const files = await queue(sql, ["raedur", "raedur_bradabirgda"], f);
+  const sh = opts.shard;
+  const files = (await queue(sql, ["raedur", "raedur_bradabirgda"], f)).filter((q) => !sh || speechShard(q.name, sh.n) === sh.i);
   // ids that have a properly named final file (`radYYYYMMDDTHHMMSS.xml`): such a file beats both an irregularly named
   // twin (` rad….xml` exists next to `rad….xml` with different bytes in 157) and any provisional text
   const regular = new Set<string>();

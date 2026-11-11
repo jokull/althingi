@@ -28,7 +28,7 @@ const { positionals, values: v } = parseArgs({
   allowPositionals: true,
   options: {
     drop: { type: "string" }, from: { type: "string" }, to: { type: "string" }, lthing: { type: "string" },
-    limit: { type: "string" }, "replay-raw": { type: "boolean" }, zip: { type: "string" },
+    limit: { type: "string" }, workers: { type: "string" }, shard: { type: "string" }, "replay-raw": { type: "boolean" }, zip: { type: "string" },
     "from-date": { type: "string" }, "to-date": { type: "string" }, "max-age-hours": { type: "string" },
     weekly: { type: "boolean" }, touched: { type: "boolean" }, provisional: { type: "boolean" }, date: { type: "string" },
   },
@@ -50,7 +50,28 @@ function report(name: string, r: StepResult) {
   log(`${name}: ${r.files} files, ${r.rows} rows written, ${r.skipped} skipped, ${r.errors} errors${notes ? ` (${notes})` : ""}`);
 }
 
+// `--workers N` on dump speeches: the parent holds the dump lock and runs N children, each `--shard i/N` (CPU-bound
+// lemmatization, one core each). Children are only allowed under a parent (INGEST_SHARD_CHILD=1), never on their own.
+const shard = (() => {
+  if (!v.shard) return undefined;
+  if (process.env.INGEST_SHARD_CHILD !== "1") { console.error("--shard is internal; use --workers N"); process.exit(2); }
+  const [i, n] = v.shard.split("/").map(Number);
+  return { i: i!, n: n! };
+})();
+
+async function speechWorkers(n: number): Promise<number> {
+  const pass = ["from", "to", "lthing", "limit"].flatMap((k) => (v[k as keyof typeof v] ? [`--${k}`, String(v[k as keyof typeof v])] : []));
+  const kids = Array.from({ length: n }, (_, i) => Bun.spawn(["bun", import.meta.path, "dump", "speeches", "--shard", `${i}/${n}`, ...pass], {
+    env: { ...process.env, INGEST_SHARD_CHILD: "1" }, stdout: "inherit", stderr: "inherit",
+  }));
+  const codes = await Promise.all(kids.map((k) => k.exited));
+  log(`dump speeches: ${n} workers exited ${codes.join(",")}`);
+  if (codes.some((c) => c !== 0)) throw new Error(`dump speeches worker failed: exit codes ${codes.join(",")}`);
+  return 0;
+}
+
 async function locked<T>(name: LockName, fn: () => Promise<T>): Promise<T> {
+  if (shard) return fn(); // child of a --workers parent that holds the lock
   if (!(await tryLock(sql, name))) { console.error(`the ${name} lock is held by another process; refusing to run two`); process.exit(3); }
   return fn();
 }
@@ -64,7 +85,12 @@ async function dump(step: string | undefined, sqlc: Sql): Promise<{ files: numbe
     log(`dump hash: drop ${h.dropId}${h.reused ? " (unchanged tree, reused)" : ""}, ${h.files} files, ${h.changed} queued`);
     files += h.changed;
   }
-  if (step === "speeches" || step === "drop") add("dump speeches", await dumpSpeeches(sqlc, f, log, { limit: v.limit ? Number(v.limit) : undefined }));
+  if (step === "speeches" || step === "drop") {
+    const workers = Number(v.workers ?? 1);
+    if (shard) add(`dump speeches ${shard.i}/${shard.n}`, await dumpSpeeches(sqlc, f, log, { limit: v.limit ? Number(v.limit) : undefined, shard }));
+    else if (workers > 1) rows += await speechWorkers(workers);
+    else add("dump speeches", await dumpSpeeches(sqlc, f, log, { limit: v.limit ? Number(v.limit) : undefined }));
+  }
   // misc before sittings: utbyting's documents name the matter of the rare vote whose lid file has no <mál>
   if (step === "misc" || step === "drop") add("dump misc", await dumpMisc(sqlc, f, log));
   if (step === "sittings" || step === "drop") add("dump sittings", await dumpSittings(sqlc, f, log));
