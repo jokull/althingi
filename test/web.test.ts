@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import postgres from "postgres";
 import { type Sql, connect, migrate, upsertCommittees, upsertMatterDetail, upsertMatters, upsertMembers, upsertSeats, upsertSessions, upsertSpeechIndex } from "../src/db.ts";
 import { ingestSpeechXml } from "../src/ingest.ts";
+import { igcIngest } from "../src/igc.ts";
 import { lemmaText } from "../src/lemma.ts";
 import { parseXml, descendants, kids, text as xmlText } from "../src/xml.ts";
 import { parseCommittees, parseMatterDetail, parseMatterList, parseMembers, parseSeats, parseSessions, parseSpeechList } from "../src/parse.ts";
@@ -111,6 +112,36 @@ describe("web", () => {
     expect(body).toContain('type="application/ld+json"');
     expect((await get("/raeda/nonsense")).status).toBe(404);
     expect((await get("/raeda/rad20000101T000000")).status).toBe(404);
+  });
+
+  test("SGML-era speech with IGC text renders, has a Markdown twin and is found by search", async () => {
+    if (!ok) return;
+    // SGML-era rows (1999) with text stitched from the IGC-Parla fixture (docs/IGC.md); removed again at the end so the
+    // corpus counts other tests assert stay as seeded
+    await upsertSpeechIndex(sql, parseSpeechList(fx("days/d19990302.xml")), lemmaText);
+    await igcIngest(sql, new URL("../fixtures/igc", import.meta.url).pathname, { from: 123, to: 123 });
+    try {
+      const id = "sgml123_03_r02142606"; // Pétur Blöndal 1999-03-02, stitched from two IGC utterances
+      const r = await get(`/raeda/${id}`);
+      expect(r.status).toBe(200);
+      const body = await r.text();
+      expect(body).toContain('id="mgr-1"');
+      expect(body).toContain("Pétur H. Blöndal");
+      expect(body).toContain("Ögmundur Jónasson: "); // the other speaker's words, shown as an interjection
+      const md = await get(`/raeda/${id}.md`);
+      expect(md.status).toBe(200);
+      expect(await md.text()).toContain("mgr-1");
+      const [p] = await sql<{ text: string }[]>`select text from paragraphs where speech_id = ${id} order by length(text) desc limit 1`;
+      const w = p!.text.split(" ").map((x) => x.replace(/[^\p{L}]/gu, "")).find((x) => x.length > 8)!;
+      const s = await (await get(`/leit.json?q=${encodeURIComponent(w)}`)).json() as { hits: { speech_id: string; url: string }[] };
+      expect(s.hits.some((h) => h.speech_id === id && h.url.endsWith(`/raeda/${id}`))).toBe(true);
+      expect((await get("/raeda/sgml123_03_r02133209.md")).status).toBe(200);
+    } finally {
+      await sql`delete from paragraph_tokens where speech_id like 'sgml%'`;
+      await sql`delete from paragraphs where speech_id like 'sgml%'`;
+      await sql`delete from speaker_sightings where speech_id like 'sgml%'`;
+      await sql`delete from speeches where era = 'sgml'`;
+    }
   });
 
   test("matter page shows status, documents, votes with counts, consultations; class case is canonical", async () => {

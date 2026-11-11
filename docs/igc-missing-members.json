@@ -1,0 +1,732 @@
+[
+{
+"member_id": 563,
+"name": "Svavar Gestsson",
+"igc_speeches_115_130": 3209
+},
+{
+"member_id": 254,
+"name": "Hjörleifur Guttormsson",
+"igc_speeches_115_130": 2149
+},
+{
+"member_id": 156,
+"name": "Friðrik Sophusson",
+"igc_speeches_115_130": 2008
+},
+{
+"member_id": 467,
+"name": "Páll Pétursson",
+"igc_speeches_115_130": 1880
+},
+{
+"member_id": 388,
+"name": "Kristín Ástgeirsdóttir",
+"igc_speeches_115_130": 1741
+},
+{
+"member_id": 440,
+"name": "Ólafur Ragnar Grímsson",
+"igc_speeches_115_130": 1636
+},
+{
+"member_id": 499,
+"name": "Sighvatur Björgvinsson",
+"igc_speeches_115_130": 1455
+},
+{
+"member_id": 606,
+"name": "Þorsteinn Pálsson",
+"igc_speeches_115_130": 1415
+},
+{
+"member_id": 150,
+"name": "Finnur Ingólfsson",
+"igc_speeches_115_130": 1337
+},
+{
+"member_id": 265,
+"name": "Ingibjörg Pálmadóttir",
+"igc_speeches_115_130": 1285
+},
+{
+"member_id": 453,
+"name": "Ólafur Þ. Þórðarson",
+"igc_speeches_115_130": 1200
+},
+{
+"member_id": 397,
+"name": "Kristján Pálsson",
+"igc_speeches_115_130": 1123
+},
+{
+"member_id": 291,
+"name": "Jóhannes Geir Sigurgeirsson",
+"igc_speeches_115_130": 1094
+},
+{
+"member_id": 561,
+"name": "Svanfríður Jónasdóttir",
+"igc_speeches_115_130": 1033
+},
+{
+"member_id": 300,
+"name": "Jón Baldvin Hannibalsson",
+"igc_speeches_115_130": 1023
+},
+{
+"member_id": 579,
+"name": "Tómas Ingi Olrich",
+"igc_speeches_115_130": 998
+},
+{
+"member_id": 586,
+"name": "Vilhjálmur Egilsson",
+"igc_speeches_115_130": 927
+},
+{
+"member_id": 28,
+"name": "Ágúst Einarsson",
+"igc_speeches_115_130": 912
+},
+{
+"member_id": 347,
+"name": "Jóna Valgerður Kristjánsdóttir",
+"igc_speeches_115_130": 738
+},
+{
+"member_id": 181,
+"name": "Guðmundur Bjarnason",
+"igc_speeches_115_130": 724
+},
+{
+"member_id": 439,
+"name": "Ólafur G. Einarsson",
+"igc_speeches_115_130": 699
+},
+{
+"member_id": 202,
+"name": "Guðrún Helgadóttir",
+"igc_speeches_115_130": 683
+},
+{
+"member_id": 199,
+"name": "Guðný Guðbjörnsdóttir",
+"igc_speeches_115_130": 667
+},
+{
+"member_id": 541,
+"name": "Stefán Guðmundsson",
+"igc_speeches_115_130": 650
+},
+{
+"member_id": 21,
+"name": "Anna Ólafsdóttir Björnsson",
+"igc_speeches_115_130": 590
+},
+{
+"member_id": 502,
+"name": "Sigríður Jóhannesdóttir",
+"igc_speeches_115_130": 585
+},
+{
+"member_id": 302,
+"name": "Jón Helgason",
+"igc_speeches_115_130": 472
+},
+{
+"member_id": 389,
+"name": "Kristín Einarsdóttir",
+"igc_speeches_115_130": 432
+},
+{
+"member_id": 117,
+"name": "Egill Jónsson",
+"igc_speeches_115_130": 406
+},
+{
+"member_id": 390,
+"name": "Kristín Halldórsdóttir",
+"igc_speeches_115_130": 405
+},
+{
+"member_id": 337,
+"name": "Jón Sigurðsson",
+"igc_speeches_115_130": 402
+},
+{
+"member_id": 252,
+"name": "Hjálmar Jónsson",
+"igc_speeches_115_130": 384
+},
+{
+"member_id": 441,
+"name": "Ólafur Örn Haraldsson",
+"igc_speeches_115_130": 368
+},
+{
+"member_id": 216,
+"name": "Gunnlaugur Stefánsson",
+"igc_speeches_115_130": 339
+},
+{
+"member_id": 260,
+"name": "Ingi Björn Albertsson",
+"igc_speeches_115_130": 321
+},
+{
+"member_id": 33,
+"name": "Árni R. Árnason",
+"igc_speeches_115_130": 286
+},
+{
+"member_id": 488,
+"name": "Ragnar Arnalds",
+"igc_speeches_115_130": 274
+},
+{
+"member_id": 554,
+"name": "Steingrímur Hermannsson",
+"igc_speeches_115_130": 232
+},
+{
+"member_id": 573,
+"name": "Sverrir Hermannsson",
+"igc_speeches_115_130": 217
+},
+{
+"member_id": 118,
+"name": "Eiður Guðnason",
+"igc_speeches_115_130": 176
+},
+{
+"member_id": 147,
+"name": "Eyjólfur Konráð Jónsson",
+"igc_speeches_115_130": 162
+},
+{
+"member_id": 474,
+"name": "Pálmi Jónsson",
+"igc_speeches_115_130": 151
+},
+{
+"member_id": 430,
+"name": "Matthías Bjarnason",
+"igc_speeches_115_130": 146
+},
+{
+"member_id": 494,
+"name": "Sigbjörn Gunnarsson",
+"igc_speeches_115_130": 121
+},
+{
+"member_id": 201,
+"name": "Guðrún J. Halldórsdóttir",
+"igc_speeches_115_130": 121
+},
+{
+"member_id": 113,
+"name": "Eggert Haukdal",
+"igc_speeches_115_130": 96
+},
+{
+"member_id": 215,
+"name": "Gunnlaugur M. Sigmundsson",
+"igc_speeches_115_130": 93
+},
+{
+"member_id": 666,
+"name": "Ásta B. Þorsteinsdóttir",
+"igc_speeches_115_130": 93
+},
+{
+"member_id": 367,
+"name": "Karl Steinar Guðnason",
+"igc_speeches_115_130": 71
+},
+{
+"member_id": 475,
+"name": "Petrína Baldursdóttir",
+"igc_speeches_115_130": 68
+},
+{
+"member_id": 782,
+"name": "Drífa J. Sigfúsdóttir",
+"igc_speeches_115_130": 37
+},
+{
+"member_id": 1073,
+"name": "Páll Magnússon",
+"igc_speeches_115_130": 36
+},
+{
+"member_id": 1055,
+"name": "Árni Gunnarsson",
+"igc_speeches_115_130": 35
+},
+{
+"member_id": 1106,
+"name": "Ásgeir Friðgeirsson",
+"igc_speeches_115_130": 34
+},
+{
+"member_id": 866,
+"name": "Jónas Hallgrímsson",
+"igc_speeches_115_130": 33
+},
+{
+"member_id": 844,
+"name": "Hrafnkell A. Jónsson",
+"igc_speeches_115_130": 29
+},
+{
+"member_id": 805,
+"name": "Guðmundur Stefánsson",
+"igc_speeches_115_130": 25
+},
+{
+"member_id": 1095,
+"name": "Þórunn H. Sveinbjörnsdóttir",
+"igc_speeches_115_130": 25
+},
+{
+"member_id": 747,
+"name": "Auður Sveinsdóttir",
+"igc_speeches_115_130": 23
+},
+{
+"member_id": 1078,
+"name": "Stefanía Óskarsdóttir",
+"igc_speeches_115_130": 21
+},
+{
+"member_id": 870,
+"name": "Karen Erla Erlingsdóttir",
+"igc_speeches_115_130": 20
+},
+{
+"member_id": 904,
+"name": "Ólafur Hannibalsson",
+"igc_speeches_115_130": 19
+},
+{
+"member_id": 1137,
+"name": "Viktor B. Kjartansson",
+"igc_speeches_115_130": 19
+},
+{
+"member_id": 1060,
+"name": "Gunnar Ingi Gunnarsson",
+"igc_speeches_115_130": 16
+},
+{
+"member_id": 803,
+"name": "Guðmundur Lárusson",
+"igc_speeches_115_130": 14
+},
+{
+"member_id": 1077,
+"name": "Soffía Gísladóttir",
+"igc_speeches_115_130": 14
+},
+{
+"member_id": 892,
+"name": "Magnús Jónsson",
+"igc_speeches_115_130": 13
+},
+{
+"member_id": 1088,
+"name": "Birna Sigurjónsdóttir",
+"igc_speeches_115_130": 13
+},
+{
+"member_id": 834,
+"name": "Hermann Níelsson",
+"igc_speeches_115_130": 12
+},
+{
+"member_id": 941,
+"name": "Sigurður Hlöðvesson",
+"igc_speeches_115_130": 12
+},
+{
+"member_id": 628,
+"name": "Þórhildur Þorleifsdóttir",
+"igc_speeches_115_130": 12
+},
+{
+"member_id": 790,
+"name": "Elín R. Líndal",
+"igc_speeches_115_130": 11
+},
+{
+"member_id": 493,
+"name": "Salome Þorkelsdóttir",
+"igc_speeches_115_130": 11
+},
+{
+"member_id": 387,
+"name": "Kristinn Pétursson",
+"igc_speeches_115_130": 11
+},
+{
+"member_id": 1069,
+"name": "Margrét K. Sverrisdóttir",
+"igc_speeches_115_130": 11
+},
+{
+"member_id": 1122,
+"name": "Önundur S. Björnsson",
+"igc_speeches_115_130": 11
+},
+{
+"member_id": 894,
+"name": "María E. Ingvadóttir",
+"igc_speeches_115_130": 10
+},
+{
+"member_id": 1225,
+"name": "Drífa Snædal",
+"igc_speeches_115_130": 10
+},
+{
+"member_id": 994,
+"name": "Þuríður Pálsdóttir",
+"igc_speeches_115_130": 9
+},
+{
+"member_id": 1083,
+"name": "Þuríður Bernódusdóttir",
+"igc_speeches_115_130": 9
+},
+{
+"member_id": 915,
+"name": "Pétur Sigurðsson",
+"igc_speeches_115_130": 9
+},
+{
+"member_id": 745,
+"name": "Arnþrúður Karlsdóttir",
+"igc_speeches_115_130": 9
+},
+{
+"member_id": 947,
+"name": "Sigurður Þórólfsson",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 923,
+"name": "Ragnhildur Eggertsdóttir",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 777,
+"name": "Bryndís Friðgeirsdóttir",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 981,
+"name": "Vilhjálmur Ingi Árnason",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 1093,
+"name": "Svanhildur Kaaber",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 1110,
+"name": "Guðmundur Beck",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 1079,
+"name": "Sturla D. Þorsteinsson",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 1081,
+"name": "Vilhjálmur Þ. Vilhjálmsson",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 1065,
+"name": "Helga Guðrún Jónasdóttir",
+"igc_speeches_115_130": 8
+},
+{
+"member_id": 802,
+"name": "Guðmundur Þ Jónsson",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 750,
+"name": "Ágústa Gísladóttir",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 1096,
+"name": "Bryndís Guðmundsdóttir",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 975,
+"name": "Unnur Stefánsdóttir",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 1063,
+"name": "Helga A. Erlingsdóttir",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 1071,
+"name": "Ólafur Björnsson",
+"igc_speeches_115_130": 7
+},
+{
+"member_id": 976,
+"name": "Valgerður Gunnarsdóttir",
+"igc_speeches_115_130": 6
+},
+{
+"member_id": 843,
+"name": "Hrafn Jökulsson",
+"igc_speeches_115_130": 6
+},
+{
+"member_id": 1100,
+"name": "Ingibjörg Sigmundsdóttir",
+"igc_speeches_115_130": 6
+},
+{
+"member_id": 1099,
+"name": "Guðrún Sigurjónsdóttir",
+"igc_speeches_115_130": 6
+},
+{
+"member_id": 1067,
+"name": "Hólmfríður Sveinsdóttir",
+"igc_speeches_115_130": 6
+},
+{
+"member_id": 742,
+"name": "Anna Kristín Sigurðardóttir",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 765,
+"name": "Björk Jóhannsdóttir",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 988,
+"name": "Þorvaldur T. Jónsson",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 1070,
+"name": "Ólafía Ingólfsdóttir",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 1105,
+"name": "Magnús Aðalbjörnsson",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 1057,
+"name": "Bergljót Halldórsdóttir",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 1074,
+"name": "Ragnheiður Hákonardóttir",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 1062,
+"name": "Gunnar Pálsson",
+"igc_speeches_115_130": 5
+},
+{
+"member_id": 187,
+"name": "Guðmundur H. Garðarsson",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 869,
+"name": "Jörgína Jónsdóttir",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 282,
+"name": "Jóhann Einvarðsson",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 1104,
+"name": "Lilja Guðmundsdóttir",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 1061,
+"name": "Gunnar Ólafsson",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 1059,
+"name": "Guðjón Sigurjónsson",
+"igc_speeches_115_130": 4
+},
+{
+"member_id": 957,
+"name": "Stefanía Traustadóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 876,
+"name": "Kristín Sigurðardóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 963,
+"name": "Sveinn Þór Elinbergsson",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 766,
+"name": "Björn Ingi Bjarnason",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 959,
+"name": "Svanhildur Árnadóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 921,
+"name": "Ragnar Þorgeirsson",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 878,
+"name": "Kristjana Bergsdóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 1064,
+"name": "Helga Halldórsdóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 1098,
+"name": "Daníel Árnason",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 1080,
+"name": "Vigdís Sveinbjörnsdóttir",
+"igc_speeches_115_130": 3
+},
+{
+"member_id": 918,
+"name": "Ragnar Elbergsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 938,
+"name": "Sigurður Rúnar Friðjónsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 791,
+"name": "Elínbjörg Magnúsdóttir",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 967,
+"name": "Sverrir Sveinsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 741,
+"name": "Anna Jensdóttir",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 1092,
+"name": "Sigfús Leví Jónsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 1091,
+"name": "Magnús L. Sveinsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 1068,
+"name": "Katrín Andrésdóttir",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 1054,
+"name": "Ármann Höskuldsson",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 1075,
+"name": "Sigríður Ragnarsdóttir",
+"igc_speeches_115_130": 2
+},
+{
+"member_id": 925,
+"name": "Runólfur Birgisson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 796,
+"name": "Gizur Gottskálksson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 920,
+"name": "Ragnar Óskarsson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1090,
+"name": "Magnús B. Jónsson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1094,
+"name": "Þóra Sverrisdóttir",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1101,
+"name": "Ingunn St. Svavarsdóttir",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1102,
+"name": "Jörundur Guðmundsson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1103,
+"name": "Kristín Jóh. Björnsdóttir",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1056,
+"name": "Ásgeir Logi Ásgeirsson",
+"igc_speeches_115_130": 1
+},
+{
+"member_id": 1072,
+"name": "Ólöf Guðný Valdimarsdóttir",
+"igc_speeches_115_130": 1
+}
+]

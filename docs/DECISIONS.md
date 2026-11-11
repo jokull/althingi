@@ -121,7 +121,7 @@ Caching: past sessions `public, s-maxage=31536000, stale-while-revalidate=86400,
 ## 8. Pre-2005 text
 
 - Out of v1 text. **Index rows are stored anyway**: the per-member lists already return SGML-era entries (1999 fixture: every entry has `ræðahófst`, 39/43 have `<sgml>`); `upsertSpeechIndex` keeps them with `text_state='unavailable'`, `era='sgml'`, id = `sgml<lthing>_<dir>_<stem>` from the `<sgml>` path (`/altext/123/03/r02133209.sgml` → `sgml123_03_r02133209`; the bare stem is day+time and repeats across months). Schema: `speeches.xml_url` becomes nullable, new `source_url text` (sgml/html link); `text_state` check gains `'unavailable'`; entries without a start time or link are skipped. Zero extra requests. Member/matter/day pages then show *"N ræður 1991–2004: texti ekki í þessu safni"* with the althingi.is link; every "first/total" reads *"frá 2005 (XML-öld)"*; search filters have no pre-2005 option; `/um` states the boundary and why (bot challenge, not circumvented).
-- Alþingi's reply (email already sent): if they offer an XML/SGML export, ingest as `era='sgml'` with the same ids. IGC Alþingi subcorpus: licence **UNVERIFIED** (believed CC BY 4.0) → not used; revisit when Alþingi says no and the CLARIN licence page is read as CC BY.
+- Alþingi's reply (email already sent): if they offer an XML/SGML export, ingest as `era='sgml'` with the same ids. IGC Alþingi subcorpus: licence verified **CC BY 4.0** on 2026-11-11 → **used** for 115–130 text onto the existing index rows (98.9 % linked by the `.sgml` URL + member id; `scripts/ingest.ts igc`; decision, measurements and deploy steps in `docs/IGC.md`). Alþingi text still wins whenever it arrives.
 
 ## 9. Search quality
 

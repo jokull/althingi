@@ -989,6 +989,7 @@ export const AboutPage = () => (
       <h2>Persónuvernd</h2>
       <p>Fyrirspurnir og IP-tölur eru ekki sendar til þriðja aðila.</p>
       <p class="hint">Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.</p>
+      <p class="hint">Ræðutexti 1991–2004, þar sem hann er til hér, er úr Íslensku risamálheildinni, þingræðumálheild (IGC-Parla 2026), Stofnun Árna Magnússonar í íslenskum fræðum, <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">CC BY 4.0</a>, <a href="http://hdl.handle.net/20.500.12537/393">hdl.handle.net/20.500.12537/393</a>; textinn er klipptur úr TEI-skrám og málsgreinaskiptur.</p>
     </article>
   </Layout>
 );

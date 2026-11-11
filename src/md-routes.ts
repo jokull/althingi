@@ -21,7 +21,7 @@ export async function renderMd(sql: Sql, rawPath: string, currentLthing: number)
   const path = canonicalPath(rawPath);
   const ctx = { sql, currentLthing };
   let m: RegExpMatchArray | null;
-  if ((m = path.match(/^\/raeda\/(rad\d{8}T\d{6})$/))) {
+  if ((m = path.match(/^\/raeda\/([^/]+)$/)) && isSpeechId(m[1]!)) {
     const s = await speechPage(sql, m[1]!);
     if (!s) return null;
     const [r] = await sql<{ reply_to_id: string | null; reply_to_inferred: boolean }[]>`select reply_to_id, reply_to_inferred from speeches where id = ${s.id}`;

@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:lang="is" xml:id="IGC-Parla_1999-03-02-75" ana="#parla.meeting">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title type="main" xml:lang="is">Íslenska risamálheildin - alþingisræður, hefðbundinn fundur 123-75 [IGC-Parla]</title>
+        <title type="main" xml:lang="en">Icelandic Gigaword Corpus - parliamentary speeches, regular meeting 123-75 [IGC-Parla]</title>
+        <title type="sub" xml:lang="is">Ræður frá Alþingi Íslendinga, 16. kjörtímabil, hefðbundinn fundur 123-75, 02.03.1999.</title>
+        <title type="sub" xml:lang="en">Speeches in the national parliament of Iceland, 16. term, regular meeting 123-75, 02.03.1999.</title>
+        <meeting n="75" corresp="#LV" ana="#parla.meeting.regular">Hefðbundinn</meeting>
+        <meeting n="123" corresp="#LV" ana="#parla.session">123. löggjafarþing</meeting>
+        <meeting n="16" corresp="#LV" ana="#parla.term #LV.16">16. kjörtímabil</meeting>
+        <respStmt>
+          <persName>Starkaður Barkarson</persName>
+          <resp xml:lang="is">Söfnun og úrvinnsla texta. TEI-kóðun.</resp>
+          <resp xml:lang="en">Collection and processing of texts. TEI encoding.</resp>
+        </respStmt>
+        <respStmt>
+          <persName>Hinrik Hafsteinsson</persName>
+          <resp xml:lang="is">Söfnun og úrvinnsla texta. TEI-kóðun.</resp>
+          <resp xml:lang="en">Collection and processing of texts. TEI encoding.</resp>
+        </respStmt>
+      </titleStmt>
+      <extent>
+        <measure unit="words" quantity="39866" xml:lang="en">39866 words</measure>
+        <measure unit="speeches" quantity="47" xml:lang="en">47 speeches</measure>
+      </extent>
+      <publicationStmt>
+        <publisher>
+          <orgName xml:lang="is">Stofnun Árna Magnússonar í íslenskum fræðum</orgName>
+          <orgName xml:lang="en">Árni Magnússon Institute for Icelandic Studies</orgName>
+          <ref target="https://www.arnastofnun.is/">www.arnastofnun.is</ref>
+        </publisher>
+        <idno type="handle">http://hdl.handle.net/20.500.12537/393</idno>
+        <availability status="free">
+          <licence>http://creativecommons.org/licenses/by/4.0/</licence>
+          <p xml:lang="is">Þessi texti er gefinn út með <ref target="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</ref>.</p>
+          <p xml:lang="en">This work is licensed under the <ref target="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</ref>.</p>
+        </availability>
+        <date when="2022-04-29">2022-04-29</date>
+      </publicationStmt>
+      <sourceDesc>
+        <bibl>
+          <title xml:lang="is">Þingræður haldnar á Alþingi Íslendinga</title>
+          <title xml:lang="en">Parliament speeches in the national parliament of Iceland </title>
+          <idno type="URI">www.athingi.is</idno>
+          <date when="1999-03-02">1999-03-02</date>
+        </bibl>
+      </sourceDesc>
+    </fileDesc>
+    <encodingDesc>
+      <tagsDecl>
+        <namespace name="http://www.tei-c.org/ns/1.0">
+          <tagUsage occurs="1" gi="text"/>
+          <tagUsage occurs="1" gi="body"/>
+          <tagUsage occurs="1" gi="div"/>
+          <tagUsage occurs="47" gi="u"/>
+          <tagUsage occurs="497" gi="seg"/>
+          <tagUsage occurs="4" gi="vocal"/>
+          <tagUsage occurs="4" gi="desc"/>
+        </namespace>
+      </tagsDecl>
+    </encodingDesc>
+    <profileDesc>
+      <settingDesc>
+        <setting>
+          <name type="address">Kirkjustræti</name>
+          <name type="city">Reykjavik</name>
+          <name type="country" key="IS">Iceland</name>
+          <date when="1999-03-02">1999-03-02</date>
+        </setting>
+      </settingDesc>
+    </profileDesc>
+  </teiHeader>
+  <text>
+    <body>
+      <div type="debateSection">
+        <u who="#GudmundurStefansson" xml:id="IGC-Parla_1999-03-02-75.u1" ana="#chair" source="http://www.althingi.is/altext/123/03/r02133209.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg1">Forseta hefur borist tilkynning frá hv. 18. þm. Reykv., Ástu Ragnheiði Jóhannesdóttur, um að þingmaðurinn afturkalli tvær fyrirspurnir, þ.e. fyrirspurn til forsrh. um réttindi heyrnarlausra, 488. mál á þskj. 798, og fyrirspurn til félmrh. um réttindi heyrnarlausra, 490. mál á þskj. 800.</seg>
+        </u>
+        <u who="#JohannaSigurdardottir" xml:id="IGC-Parla_1999-03-02-75.u4" ana="#regular" source="http://www.althingi.is/altext/123/03/r02133527.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg5">Herra forseti. Þessar vikurnar er að ganga eftir það sem stjórnarandstaðan óttaðist um nýja húsnæðislánakerfið. Ófremdarástand ríkir á leigumarkaðnum þar sem nýja kerfið hefur ýtt upp leigunni og leitt til langra biðraða eftir leiguhúsnæði en 1.200 einstaklingar og fjölskyldur bíða nú eftir leiguhúsnæði á landinu öllu og ríkir hreint neyðarástand á höfuðborgarsvæðinu, ekki síst hjá einstæðum foreldrum sem sumir hverjir eru nánast á götunni.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg6">Klúður og seinagangur í afgreiðslu umsókna er að grafa undan kerfinu og hefur vafið upp á sig kostnaði og miklum óþægindum fyrir íbúðarkaupendur og seljendur en samkvæmt upplýsingum sem ég hef aflað mér hafa einungis 20% umsókna verið afgreiddar frá áramótum. Óraunsætt greiðslumat mun valda greiðsluerfiðleikum og gjaldþroti heimila sem aldrei fyrr. Ljóst er að öryggi og stöðugleikanum í húsbréfakerfinu er nú alvarlega ógnað með klúðrinu hjá Íbúðalánasjóðnum en jafnan þegar framsóknarmenn taka við húsnæðismálum virðist það vera ávísun á öngþveiti í húsnæðismálum. Kerfi sem var einfalt og gekk fullkomlega upp hefur verið fórnað og við tekið kerfi með flóknu og dýru vinnuferli sem er algjörlega snúið á haus og er hin raunverulega ástæða fyrir löngum biðtíma en ekki tölvuvandamál sem hæstv. ráðherra ber fyrir sig. Fólkið gerir sjálft sitt eigið greiðslumat og á grundvelli þess kauptilboð í íbúð áður en það fer í greiðslumat í banka. Ráðgjöf sem kemur eftir að kaupendur hafa tekið ákvörðun um íbúðakaup er auðvitað algerlega gagnslaus auk þess að leiða til verulegrar hættu á vanskilum. Allt þetta klúður ráðherrans hefur því einungis leitt til flókins vinnuferlis með ærnum kostnaði og fyrirhöfn fyrir íbúðakaupendur.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg7">Greiðslumatið er líka ein samfelld endaleysa sem leitt getur til mikilla greiðsluerfiðleika í húsnæðislánakerfinu og jafnvel fjölda gjaldþrota á komandi mánuðum og missirum. Ekki verður annað séð en nýtt greiðslumat opni fyrir að 30 til allt að 50% af heildarlaunum viðkomandi geti farið til greiðslu á húsnæðiskostnaði en það hef ég fengið staðfest af Þjóðhagsstofnun. Þar kemur fram að fjögurra manna fjölskylda með 250 þús. kr. mánaðartekjur gat ráðstafað í eldra greiðslumati 45 þús. kr. í afborganir og vexti af lánum en 95 þús. kr. í nýja mati ráðherrans. Miðað við 500 þús. kr. tekjur gat þessi fjölskylda ráðstafað 90 þús. kr. áður í afborganir og vexti í eldra greiðslumati en nú 250 þús. kr. í stað 90 þús. kr. áður í nýja greiðslumatinu eða nærfellt 50% af tekjum. Ég held að hæstv. ráðherra verði að gera sér ljóst að hann er að kalla mikla greiðsluerfiðleika yfir heimilin í landinu og verulega áhættu fyrir Íbúðalánasjóðinn og þar með skattgreiðendur.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg8">Ástæða er til að minna á að þegar húsbréfakerfinu var komið á var greiðslumatið miðað við að 30% af heildarlaunum gæti farið til greiðslu á húsnæðiskostnaði. Það stóð aðeins í nokkra daga og var þá lækkað niður í 20% einfaldlega vegna þess að sérfræðingar töldu að fólk stæði aldrei undir svo háu mati. Hæstv. ráðherra verður auðvitað að svara því undanbragðalaust hvað hefur breyst svo í umhverfinu að skyndilega sé hægt að hækka viðmiðunarmörkin í greiðslumatinu fyrir flesta íbúðakaupendur eins og fyrir meðalfjölskyldu með meðaltekjur úr 18% í um 30% og allt upp í 50% sem er auðvitað ekkert annað en ávísun á vanskil og greiðsluerfiðleika. Það er engu líkara en nýtt mat hæstv. ráðherra byggi á því að framfærslukostnaður heimilanna hafi frá síðustu áramótum lækkað um meira en helming og því sé allt í lagi að 30 til allt að 50% af heildarlaunum renni nú til afborgana og vaxta af lánum í stað 18% áður. Hæstv. ráðherra er kominn í háskalegan leik með heimilin í landinu sem leitt getur til mikilla greiðsluerfiðleika í húsnæðislánakerfinu og jafnvel fjölda gjaldþrota á komandi mánuðum og missirum. Ráðherrann virðist ætla að fá sér skjól rétt fyrir kosningar með því að galopna húsbréfakerfið fyrir öllum og breiða þannig yfir húsnæðisneyð þeirra sem þurfa á leiguhúsnæði að halda.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg9">Hæstv. ráðherra skuldar þingi og þjóð skýringar sem nú er leitað eftir með eftirfarandi spurningum til hæstv. ráðherra:</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg10">Hvaða afleiðingar telur ráðherra að það hafi fyrir heimilin í landinu að hækka viðmiðunarmörkin í greiðslumatinu í húsbréfakerfinu fyrir flesta íbúðakaupendur eins og fyrir meðalfjölskyldu með meðaltekjur úr 18% í um 30% af heildarlaunum?</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg11">Var leitað álits fasteignasala, Húsnæðisstofnunar og viðskiptabanka á nýju vinnuferli umsókna í húsbréfakerfinu?</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg12">Hvaða kostnaður hefur orðið því samfara að breyta vinnuferli umsókna í húsbréfakerfinu og koma á fót starfsemi Íbúðalánasjóðs?</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg13">Hvað má áætla að margir þeirra umsækjenda sem rétt áttu á félagslegri íbúð, annars vegar eignaríbúð og hins vegar leiguíbúð á síðasta ári fái úrlausn hjá nýja Íbúðalánasjóðnum?</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg14">Hverja má áætla aukna eftirspurn af leiguhúsnæði í Reykjavík vegna lokunar félagslega íbúðalánakerfisins?</seg>
+        </u>
+        <u who="#PallPetursson" xml:id="IGC-Parla_1999-03-02-75.u5" ana="#regular" source="http://www.althingi.is/altext/123/03/r02134051.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg15">Herra forseti. Ég vil byrja á að þakka hv. þm. fyrir að opna umræðu um starfsemi Íbúðalánasjóðs. Ég þakka henni ekkert sérstaklega fyrir þessa framsöguræðu en það er önnur saga.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg16">Starfsemi Íbúðalánasjóðs er komin yfir byrjunarörðugleika sem vissulega voru til staðar og þarf ekki að tíunda það. Alkunna er að það var vegna tæknilegra örðugleika og vandamála sem sköpuðust á fyrstu dögum í starfsemi sjóðsins. Það er búið að afgreiða í Íbúðalánasjóði 1.133 umsóknir frá áramótum og þar af voru 523 sem komu inn þessu ári. Þetta greiðslumat sem við búum við núna er miklu áreiðanlegra og raunhæfara en fyrra greiðslumat. Útreikningar miðast við greiðslugetu og miðast við að umsækjandi eigi eða geti átt fyrir afborgunum lána á hverjum mánuði eftir að frá hafa verið dregnir kostnaðarliðir. Mér er það ljóst að neysluviðmiðunin í þessu greiðslumati er mjög þröng en þó er það spor í rétta átt að taka neysluviðmiðun inn. Það er ekki verið að miða við ákveðna hlutfallstölu launa eins og áður var heldur er miðað við þá fjárhæð sem raunverulega er eftir þegar tekið hefur verið tillit til kostnaðar við brýnustu framfærslu fjölskyldunnar.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg17">Eins og hv. þm. á að vita var við vinnu starfshóps um nýtt greiðslumat leitað til samstarfs við Félag fasteignasala, lánastofnanir og húsbréfadeild Húsnæðisstofnunar og núverandi greiðslumat er byggt á niðurstöðum þessa starfshóps.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg18">Það fylgir ávallt kostnaður skipulagsbreytingum. Kostnaður við stofnun Íbúðalánasjóðs felst fyrst og fremst í breytingum á hugbúnaði og tölvukerfi. Þróun nýja hugbúnaðarins er ekki að fullu lokið og því liggja tölur um kostnað ekki endanlega fyrir, en þess má geta að vélbúnaður Húsnæðisstofnunar ríkisins var orðinn úreltur og endurnýjunar hefði verið þörf hvort sem kerfið hefði tekið breytingum eða ekki. Auk þess er nokkur kostnaður vegna biðlauna starfsmanna sem ekki voru ráðnir til Íbúðalánasjóðs.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg19">Það má gera ráð fyrir að fleiri umsækjendur falli undir skilyrði um viðbótarlán en þeir sem áttu áður rétt á félagslegri íbúð þar sem tekju- og eignarmörk eru talsvert rýmkuð, og þar sem ekki er lengur gert ráð fyrir svokölluðu 100% láni til kaupa á félagslegri íbúð, þá má gera ráð fyrir því að þeir sem féllu undir þann rétt muni bætast við leigumarkaðinn. Á árinu 1998 voru þetta um 150 fjölskyldur. Þegar hefur verið úthlutað lánum að heildarfjárhæð 1.755 millj. til félagasamtaka og sveitarfélaga til byggingar eða kaupa á leiguíbúðum og gert er ráð fyrir því að þessi fjárhæð dugi til byggingar á 452 leiguíbúðum. Enn er eftir að úthluta heimildum til 60 leiguíbúða. Þá verður samtals úthlutað um og yfir 500 leiguíbúðum á árinu.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg20">Á árinu 1994, sem var síðasta árið sem hv. þm. hafði með þessi mál að gera, var úthlutað lánum til 153 leiguíbúða. Aukning á úthlutunum til leiguíbúða á þessu ári eru því 359 íbúðir og sé einnig tekið tillit til þeirra sem hugsanlega bætast við leigumarkaðinn vegna niðurfellingar á 100% lánunum, þá er nettóaukningin meiri. Gera má ráð fyrir að 150 umsækjendur bætist í hóp leigjenda vegna þess að ekki er hægt að fá 100% lán lengur. Og þegar er búið að úthluta heimildum til 896 íbúðalána, þ.e. tæplega 900 viðbótarlána sem koma í staðinn fyrir félagslegu íbúðirnar áður og ónýttar heimildir Íbúðalánasjóðs til viðbótarlána munu enn þá vera um 40 talsins. Af þessu má sjá að hér hefur orðið mikil breyting og hrakspár um hið félagslega kerfi og skort á leiguhúsnæði hafa ekki ræst. Það eru að vísu biðlistar eftir leiguhúsnæði en á þessu ári er orðið við öllum beiðnum sveitarfélaga nema tveggja um lán til leiguíbúða.</seg>
+        </u>
+        <u who="#PeturBlondal1944" xml:id="IGC-Parla_1999-03-02-75.u15" ana="#regular #issue.123_323_M" source="http://www.althingi.is/altext/123/03/r02142606.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg54">Herra forseti. Ég mæli fyrir brtt. við frv. til laga um Lífeyrissjóð bænda. Flutningsmaður auk mín er hv. þm. Gunnlaugur M. Sigmundsson. Brtt. er í fjórum liðum.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg55">Herra forseti. Lífeyrissjóður bænda lofar hverjum sjóðfélaga ákveðnum réttindum sem eru háð fjölskyldustöðu. Þessi réttindi má reikna með allgóðri nákvæmni til fjár. Verðmæti allra þessara réttinda sjóðfélaga eiga að standast á við eignir sjóðsins í verðbréfum og fasteignum samkvæmt nýsamþykktum lögum um lífeyrissjóði. Þessar eignir sjóðsins standa því á bak við réttindi sjóðfélaganna sem hljóta því að eiga þessar eignir. 1. liður brtt. tekur mið af þessu en þar segir svo, með leyfi forseta:</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg56">,,Við 1. gr. Við greinina bætist ný málsgrein, svohljóðandi:</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg57">Sjóðurinn er eign sjóðfélaga og lífeyrisþega. Innstæða eða réttindi skv. 7. gr. eru eign rétthafa.``</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg58">Herra forseti. Ég get ekki séð hver annar eigi eignir Lífeyrissjóðs bænda en bændur sjálfir og sjóðfélagar. Bændur borga bæði 4% iðgjald launþega og 6% iðgjald atvinnurekenda þannig að ég get ómögulega séð hverjir eigi Lífeyrissjóð bænda aðrir en bændur sjálfir. Því er hér lagt til að þetta verði gert formlegt og sagt: ,,Sjóðurinn er eign sjóðfélaga.``</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg59">Herra forseti. Í 8. gr. frv. er gert ráð fyrir að fimm menn skipi stjórn sjóðsins og þeir verði skipaðir af Hæstarétti, fjmrh., landbrh. og svo tveir af Bændasamtökum Íslands.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg60">Þeir fyrstu þrír sem tilnefndir eru af Hæstarétti, fjmrh. og landbrh. eru ekki í nokkrum einustu tengslum við sjóðfélaga sjóðsins en eiga þó að hafa afgerandi áhrif á ávöxtun þess fjár sem stendur að baki þeim réttindum sem þetta fólk á að njóta í ellinni. Ég get ekki séð hverjir hafi meiri hagsmuni af því hvernig þetta fé er ávaxtað en sjóðfélagarnir sjálfir. Þetta er þeirra fjöregg. Þetta er þeirra eign sem á að standa undir lífeyri þeirra í ellinni þannig að mér finnst fráleitt að einhverjir aðilar tilnefndir af Hæstarétti og tveimur ráðherrum komi að þessari stjórn.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg61">Þá eru tveir stjórnarmenn tilnefndir af Bændasamtökum Íslands og sumir kynnu að halda að það sé sama sem bændur, þ.e. að bændur kjósi þá menn. En ég sé mikinn mun á Bændasamtökum Íslands og bændum sjálfum, og alveg sérstaklega sjóðfélögum þessa sjóðs. Ég geri almennt mikinn mun á stéttarfélögum og þeim sem eru skyldaðir til að eiga aðild að þeim.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg62">Herra forseti. Ég treysti bændum fullkomlega til þess að annast sín fjármál. Þetta eru fullorðnir og fullvaxta menn sem hafa fjárráð og ég treysti þeim til að fara með sín fjárráð og kjósa sína stjórn. <vocal type="interruption">
+              <desc>Gripið fram í: Sumir orðnir nokkuð gamlir.</desc>
+            </vocal>Því er lagt til að stjórn sjóðsins verði kosin af sjóðfélögum á félagsfundi.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg63">2. liður brtt. hljóðar svo, með leyfi herra forseta:</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg64">,,Félagsfundur fer með æðsta vald í málefnum sjóðsins. Heimild til að sitja félagsfund hafa sjóðfélagar eða umboðsmenn þeirra.``</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg65">Þeir kjósi síðan stjórn og annist allan rekstur sjóðsins. Ég get ómögulega séð annað en að sjóðfélagarnir eigi að fara með stjórn þessa sjóðs sem og stjórn allra annarra lífeyrissjóða. Ég treysti fólki fullkomlega til þess að annast þetta lýðræði sjálft. Ég hef nefnilega trú á lýðræðinu sem margir hverjir hafa ekki.</seg>
+        </u>
+        <u who="#OgmundurJonasson" xml:id="IGC-Parla_1999-03-02-75.u16" ana="#issue.123_323_M #regular" source="http://www.althingi.is/altext/123/03/r02142606.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg66">Jafnvel þótt aðeins tveir menn sæki fundinn?</seg>
+        </u>
+        <u who="#PeturBlondal1944" xml:id="IGC-Parla_1999-03-02-75.u17" ana="#regular #issue.123_323_M" source="http://www.althingi.is/altext/123/03/r02142606.sgml">
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg67">Hv. þm. er í stjórn lífeyrissjóðs. Hann er ekki kosinn af sjóðfélögum í þann sjóð og fer þó með mikið fjármagn og mikið kapítal. Hann er nefnilega kapítalisti.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg68">Herra forseti. Í 3. lið tillagnanna er getið um skyldu til þess að upplýsa hvern sjóðfélaga um eign hans í sjóðnum sem er þá jafnverðmæt réttindum hans. Þarna er gert ráð fyrir því að hver maður fái að vita hvað hann eigi mikið í sínum lífeyrissjóði, en það mun auka áhuga hans á því að vel sé með þetta fé farið og það mun auka áhuga hans á því að mæta á félagsfundi. Nú er það nefnilega þannig, hv. þm. sem áðan greip hérna fram í, að þeir sjóðfélagar sem mæta á félagsfund hafa engin áhrif. Þeir hafa ekkert að segja þar. Þeir kjósa ekki í stjórn. Þeir hafa engin áhrif svo að það er ekki skrýtið þó að fáir mæti á ársfundi. Það er ekki skrýtið. Þeir hafa ekkert að segja þar. Ef þeir fengju hins vegar upplýsingar um að þeir ættu kannski 2 millj. í þessum sjóði í réttindum og þessar 2 millj. eiga að standa undir lífeyri þeirra í ellinni, þá munu þeir örugglega sýna miklu meiri áhuga á því hvernig þetta fé er ávaxtað og hver fer með það þannig að þeir munu fjölmenna á félagsfundi.</seg>
+          <seg xml:id="IGC-Parla_1999-03-02-75.seg69">Herra forseti. Í 4. lið tillagnanna er gert ráð fyrir að núverandi sjóðstjórn sitji þar til ný stjórn hefur verið kjörin á fyrsta félagsfundi og það er eðlileg afleiðing af þessum brtt.</seg>
+        </u>
+      </div>
+    </body>
+  </text>
+</TEI>

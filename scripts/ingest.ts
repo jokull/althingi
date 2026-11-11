@@ -10,6 +10,7 @@
 //   bun scripts/ingest.ts post                                          vocab MV refresh, post-ingest hook
 //   bun scripts/ingest.ts service lists|members|matters|texts|poll|index …   XML service (crawl lock, 5 s)
 //   bun scripts/ingest.ts laws [--zip PATH]                             lagasafn: parse a local zip, or conditional GET
+//   bun scripts/ingest.ts igc --path DIR [--from N --to N] [--limit N]  IGC-Parla TEI → text for SGML-era rows (docs/IGC.md)
 //   bun scripts/ingest.ts status
 // Dump, derive and laws steps never take the crawl lock: they run beside the crawler. Exit codes: 3 lock held,
 // 4 blocked (403/challenge), 5 rate limited (429), 6 crawl paused.
@@ -21,6 +22,7 @@ import { Blocked, RateLimited } from "../src/fetcher.ts";
 import { post } from "../src/post.ts";
 import { runService } from "../src/service.ts";
 import { runLaws } from "../src/laws-ingest.ts";
+import { igcIngest } from "../src/igc.ts";
 
 const log = (s: string) => console.log(`${new Date().toISOString().slice(11, 19)} ${s}`);
 
@@ -31,6 +33,7 @@ const { positionals, values: v } = parseArgs({
     limit: { type: "string" }, workers: { type: "string" }, shard: { type: "string" }, "replay-raw": { type: "boolean" }, zip: { type: "string" },
     "from-date": { type: "string" }, "to-date": { type: "string" }, "max-age-hours": { type: "string" },
     weekly: { type: "boolean" }, touched: { type: "boolean" }, provisional: { type: "boolean" }, date: { type: "string" },
+    path: { type: "string" },
   },
 });
 const [group, sub] = positionals;
@@ -39,7 +42,7 @@ const f: Filter = {
   to: v.to ?? v.lthing ? Number(v.to ?? v.lthing) : undefined,
 };
 
-const USAGE = "usage: ingest.ts dump hash|speeches|sittings|misc|drop | derive | post | service lists|members|matters|texts|poll|index | laws | status";
+const USAGE = "usage: ingest.ts dump hash|speeches|sittings|misc|drop | derive | post | service lists|members|matters|texts|poll|index | laws | igc --path DIR | status";
 
 const sql = connect();
 let runId = 0;
@@ -111,7 +114,7 @@ async function status() {
 let status_ = "ok";
 let note: string | null = null;
 try {
-  if (!group || !["dump", "derive", "post", "service", "laws", "status"].includes(group)) { console.error(USAGE); process.exit(2); }
+  if (!group || !["dump", "derive", "post", "service", "laws", "igc", "status"].includes(group)) { console.error(USAGE); process.exit(2); }
   await migrate(sql);
   if (group === "status") { await status(); }
   else {
@@ -142,6 +145,12 @@ try {
     } else if (group === "laws") {
       const r = await locked("laws", () => runLaws(sql, { zip: v.zip, log }));
       requests = r.requests; files = r.files; rows = r.rows;
+    } else if (group === "igc") {
+      if (!v.path) { console.error("--path DIR is required (the unpacked IGC-Parla-*.TEI directory)"); process.exit(2); }
+      // zero requests; takes the dump lock so it never runs beside a dump pass writing the same speeches rows
+      const r = await locked("dump", () => igcIngest(sql, v.path!, f, log, { limit: v.limit ? Number(v.limit) : undefined }));
+      report("igc", r);
+      files = r.files; rows = r.rows;
     }
     await finishRun(sql, runId, { status: status_, requests, files, rows });
   }
