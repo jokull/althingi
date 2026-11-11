@@ -166,7 +166,7 @@ describe("mcp tools for agents", () => {
     const tl = (await call("topic_timeline", { q: s.word })).structuredContent;
     expect(tl.years).toEqual([expect.objectContaining({ year: 2018, speeches: 1 })]);
     for (const y of tl.years) for (const m of y.top_matters) expect(tl.matters.map((x: any) => x.key)).toContain(m.matter);
-    expect(tl.corpus).toContain("session 131");
+    expect(tl.corpus).toContain("session 115");
     expect((await call("topic_timeline", { q: "og" })).isError).toBe(true);
   });
 

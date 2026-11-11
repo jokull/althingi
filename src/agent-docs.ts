@@ -38,7 +38,7 @@ export async function corpusFacts(sql: Sql): Promise<CorpusFacts> {
   return { first: r?.first ?? null, last: r?.last ?? null, from: r?.d0 ?? null, to: r?.d1 ?? null, speeches: r?.n ?? 0 };
 }
 const boundary = (f: CorpusFacts) => f.last
-  ? `Speech text for sessions ${f.first}–${f.last} (${f.from} to ${f.to}, ${f.speeches.toLocaleString("en")} speeches). The text era starts at session 131 (October 2004); older speeches are index-only and not searchable. Older sessions are still being added: check list_sessions.`
+  ? `Speech text for sessions ${f.first}–${f.last} (${f.from} to ${f.to}, ${f.speeches.toLocaleString("en")} speeches). The text era starts at session 115 (October 1991); older speeches are index-only and not searchable. Older sessions are still being added: check list_sessions.`
   : "The corpus is empty right now.";
 
 /** https://llmstxt.org: H1, one blockquote, prose, then H2 link lists; `## Optional` last. */
@@ -112,7 +112,7 @@ ${CLIENTS.map((c) => `## ${c.name}\n\n${c.steps}${c.code ? `\n\n\`\`\`\n${c.code
 
 ## Hvað þjónninn gerir / What it does
 
-Leit í ræðum frá 131. þingi, október 2004 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, topic_timeline, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
+Leit í ræðum frá 115. þingi, október 1991 (lemmuð íslenska), mál, atkvæðagreiðslur og atkvæði hvers þingmanns, þingmenn, þingfundir og lagasafn. Hver niðurstaða hefur slóð til að vísa í. Tools: search_speeches, topic_timeline, get_speech, get_context, get_matter, get_vote, member_votes, get_member, get_law, get_sitting, list_sittings, list_votes, aggregate, first_use, explain_query, list_sessions, search, fetch.
 
 Dæmi / example: „hvernig hefur umræðan um veiðigjöld þróast?“ → \`topic_timeline(q="veiðigjald")\`: ræður á ári, helstu mál hvers árs, afdrif þeirra og lokaatkvæðagreiðsla eftir flokkum; síðan \`get_matter\` og \`search_speeches(q, lthing, matter)\` fyrir umræðuna sjálfa.
 
@@ -155,7 +155,7 @@ url: "${SITE}/"
 
 Leitarvél yfir ræður, mál, atkvæðagreiðslur og lög Alþingis sem finnur allar beygingarmyndir orða („hestinum“ finnur „hestur“). Search engine for the Icelandic parliament.
 
-${f.last ? `Safnið: ${f.speeches} ræður með texta af ${f.first}.–${f.last}. þingi (${f.from} til ${f.to}). Ræðutexti er til frá 131. þingi (október 2004).` : "Safnið er tómt."}
+${f.last ? `Safnið: ${f.speeches} ræður með texta af ${f.first}.–${f.last}. þingi (${f.from} til ${f.to}). Ræðutexti er til frá 115. þingi (október 1991).` : "Safnið er tómt."}
 
 ## Fyrir gervigreind / For AI agents
 
@@ -188,7 +188,7 @@ Leitarvél yfir ræður Alþingis með íslenskri beygingargreiningu (lemma-is).
 
 ## Mörk safnsins
 
-Ræðutexti er til frá 131. þingi (október 2004). Eldri ræður (fyrir 131. þing) eru aðeins skráðar í ræðuskrá og ekki leitarbærar. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 131. þingi (október 2004).
+Ræðutexti er til frá 115. þingi (október 1991). Eldri ræður (fyrir 115. þing) eru aðeins skráðar í ræðuskrá og ekki leitarbærar. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 115. þingi (október 1991).
 
 ## Hvað er áætlað
 
@@ -213,7 +213,7 @@ export function homeJsonLd(f: CorpusFacts) {
     "@graph": [
       { "@type": "WebSite", "@id": `${SITE}/#site`, url: `${SITE}/`, name: "Alþingi · leit", inLanguage: "is",
         potentialAction: { "@type": "SearchAction", target: `${SITE}/leit?q={q}`, "query-input": "required name=q" } },
-      { "@type": "Dataset", name: "Ræður Alþingis (texti frá 131. þingi, október 2004)", description: `Speeches, matters, votes with per-member ballots, members and laws of the Icelandic parliament. Public MCP server at ${MCP_URL} (no sign-in); Markdown of every page at <url>.md; guide at ${SITE}/llms.txt.`,
+      { "@type": "Dataset", name: "Ræður Alþingis (texti frá 115. þingi, október 1991)", description: `Speeches, matters, votes with per-member ballots, members and laws of the Icelandic parliament. Public MCP server at ${MCP_URL} (no sign-in); Markdown of every page at <url>.md; guide at ${SITE}/llms.txt.`,
         url: `${SITE}/`, inLanguage: "is", isBasedOn: "https://www.althingi.is", creditText: ATTRIBUTION,
         temporalCoverage: f.from && f.to ? `${f.from}/${f.to}` : undefined,
         distribution: [

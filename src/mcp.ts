@@ -51,7 +51,7 @@ const SEARCH_OUT = {
 };
 
 const INSTRUCTIONS = [
-  "Search and fetch Icelandic parliament (Alþingi) speeches, matters (þingmál), votes with per-member ballots, members, laws and sittings. Speech TEXT exists from session 131 (October 2004) only; counts, searches and lookups carry a one-line `corpus` stating what is covered (list_sessions has the detail) — never claim something 'never' happened without checking it.",
+  "Search and fetch Icelandic parliament (Alþingi) speeches, matters (þingmál), votes with per-member ballots, members, laws and sittings. Speech TEXT exists from session 115 (October 1991) only; counts, searches and lookups carry a one-line `corpus` stating what is covered (list_sessions has the detail) — never claim something 'never' happened without checking it.",
   "Queries are lemmatized Icelandic keywords: an inflected word finds all its forms; all words must occur in the same paragraph; \"quoted\" = exact adjacent phrase. Translate the user's topic into Icelandic content words; put people, parties, dates and matters into filters (resolve names with get_member). explain_query shows how a query was read.",
   "For how a topic evolved, start with topic_timeline(q): per year, the matters behind the speeches, their outcome and final vote by party. Ids chain: search_speeches -> speech_id -> get_speech / get_context; matter {lthing,class,nr} -> get_matter -> votes[].id -> get_vote; member.id -> get_member / member_votes; law {year,nr} -> get_law; sitting {lthing,fundur} -> get_sitting. Every item has a `url` to cite (append .md for Markdown; resources use the same https URLs). Party is always 'party_at_date' (seat on that day).",
   "Fields marked inferred are not source facts. Interjections (framíköll) are shown but not searchable. Rate limit: 60 requests a minute per client (HTTP 429 + Retry-After).",
@@ -71,7 +71,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("search_speeches", {
     title: "Search speeches",
-    description: "Lemma-aware full-text search over speech paragraphs (text from session 131, October 2004). Returns speeches with the best paragraph snippets, party at the speech date, matter, citable urls (paragraph anchors #mgr-N) and `total`. Zero hits return a structured `why`. `q` is Icelandic KEYWORDS, not a question: e.g. user asks 'what did MPs say about fishing fees in 2023' -> q='veiðigjald', date_from='2023-01-01', date_to='2023-12-31'. Resolve people with get_member and pass member_id. Page with next_cursor.",
+    description: "Lemma-aware full-text search over speech paragraphs (text from session 115, October 1991). Returns speeches with the best paragraph snippets, party at the speech date, matter, citable urls (paragraph anchors #mgr-N) and `total`. Zero hits return a structured `why`. `q` is Icelandic KEYWORDS, not a question: e.g. user asks 'what did MPs say about fishing fees in 2023' -> q='veiðigjald', date_from='2023-01-01', date_to='2023-12-31'. Resolve people with get_member and pass member_id. Page with next_cursor.",
     inputSchema: {
       q: z.string().min(1).max(200).describe("Icelandic keywords (any inflection), \"quoted phrase\" for exact wording. Example: 'veiðigjald', '\"virðulegi forseti\"'. Not for law/matter numbers: use get_matter / get_law."),
       member_id: z.number().int().optional().describe("Only this speaker (id from get_member)"),
@@ -91,7 +91,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
   s.registerTool("get_speech", {
     title: "Get a speech",
     description: "Full text of one speech (paragraphs numbered as in the url anchors #mgr-N), speaker, party at date, matter, reply_to / replies (andsvar chains), audio/video links, a ready cite string and the source revision hash. Long speeches are paged: pass from=next_from.",
-    inputSchema: { speech_id: z.string().regex(/^rad\d{8}T\d{6}$/).describe("e.g. rad20180306T163325"), from: z.number().int().min(1).optional(), to: z.number().int().min(1).optional() },
+    inputSchema: { speech_id: z.string().regex(/^(rad\d{8}T\d{6}|sgml\d+_\w+_r\w+)$/).describe("e.g. rad20180306T163325"), from: z.number().int().min(1).optional(), to: z.number().int().min(1).optional() },
     outputSchema: z.looseObject({
       speech: z.looseObject({ id: z.string(), url, citation: z.string(), member, matter: matterRef.nullable(), reply_to: z.looseObject({ speech_id: z.string(), inferred: z.boolean() }).nullable(), provisional: z.boolean() }),
       paragraphs: z.array(z.looseObject({ mgr: z.number(), text: z.string(), interjections: z.array(z.string()) })), paragraphs_total: z.number(), next_from: z.number().nullable(),
@@ -102,7 +102,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
   s.registerTool("get_context", {
     title: "Get a paragraph with context",
     description: "A paragraph and its neighbours (window 0-5) with a precise citation: the evidence package for a quote. Use the mgr from a search hit.",
-    inputSchema: { speech_id: z.string().regex(/^rad\d{8}T\d{6}$/), mgr: z.number().int().min(1).describe("Paragraph number (1-based)"), window: z.number().int().min(0).max(5).optional() },
+    inputSchema: { speech_id: z.string().regex(/^(rad\d{8}T\d{6}|sgml\d+_\w+_r\w+)$/), mgr: z.number().int().min(1).describe("Paragraph number (1-based)"), window: z.number().int().min(0).max(5).optional() },
     outputSchema: z.looseObject({ speech_id: z.string(), url, citation: z.string(), member, paragraphs: z.array(z.looseObject({ mgr: z.number(), text: z.string(), is_target: z.boolean() })) }),
     annotations: ro,
   }, (a) => run("get_context", a, () => T.getContext(ctx, a)));
@@ -244,7 +244,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("first_use", {
     title: "First use of a word or phrase",
-    description: "Earliest paragraphs matching a query plus a speeches-per-year strip. 'First' means first in the text corpus (from session 131, October 2004), see `corpus_detail`.",
+    description: "Earliest paragraphs matching a query plus a speeches-per-year strip. 'First' means first in the text corpus (from session 115, October 1991), see `corpus_detail`.",
     inputSchema: { q: z.string().min(1).max(200), limit: z.number().int().min(1).max(20).optional() },
     outputSchema: z.looseObject({ corpus, corpus_detail: corpusDetail, earliest: z.array(z.looseObject({ speech_id: z.string(), mgr: z.number(), started: z.string(), text: z.string(), url })), speeches_per_year: z.array(z.looseObject({ year: z.number(), speeches: z.number() })), caveat: z.string() }),
     annotations: ro,
@@ -260,7 +260,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("list_sessions", {
     title: "List sessions and what text is available",
-    description: "Sessions (löggjafarþing) with their dates and how many speeches have text, are pending, or are index-only (before session 131, October 2004). Call this first to learn the corpus boundary.",
+    description: "Sessions (löggjafarþing) with their dates and how many speeches have text, are pending, or are index-only (before session 115, October 1991). Call this first to learn the corpus boundary.",
     inputSchema: {},
     outputSchema: z.looseObject({ corpus, corpus_detail: corpusDetail, sessions: z.array(z.looseObject({ lthing: z.number(), starts: z.string().nullable(), ends: z.string().nullable(), speeches_with_text: z.number(), text_complete: z.boolean() })) }),
     annotations: ro,

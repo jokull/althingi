@@ -9,7 +9,7 @@ type R<F extends (...a: any[]) => any> = Exclude<Awaited<ReturnType<F>>, { error
 const esc = (s: string | null | undefined) => (s ?? "").replace(/([\\`*_[\]<>|])/g, "\\$1");
 const front = (o: Record<string, string | number | boolean | null | undefined>) =>
   `---\n${Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => `${k}: ${typeof v === "string" ? JSON.stringify(v) : v}`).join("\n")}\n---\n\n`;
-export const FOOTER = `\n---\nHeimild / source: Alþingi (https://www.althingi.is). Ræðutexti frá 131. þingi (október 2004). Vefur og MCP: ${SITE} · ${SITE}/mcp · ${SITE}/llms.txt\n`;
+export const FOOTER = `\n---\nHeimild / source: Alþingi (https://www.althingi.is). Ræðutexti frá 115. þingi (október 1991). Vefur og MCP: ${SITE} · ${SITE}/mcp · ${SITE}/llms.txt\n`;
 const matterHref = (l: number, c: string, n: number) => `${SITE}/mal/${l}/${c.toLowerCase()}/${n}`;
 
 export function speechMd(s: SpeechPage, reply?: { reply_to: { speech_id: string; inferred: boolean } | null }): string {

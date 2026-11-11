@@ -15,8 +15,8 @@ export interface Ctx { sql: Sql; currentLthing: number }
 const SNIPPET_MAX = 400;
 const clip = (s: string, n = SNIPPET_MAX) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-/** The text era: speech XML (and the bulk dump) starts with session 131, which opened on 2004-10-01. */
-export const TEXT_ERA = { lthing: 131, en: "session 131 (October 2004)", is: "131. þingi (október 2004)" } as const;
+/** The text era: session 115 (Oct 1991) on; 131+ from Alþingi XML/dump, 115–130 from IGC-Parla 2026 (98.9 % of indexed speeches). */
+export const TEXT_ERA = { lthing: 115, en: "session 115 (October 1991)", is: "115. þingi (október 1991)" } as const;
 
 export interface CorpusDetail {
   text_from: string; speeches_with_text: number; sessions_with_text: number[];

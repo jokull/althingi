@@ -85,7 +85,7 @@ describe("web", () => {
     if (!ok) return;
     const body = await (await get("/leit?q=hvalkjötsframleiðsla")).text();
     expect(body).toContain("Engar niðurstöður");
-    expect(body).toContain("frá 131. þingi (október 2004)");
+    expect(body).toContain("frá 115. þingi (október 1991)");
     expect(body).toContain("Framíköll eru ekki leitarbær");
   });
 
@@ -348,7 +348,7 @@ describe("mcp", () => {
     if (!ok) return;
     const init = await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "0" } });
     expect(init.json.result.serverInfo.name).toBe("althingi-search");
-    expect(init.json.result.instructions).toContain("from session 131 (October 2004) only");
+    expect(init.json.result.instructions).toContain("from session 115 (October 1991) only");
     expect(init.res.headers.get("cache-control")).toMatch(/^no-(store|cache)$/); // POST event-stream: never cacheable
     const { json } = await rpc("tools/list", undefined, 2);
     const names = json.result.tools.map((t: { name: string }) => t.name).sort();
@@ -359,7 +359,7 @@ describe("mcp", () => {
   test("search_speeches: chainable ids, urls, corpus block, party_at_date, small payload", async () => {
     if (!ok) return;
     const r = await call("search_speeches", { q: word, limit: 3 });
-    expect(r.corpus).toContain("session 131 (October 2004)");
+    expect(r.corpus).toContain("session 115 (October 1991)");
     expect(r.corpus.length).toBeLessThan(300);
     expect(r).not.toHaveProperty("corpus_detail"); // the full object only where absence could be misread
     expect(r.hits.length).toBeGreaterThan(0);
@@ -442,8 +442,8 @@ describe("mcp", () => {
     const fu = await call("first_use", { q: word });
     expect(fu.earliest[0].speech_id).toBe(speechId);
     expect(fu.speeches_per_year).toEqual([{ year: 2018, speeches: 1 }]);
-    expect(fu.caveat).toContain("131. þingi");
-    expect(fu.corpus_detail.text_from).toBe("session 131 (October 2004)");
+    expect(fu.caveat).toContain("115. þingi");
+    expect(fu.corpus_detail.text_from).toBe("session 115 (October 1991)");
     expect(ss.corpus_detail.sessions_with_text).toContain(148);
   });
 });

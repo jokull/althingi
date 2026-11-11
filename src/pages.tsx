@@ -159,7 +159,7 @@ export const Layout = ({ title, desc, canonical, q, jsonld, wide, children, md }
       <main id="main" class={wide ? "page wide" : "page"}>{children}</main>
       <footer class="foot">
         <div>
-          <p>Ræðutexti frá 131. þingi (október 2004). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/um#ordskyringar">Orðskýringar</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a> · <a href="/mcp">Fyrir gervigreind (MCP)</a></p>
+          <p>Ræðutexti frá 115. þingi (október 1991). Eldri ræður eru ekki í þessu safni. Gögn: <a href="https://www.althingi.is">Alþingi</a> · <a href="/um">Um vefinn</a> · <a href="/um#ordskyringar">Orðskýringar</a> · <a href="/nyjast/atom">Nýjustu ræður (Atom)</a> · <a href="/mcp">Fyrir gervigreind (MCP)</a></p>
           <p>Lemmun byggir á Beygingarlýsingu íslensks nútímamáls (BÍN), © Stofnun Árna Magnússonar í íslenskum fræðum, CC BY-SA 4.0, um lemma-is.</p>
         </div>
       </footer>
@@ -501,7 +501,7 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
                 {words.length > 1 && <p>Öll orðin þurfa að koma fyrir í sömu málsgrein. Prófaðu eitt í einu: {words.map((w, i) => <>{i > 0 && " · "}<a href={qs(v.baseQuery, { q: w.text })}>{w.text}</a></>)}</p>}
                 {!nameMiss && <p><Coverage v={v} /></p>}
                 <ul>
-                  <li>Leitin nær til ræðna frá 131. þingi (október 2004){v.corpusFrom ? ` (safnið sem er sótt nú nær aftur til ${fmtDate(v.corpusFrom)})` : ""}.</li>
+                  <li>Leitin nær til ræðna frá 115. þingi (október 1991){v.corpusFrom ? ` (safnið sem er sótt nú nær aftur til ${fmtDate(v.corpusFrom)})` : ""}.</li>
                   <li>Framíköll eru ekki leitarbær.</li>
                   {parsed.numbers.length > 0 && <li>Tölur ({parsed.numbers.join(", ")}) eru bornar saman við textann sjálfan, ekki beygingarmyndir.</li>}
                   <li>Prófaðu færri orð eða eina orðmynd; leitin finnur allar beygingarmyndir orðs.</li>
@@ -975,7 +975,7 @@ export const AboutPage = () => (
       <p class="lede">Leitarvél yfir ræður Alþingis með íslenskri beygingargreiningu (<a href="https://github.com/jokull/lemma-is">lemma-is</a>).</p>
       <p>Gögnin koma úr opinni XML-þjónustu Alþingis; vefurinn sækir hvert skjal einu sinni, með 5 sekúndna millibili og auðkennir sig.</p>
       <h2>Mörk safnsins</h2>
-      <p>Ræðutexti er til frá 131. þingi (október 2004). Eldri ræður (fyrir 131. þing) eru aðeins skráðar í ræðuskrá, textinn er ekki sóttur og því ekki leitarbær. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 131. þingi (október 2004).</p>
+      <p>Ræðutexti er til frá 115. þingi (október 1991). Eldri ræður (fyrir 115. þing) eru aðeins skráðar í ræðuskrá, textinn er ekki sóttur og því ekki leitarbær. Allar „fyrstu“ og „samtals“ tölur eiga við tímabilið frá 115. þingi (október 1991).</p>
       <h2>Hvað er áætlað</h2>
       <p>Tengsl sem ekki eru gefin upp í gögnunum (til dæmis hvaða ræðu andsvar svarar) eru merkt sem áætluð. Framíköll eru birt en ekki leitarbær.</p>
       <h2 id="ordskyringar">Orðskýringar</h2>
