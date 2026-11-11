@@ -36,6 +36,7 @@ const corpus = z.object({ text_from: z.string(), speeches_with_text: z.number(),
   .describe("What the text corpus covers. 'Never'/'first'/totals only hold within it.");
 const member = z.object({ id: z.number().nullable(), name: z.string().nullable(), party_at_date: z.string().nullable().optional() });
 const matterRef = z.object({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string().nullable().optional() });
+const byParty = z.array(z.object({ party: z.string(), counts: z.record(z.string(), z.number()) })).describe("Ballots per party (party on the vote date)");
 const url = z.string().describe("Citable page on althingi.solberg.is (append .md for Markdown)");
 
 const SEARCH_OUT = {
@@ -102,12 +103,13 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 
   s.registerTool("get_matter", {
     title: "Get a matter (þingmál)",
-    description: "One bill/resolution/question: status, sponsors (flutningsmenn), committee rapporteurs, topics, laws it amends, related matters, documents (þingskjöl), vote summaries (ids for get_vote), sitting events (debate closed, passed as law), consultation counts and an index of its speeches. B-mál have no documents or votes. Example: 300. mál á 157. þingi -> lthing=157, nr=300.",
+    description: "One bill/resolution/question: status (derived from sitting events or the final vote when Alþingi left it empty: status_source), sponsors (flutningsmenn), committee rapporteurs, topics, laws it amends, related matters, documents (þingskjöl), vote summaries (ids for get_vote; is_final marks the vote on the whole bill/resolution, with a per-party tally), sitting events (debate closed, passed as law), consultation counts and an index of its speeches. B-mál have no documents or votes. Example: 300. mál á 157. þingi -> lthing=157, nr=300.",
     inputSchema: { lthing: z.number().int().describe("Session number, e.g. 157"), class: cls.optional(), nr: z.number().int().describe("Matter number within the session") },
     outputSchema: {
-      corpus, matter: z.object({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string(), status: z.string().nullable(), url, althingi_url: z.string() }),
+      corpus, matter: z.object({ lthing: z.number(), class: z.string(), nr: z.number(), title: z.string(), subtitle: z.string().nullable(), status: z.string().nullable(), status_source: z.string().nullable(), url, althingi_url: z.string() }),
       sponsors: z.array(z.object({ order: z.number(), member: z.object({ id: z.number(), name: z.string().nullable() }).nullable(), office: z.string().nullable() })),
-      votes: z.array(z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), yes: z.number().nullable(), no: z.number().nullable(), abstain: z.number().nullable() })),
+      votes: z.array(z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), yes: z.number().nullable(), no: z.number().nullable(), abstain: z.number().nullable(), is_final: z.boolean(), by_party: byParty.optional() })),
+      final_vote_id: z.number().nullable(),
       documents: z.array(z.object({ nr: z.number(), type: z.string() })), speeches: z.object({ total: z.number(), index: z.array(z.object({ id: z.string() })) }),
     },
     annotations: ro,
@@ -145,7 +147,7 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
     outputSchema: {
       vote: z.object({ id: z.number(), at: z.string().nullable(), about: z.string(), result: z.string().nullable(), matter: matterRef, url, althingi_url: z.string() }),
       ballots: z.array(z.object({ member: z.object({ id: z.number(), name: z.string().nullable(), party_at_date: z.string().nullable() }), choice: z.string(), choice_en: z.string().nullable() })),
-      by_party: z.array(z.object({ party: z.string(), counts: z.record(z.string(), z.number()) })), ballots_total: z.number(),
+      by_party: byParty, ballots_total: z.number(),
     },
     annotations: ro,
   }, async (a) => out(await T.getVote(ctx, a)));

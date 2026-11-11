@@ -7,6 +7,7 @@ import { parseQuery, describe } from "./explain.ts";
 import { lawPage, matterPage, memberPage, partiesFor, speechPage } from "./queries.ts";
 import { phraseTsQuery, recallTsQuery, search } from "./search.ts";
 import { fmtTime, citation, SITE } from "./pages.tsx";
+import { FINAL_CODES, RESULT_EN, finalVoteIndex, matterStatus, partyTallies, voteResult } from "./outcomes.ts";
 
 export interface Ctx { sql: Sql; currentLthing: number }
 
@@ -156,10 +157,18 @@ export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; n
     ctx.sql<{ member_id: number; name: string }[]>`select member_id, name from matter_rapporteurs where lthing = ${m.lthing} and cls = ${m.cls} and nr = ${m.nr} order by name`,
     ctx.sql<{ at: string; kind: string; fundur: number }[]>`select at::text, kind, fundur from sitting_events where lthing = ${m.lthing} and cls = ${m.cls} and nr = ${m.nr} order by at`,
   ]);
+  // vote type and method codes (not on MatterPage): derive missing results and mark the final vote (src/outcomes.ts)
+  const codes = new Map((await ctx.sql<{ id: number; code: string | null; method_code: string | null }[]>`
+    select id, coalesce(kind_code2, kind_code) as code, method_code from votes where lthing = ${m.lthing} and cls = ${m.cls} and nr = ${m.nr}`).map((r) => [r.id, r]));
+  const votes = m.votes.map((v) => ({ ...v, code: codes.get(v.id)?.code ?? null, ...voteResult({ ...v, method_code: codes.get(v.id)?.method_code ?? null }) }));
+  const fi = finalVoteIndex(votes);
+  const finalTally = fi >= 0 ? (await partyTallies(ctx.sql, [votes[fi]!.id])).get(votes[fi]!.id) ?? [] : [];
+  const st = matterStatus(m.statusText, events.some((e) => e.kind === "frvAfgreittSemLög"), fi >= 0 ? votes[fi]! : null);
   return {
     corpus: await corpusBlock(ctx.sql),
     matter: {
-      lthing: m.lthing, class: m.cls, nr: m.nr, title: m.title, subtitle: m.subtitle, type: m.typeLabel, status: m.statusText,
+      lthing: m.lthing, class: m.cls, nr: m.nr, title: m.title, subtitle: m.subtitle || null, type: m.typeLabel,
+      status: st.status, status_source: st.status_source, // althingi | sitting_event | final_vote (derived) | null
       url: `${SITE}/mal/${m.lthing}/${m.cls.toLowerCase()}/${m.nr}`, althingi_url: m.althingiUrl,
       detail_fetched: m.detailFetched,
       note: m.cls === "B" ? "B-mál: titill úr ræðuskrá, engin þingskjöl eða atkvæðagreiðslur." : undefined,
@@ -171,7 +180,13 @@ export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; n
     topics: m.topics, laws_amended: m.laws.map((l) => ({ year: l.year, nr: l.nr, url: `${SITE}/log/${l.year}/${l.nr}`, althingi_url: lawPageUrl(l.year, l.nr) })),
     related_matters: m.links.map((l) => ({ relation: l.kind, lthing: l.lthing, class: l.cls, nr: l.nr, title: l.title })),
     documents: m.documents.map((d) => ({ nr: d.nr, type: d.type, issued: d.issued, source_url: d.htmlUrl, althingi_url: d.althingiUrl })),
-    votes: m.votes.map((v) => ({ id: v.id, at: v.at, about: v.kind, method: v.method, result: v.result, yes: v.yes, no: v.no, abstain: v.abstain, althingi_url: v.althingiUrl })),
+    votes: votes.map((v, i) => ({
+      id: v.id, at: v.at, about: v.kind, type_code: v.code, method: v.method, result: v.result, result_en: v.result ? RESULT_EN[v.result] ?? null : null,
+      ...(v.result_derived ? { result_derived: true } : {}), yes: v.yes, no: v.no, abstain: v.abstain, is_final: i === fi,
+      ...(i === fi ? { by_party: finalTally } : {}), althingi_url: v.althingiUrl,
+    })),
+    final_vote_id: fi >= 0 ? votes[fi]!.id : null,
+    votes_note: `is_final marks the last vote on the bill or resolution as a whole (type_code ${[...FINAL_CODES].join(" or ")}); by_party (party on the vote date) is inlined on it, get_vote(id) has every ballot. result_derived = filled from the counts or the method because Alþingi left it empty.`,
     consultations: { requests: m.consultations.length, submissions_received: m.submissionCount },
     speeches: { total: m.speechCount, index: m.speeches.slice(0, 100).map((s) => ({ id: s.id, started: s.started, member: { id: s.memberId, name: s.memberName }, speech_type: s.type, debate: s.debate, althingi_url: speechPageUrl(m.lthing, s.id) })) },
     derived: false,
