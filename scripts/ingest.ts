@@ -7,7 +7,8 @@
 //   bun scripts/ingest.ts dump misc     [--from N --to N]               utbyting/, fjarvist(ir)/, inn/
 //   bun scripts/ingest.ts dump drop     --drop PATH [--from N --to N]   all of the above, then derive and post
 //   bun scripts/ingest.ts derive [--replay-raw]                          aliases, member ids, reply_to_id (zero requests)
-//   bun scripts/ingest.ts post                                          vocab MV refresh, post-ingest hook
+//   bun scripts/ingest.ts post [--quick]                                speech_index + corpus_state (+ vocab MV unless --quick), hook
+//   bun scripts/ingest.ts backfill-index [--force] [--from N --to N]    one-off: speech_index for every speech with text
 //   bun scripts/ingest.ts service lists|members|matters|texts|poll|index …   XML service (crawl lock, 5 s)
 //   bun scripts/ingest.ts laws [--zip PATH]                             lagasafn: parse a local zip, or conditional GET
 //   bun scripts/ingest.ts igc --path DIR [--from N --to N] [--limit N]  IGC-Parla TEI → text for SGML-era rows (docs/IGC.md)
@@ -19,7 +20,7 @@ import { type LockName, type Sql, connect, finishRun, migrate, startRun, tryLock
 import { derive, unresolvedSpeakers } from "../src/derive.ts";
 import { type Filter, PARSER_REV, type StepResult, dumpMisc, dumpSittings, dumpSpeeches, hashDrop } from "../src/dump-ingest.ts";
 import { Blocked, RateLimited } from "../src/fetcher.ts";
-import { post } from "../src/post.ts";
+import { backfillSpeechIndex, post } from "../src/post.ts";
 import { runService } from "../src/service.ts";
 import { runLaws } from "../src/laws-ingest.ts";
 import { igcIngest } from "../src/igc.ts";
@@ -34,6 +35,8 @@ const { positionals, values: v } = parseArgs({
     "from-date": { type: "string" }, "to-date": { type: "string" }, "max-age-hours": { type: "string" },
     weekly: { type: "boolean" }, touched: { type: "boolean" }, provisional: { type: "boolean" }, date: { type: "string" },
     path: { type: "string" },
+    quick: { type: "boolean" },
+  force: { type: "boolean" },
   },
 });
 const [group, sub] = positionals;
@@ -42,7 +45,7 @@ const f: Filter = {
   to: v.to ?? v.lthing ? Number(v.to ?? v.lthing) : undefined,
 };
 
-const USAGE = "usage: ingest.ts dump hash|speeches|sittings|misc|drop | derive | post | service lists|members|matters|texts|poll|index | laws | igc --path DIR | status";
+const USAGE = "usage: ingest.ts dump hash|speeches|sittings|misc|drop | derive | post [--quick] | backfill-index | service lists|members|matters|texts|poll|index | laws | igc --path DIR | status";
 
 const sql = connect();
 let runId = 0;
@@ -114,7 +117,7 @@ async function status() {
 let status_ = "ok";
 let note: string | null = null;
 try {
-  if (!group || !["dump", "derive", "post", "service", "laws", "igc", "status"].includes(group)) { console.error(USAGE); process.exit(2); }
+  if (!group || !["dump", "derive", "post", "backfill-index", "service", "laws", "igc", "status"].includes(group)) { console.error(USAGE); process.exit(2); }
   await migrate(sql);
   if (group === "status") { await status(); }
   else {
@@ -138,7 +141,9 @@ try {
       rows += Object.values(c).reduce((a, b) => a + b, 0);
       log(`derive: ${rows} rows written; unresolved speakers ${await unresolvedSpeakers(sql)}`);
     } else if (group === "post") {
-      await post(sql, { runId, log, refreshVocab: true });
+      await post(sql, { runId, log, refreshVocab: !v.quick });
+    } else if (group === "backfill-index") {
+      rows = await backfillSpeechIndex(sql, { log, force: v.force, from: f.from, to: f.to });
     } else if (group === "service") {
       const r = await locked("crawl", () => runService(sql, sub, { ...v, filter: f, log }));
       requests = r.requests; files = r.files; rows = r.rows;

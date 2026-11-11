@@ -1,5 +1,6 @@
 import { documentPageUrl, matterPageUrl, memberPageUrl, speechPageUrl, submissionUrl, votePageUrl } from "./althingi-urls.ts";
 // Read queries behind the pages. Party is ALWAYS resolved through seats on the date in question, never by session.
+import { corpusState } from "./corpus.ts";
 import type { Sql } from "./db.ts";
 
 export interface SpeechPage {
@@ -134,11 +135,11 @@ export async function memberPage(sql: Sql, id: number): Promise<MemberPage | nul
     sql<{ lthing: number; kind: string; party: string | null; constituency: string | null; from_date: string | null; to_date: string | null }[]>`
       select st.lthing, st.kind, p.name as party, st.constituency, st.from_date::text, st.to_date::text from seats st left join parties p on p.id = st.party_id
       where st.member_id = ${id} order by st.from_date nulls first, st.lthing`,
-    sql<{ n: number }[]>`select count(*)::int n from speeches where member_id = ${id} and text_state = 'done'`,
+    sql<{ n: number }[]>`select count(*)::int n from speech_index where member_id = ${id}`,
     sql<{ id: string; started: string; type: string; title: string | null; matter_cls: string | null; matter_nr: number | null; lthing: number; word_count: number | null }[]>`
-      select s.id, s.started::text, s.type, m.title, s.matter_cls, s.matter_nr, s.lthing, s.word_count from speeches s
+      select s.id, s.started::text, s.type, m.title, s.matter_cls, s.matter_nr, s.lthing, s.word_count from speech_index s
       left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
-      where s.member_id = ${id} and s.text_state = 'done' order by s.started desc limit 40`,
+      where s.member_id = ${id} order by s.started desc limit 40`,
   ]);
   return {
     id, name: m?.name ?? fallback!.member_name, born: m?.born ?? null, althingiUrl: memberPageUrl(id, m?.cv_url),
@@ -175,10 +176,10 @@ export async function dayPage(sql: Sql, date: string): Promise<DayPage | null> {
   return { date, groups: [...groups.values()], total: rows.length, prev: nb?.prev ?? null, next: nb?.next ?? null };
 }
 
+/** From the precomputed corpus_state row (docs/PERFORMANCE.md §3.1): never an aggregate on the request path. */
 export async function corpusStats(sql: Sql): Promise<{ speeches: number; from: string | null; to: string | null; lastIngest: Date | null }> {
-  const [r] = await sql<{ n: number; d0: string | null; d1: string | null; last: Date | null }[]>`
-    select count(*)::int n, min(speech_date)::text d0, max(speech_date)::text d1, max(fetched_at) as last from speeches where text_state = 'done'`;
-  return { speeches: r?.n ?? 0, from: r?.d0 ?? null, to: r?.d1 ?? null, lastIngest: r?.last ?? null };
+  const s = await corpusState(sql);
+  return { speeches: s.speechesDone, from: s.from, to: s.to, lastIngest: s.lastIngest };
 }
 
 /** Party on the speech date for many speeches at once (one query). Map key = speech id. */
@@ -243,18 +244,9 @@ export async function lawPage(sql: Sql, year: number, nr: number): Promise<LawPa
  * only those are safe to cache as immutable. A session still being backfilled stays on short TTLs, whatever its number.
  */
 export async function sessionState(sql: Sql): Promise<{ lthing: number; first: number; starts: string | null; complete: Set<number> }> {
-  const sessions = await sql<{ lthing: number; pending: number; done: number }[]>`
-    select lthing, count(*) filter (where text_state = 'pending')::int as pending, count(*) filter (where text_state = 'done')::int as done
-    from speeches where era = 'xml' group by lthing`;
-  const withData = sessions.filter((x) => x.done > 0).map((x) => x.lthing);
-  const lthing = withData.length ? Math.max(...withData) : 0;
-  const [st] = await sql<{ starts: string | null }[]>`select starts::text from sessions where lthing = ${lthing}`;
-  const first = withData.length ? Math.min(...withData) : 0;
-  const cover = new Map((await sql<{ lthing: number; a: number; fetched: number }[]>`
-    select lthing, count(*)::int a, count(detail_fetched_at)::int fetched from matters where cls = 'A' group by lthing`)
-    .map((r) => [r.lthing, r.a === 0 ? 1 : r.fetched / r.a]));
-  const complete = sessions.filter((x) => x.pending === 0 && x.done > 0 && (cover.get(x.lthing) ?? 1) >= 0.95).map((x) => x.lthing);
-  return { lthing, first, starts: st?.starts ?? null, complete: new Set(complete) };
+  // computed by corpus_state_refresh() in the ingest post step (sql/0008); the running session is never complete
+  const s = await corpusState(sql);
+  return { lthing: s.currentLthing, first: s.firstLthing, starts: s.sessions.find((x) => x.lthing === s.currentLthing)?.starts ?? null, complete: s.complete };
 }
 
 /** The seats at the END of a session (members on leave count; their stand-ins do not): who "sits" for each party. */
@@ -280,11 +272,7 @@ export async function partyPage(sql: Sql, id: number): Promise<PartyPage | null>
   const [p] = await sql<{ name: string; lthing: number | null }[]>`
     select name, (select max(lthing) from seats where party_id = ${id}) as lthing from parties where id = ${id}`;
   if (!p) return null;
-  // speeches given while seated for this party (seat on the speech date), restricted to members who ever sat for it
-  const forParty = sql`
-    sp.text_state = 'done' and sp.member_id in (select member_id from seats where party_id = ${id})
-    and exists (select 1 from seats st where st.member_id = sp.member_id and st.party_id = ${id} and st.kind in ('þingmaður', 'varamaður')
-      and sp.speech_date between coalesce(st.from_date, date '0001-01-01') and coalesce(st.to_date, date '9999-12-31'))`;
+  // speeches given while seated for this party: party_id in speech_index IS the seat on the speech date
   const [members, counts, recent] = await Promise.all([
     p.lthing === null ? [] : sql<{ id: number; name: string; constituency: string | null; kind: string; sitting: boolean }[]>`
       select distinct on (st.member_id) st.member_id as id, m.name, st.constituency, st.kind,
@@ -294,12 +282,12 @@ export async function partyPage(sql: Sql, id: number): Promise<PartyPage | null>
       where st.party_id = ${id} and st.lthing = ${p.lthing}
       order by st.member_id, sitting desc, st.from_date desc nulls last`,
     sql<{ id: number; name: string; n: number }[]>`
-      select sp.member_id as id, min(sp.member_name) as name, count(*)::int as n from speeches sp where ${forParty}
+      select sp.member_id as id, min(sp.member_name) as name, count(*)::int as n from speech_index sp where sp.party_id = ${id} and sp.member_id is not null
       group by sp.member_id order by n desc`,
     sql<{ id: string; started: string; type: string; member_id: number; member_name: string; lthing: number; matter_cls: string | null; matter_nr: number | null; title: string | null }[]>`
       select sp.id, sp.started::text, sp.type, sp.member_id, sp.member_name, sp.lthing, sp.matter_cls, sp.matter_nr, m.title
-      from speeches sp left join matters m on m.lthing = sp.lthing and m.cls = sp.matter_cls and m.nr = sp.matter_nr
-      where ${forParty} order by sp.started desc limit 20`,
+      from speech_index sp left join matters m on m.lthing = sp.lthing and m.cls = sp.matter_cls and m.nr = sp.matter_nr
+      where sp.party_id = ${id} order by sp.started desc limit 20`,
   ]);
   const n = new Map(counts.map((c) => [c.id, c.n]));
   return {

@@ -1,5 +1,6 @@
 // Agent-facing text: llms.txt, llms-full.txt, connect instructions per client, the MCP server card / registry server.json.
 // One source for the /mcp page, the front page section, their Markdown variants and the MCP `guide` resource.
+import { corpusState } from "./corpus.ts";
 import type { Sql } from "./db.ts";
 import { SITE } from "./pages.tsx";
 import { glossaryMd } from "./markdown.ts";
@@ -33,9 +34,8 @@ export const URL_SCHEME: [string, string][] = [
 
 export interface CorpusFacts { first: number | null; last: number | null; from: string | null; to: string | null; speeches: number }
 export async function corpusFacts(sql: Sql): Promise<CorpusFacts> {
-  const [r] = await sql<{ first: number | null; last: number | null; d0: string | null; d1: string | null; n: number }[]>`
-    select min(lthing) first, max(lthing) last, min(speech_date)::text d0, max(speech_date)::text d1, count(*)::int n from speeches where text_state = 'done'`;
-  return { first: r?.first ?? null, last: r?.last ?? null, from: r?.d0 ?? null, to: r?.d1 ?? null, speeches: r?.n ?? 0 };
+  const s = await corpusState(sql); // precomputed row, docs/PERFORMANCE.md §3.1
+  return { first: s.firstLthing || null, last: s.currentLthing || null, from: s.from, to: s.to, speeches: s.speechesDone };
 }
 const boundary = (f: CorpusFacts) => f.last
   ? `Speech text for sessions ${f.first}–${f.last} (${f.from} to ${f.to}, ${f.speeches.toLocaleString("en")} speeches). The text era starts at session 115 (October 1991); older speeches are index-only and not searchable. Older sessions are still being added: check list_sessions.`

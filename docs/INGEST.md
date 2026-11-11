@@ -259,7 +259,9 @@ against double-start by launchd, then `bun scripts/ingest.ts …`), plists `com.
 (StartCalendarInterval), logs under `~/althingi/logs/`, watchdog gains: `ingest_runs` with `status='blocked'` → alert; no
 successful poll on a sitting day for 2 h → alert; `crawl_paused_until` set → alert once.
 
-**Post-ingest hooks** (`post`): `refresh materialized view concurrently vocab` (nightly and after a dump drop; not per poll),
+**Post-ingest hooks** (`post`, docs/PERFORMANCE.md §3.3): `speech_index`/`paragraph_index` reconciliation (rows missing or
+older than their speech's text, then the whole current session) and `corpus_state_refresh()` on every run — the poll ends
+with `post --quick` for exactly these two; `refresh materialized view concurrently vocab` (nightly and after a dump drop; not per poll),
 sitemap files for touched sessions, `cf cache purge` by URL list (speech, matter, day, member pages touched; `/` and
 `/nyjast/atom` always), `/healthz` reports `last_poll_at`, `last_dump_drop`, `unresolved_speakers`, `pending_texts`.
 

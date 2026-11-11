@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # launchd entry for the layered ingest (docs/INGEST.md §5). Run kinds:
-#   poll       sitting-day poll (Mon–Fri 09:00–23:30, every 30 min): day speech list → texts → derive
+#   poll       sitting-day poll (Mon–Fri 09:00–23:30, every 30 min): day speech list → texts → derive → post --quick
 #   nightly    03:10: current-session lists, touched matters, new members' seats, derive, post (vocab MV)
 #   weekly     Sun 02:00: non-terminal current-session matters, previous session's lists, per-member reconcile, laws, derive, post
 #   dump-drop  manual, after a person downloaded + unpacked xmlfiles.zip:  ops/ingest.sh dump-drop ~/althingi/xml-dump/<date>
@@ -38,6 +38,7 @@ case "$kind" in
     [ "$dow" -le 5 ] || { echo "weekend: no poll"; exit 0; }
     step service poll
     step derive
+    step post --quick    # speech_index for the current session + corpus_state (no vocab MV): docs/PERFORMANCE.md §3.3
     ;;
   nightly)
     step service lists

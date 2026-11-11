@@ -79,7 +79,7 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
     raw.length >= 2
       ? sql<{ id: number; name: string; last: number | null; first: number | null; party: string | null; constituency: string | null; speeches: number; ls_id: string | null; ls_started: string | null }[]>`
           select m.id, m.name, x.last, x.first, x.party, x.constituency,
-                 (select count(*)::int from speeches sp where sp.member_id = m.id and sp.text_state = 'done') as speeches,
+                 (select count(*)::int from speech_index si where si.member_id = m.id) as speeches,
                  ls.id as ls_id, ls.started::text as ls_started
           from members m
           left join lateral (
@@ -88,7 +88,7 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
                    (array_agg(s.constituency order by s.from_date desc nulls last))[1] as constituency
             from seats s left join parties p on p.id = s.party_id where s.member_id = m.id) x on true
           left join lateral (
-            select sp.id, sp.started from speeches sp where sp.member_id = m.id and sp.text_state = 'done' order by sp.started desc limit 1) ls on true
+            select si.id, si.started from speech_index si where si.member_id = m.id order by si.started desc limit 1) ls on true
           where m.name ilike ${like} or m.name % ${raw}
           order by (lower(m.name) = lower(${raw})) desc, (m.name ilike ${like}) desc, x.last desc nulls last, speeches desc, similarity(m.name, ${raw}) desc, m.id
           limit ${limit}`
@@ -98,8 +98,7 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
           select p.id, p.name, l.lthing,
             (select count(distinct s.member_id)::int from seats s where s.party_id = p.id and s.lthing = l.lthing and s.kind in ('þingmaður', 'með varamann')
                and coalesce(s.to_date, date '9999-12-31') >= coalesce((select max(to_date) from seats where lthing = l.lthing), date '0001-01-01')) as seats,
-            (select count(*)::int from speeches sp where sp.text_state = 'done' and sp.member_id in (select member_id from seats where party_id = p.id) and exists (select 1 from seats s where s.member_id = sp.member_id and s.party_id = p.id
-               and s.kind in ('þingmaður', 'varamaður') and sp.speech_date between coalesce(s.from_date, date '0001-01-01') and coalesce(s.to_date, date '9999-12-31'))) as speeches
+            (select count(*)::int from speech_index si where si.party_id = p.id) as speeches
           from parties p cross join lateral (select max(lthing) as lthing from seats where party_id = p.id) l
           where p.name ilike ${like} order by l.lthing desc nulls last, speeches desc limit ${limit}`
       : [],

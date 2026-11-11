@@ -13,7 +13,12 @@ export function connect(url = process.env.DATABASE_URL, max = 4): Sql {
 
 const SQL_DIR = new URL("../sql/", import.meta.url);
 
-/** Apply sql/*.sql in filename order, once each. */
+/**
+ * Apply sql/*.sql in filename order, once each, every file in one transaction — unless its first line is
+ * `-- migrate: no-transaction`: then its statements run one by one outside a transaction (`create index concurrently`
+ * refuses to run inside one) and the schema_migrations row is written after the last one, so a failed file re-runs.
+ * Such files must be idempotent (`if not exists`, `create or replace`).
+ */
 export async function migrate(sql: Sql): Promise<string[]> {
   await sql`create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())`;
   const done = new Set((await sql<{ name: string }[]>`select name from schema_migrations`).map((r) => r.name));
@@ -21,13 +26,39 @@ export async function migrate(sql: Sql): Promise<string[]> {
   for (const f of readdirSync(SQL_DIR).filter((x) => x.endsWith(".sql")).sort()) {
     if (done.has(f)) continue;
     const body = readFileSync(new URL(f, SQL_DIR), "utf8");
-    await sql.begin(async (tx) => {
-      await tx.unsafe(body);
-      await tx`insert into schema_migrations (name) values (${f})`;
-    });
+    if (/^--\s*migrate:\s*no-transaction/.test(body)) {
+      for (const stmt of splitStatements(body)) await sql.unsafe(stmt);
+      await sql`insert into schema_migrations (name) values (${f})`;
+    } else {
+      await sql.begin(async (tx) => {
+        await tx.unsafe(body);
+        await tx`insert into schema_migrations (name) values (${f})`;
+      });
+    }
     applied.push(f);
   }
   return applied;
+}
+
+/** Split a SQL script on top-level semicolons, respecting quotes, dollar-quoted bodies and `--` comments. */
+export function splitStatements(body: string): string[] {
+  const out: string[] = [];
+  let cur = "", i = 0, quote: string | null = null;
+  while (i < body.length) {
+    const ch = body[i]!;
+    if (quote) {
+      cur += ch;
+      if (body.startsWith(quote, i)) { cur += quote.slice(1); i += quote.length; quote = null; continue; }
+      i++; continue;
+    }
+    if (ch === "-" && body[i + 1] === "-") { const e = body.indexOf("\n", i); const end = e === -1 ? body.length : e; cur += body.slice(i, end); i = end; continue; }
+    if (ch === "'") { quote = "'"; cur += ch; i++; continue; }
+    if (ch === "$") { const m = /^\$[A-Za-z_]*\$/.exec(body.slice(i)); if (m) { quote = m[0]; cur += m[0]; i += m[0].length; continue; } }
+    if (ch === ";") { if (cur.trim()) out.push(cur.trim()); cur = ""; i++; continue; }
+    cur += ch; i++;
+  }
+  if (cur.trim() && !/^(\s|--[^\n]*\n?)*$/.test(cur)) out.push(cur.trim());
+  return out.filter((s) => !/^(--[^\n]*\n?\s*)*$/.test(s));
 }
 
 /** Source feeds contain exact duplicate rows (e.g. matter 157/A/516 twice); last one wins. */
@@ -71,6 +102,9 @@ export async function upsertSeats(sql: Sql, rows: Seat[]): Promise<void> {
     on conflict (member_id, lthing, kind, coalesce(from_date, date '0001-01-01'), coalesce(to_date, date '9999-12-31'))
     do update set abbr = excluded.abbr, party_id = excluded.party_id, constituency_id = excluded.constituency_id,
                   constituency = excluded.constituency`);
+  // party-on-the-date is precomputed in speech_index: re-resolve it for the members whose seats just changed
+  const members = [...new Set(data.map((s) => s.member_id))];
+  if (members.length) await sql`select speech_index_reparty(${members}::int[])`;
 }
 
 export async function upsertMatters(sql: Sql, rows: MatterRow[], lemmatize: (t: string) => string = () => ""): Promise<void> {
@@ -206,7 +240,22 @@ export async function saveSpeechText(
         text_source = ${info.textSource ?? "service"}, provisional = ${info.provisional ?? false},
         source_ref = coalesce(${info.sourceRef ?? null}, source_ref)
       where id = ${meta.id}`;
+    // the speech-level index (docs/PERFORMANCE.md §3.1) in the same commit: never stale for new text
+    await tx`select speech_index_refresh(array[${meta.id}]::text[])`;
   });
+}
+
+/** Rebuild speech_index rows for a set of speeches (post step, backfill, reindex). Returns rows written. */
+export async function refreshSpeechIndex(sql: Queryable, ids: string[]): Promise<number> {
+  if (!ids.length) return 0;
+  const [r] = await sql<{ n: number }[]>`select speech_index_refresh(${ids}::text[]) as n`;
+  return r?.n ?? 0;
+}
+
+/** Recompute the one-row corpus state (counts, sessions, complete flags); returns the new version. */
+export async function refreshCorpusState(sql: Queryable): Promise<number> {
+  const [r] = await sql<{ v: string }[]>`select corpus_state_refresh() as v`;
+  return Number(r?.v ?? 0);
 }
 
 /** Upsert the parallel-array token rows for a set of paragraphs. */
