@@ -109,7 +109,7 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
   - `*` gets `Allow: /`, `Allow: /leit.json`, `Disallow: /leit`. HTML search is an infinite URL space and stays out of indexes; the JSON search is fine.
   - The user-triggered agents (`ChatGPT-User`, `Claude-User`, `Perplexity-User`) get `Allow: /`, because they fetch on a person's behalf.
   - `Disallow: /mcp` is dropped: robots does not govern MCP clients, and the rule only hid the connect page.
-  - `Content-Signal: search=yes, ai-input=yes`. `ai-train` is deliberately left unstated: that is the owner's call. Cloudflare's managed default is `ai-train=no`.
+  - `Content-Signal: search=yes, ai-input=yes`. `ai-train` is deliberately left unstated: the owner chose to stay neutral (2026-11-11), so neither yes nor no is signalled. Cloudflare's managed default is `ai-train=no`.
 - **Sitemaps:** `/sitemap.xml` was referenced but returned 404 on the live site. It is now an index over:
   - `static`;
   - `members`;
@@ -155,7 +155,7 @@ Code: `src/mcp.ts` (server, schemas, resources, prompts), `src/mcp-tools.ts` (to
 
 - **v2 SDK** with 2026-07-28 support (`server/discover`, `ttlMs`/`cacheScope: "public"`). Wait until Claude and ChatGPT document 2026 clients.
 - **Registry publish:** generate an Ed25519 key, serve `/.well-known/mcp-registry-auth`, then run `mcp-publisher login http --domain althingi.solberg.is` and `publish`. The owner does this.
-- **`ai-train`** in Content-Signal (and possibly `__usage_ai-training`): an owner decision.
+- **`ai-train`** in Content-Signal (and `__usage_ai-training`): decided 2026-11-11, stay neutral (no signal either way). Revisit only if the owner asks.
 - **Smaller deferrals:**
   - per-entity `.json` twins;
   - icons in serverInfo and the server card;
