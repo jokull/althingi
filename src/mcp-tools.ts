@@ -76,6 +76,8 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
     corpus,
     query: { text: a.q, interpreted_as: r.query.description, dropped_stopwords: r.query.parsed.dropped, numbers: r.query.parsed.numbers },
     ...(r.total !== undefined ? { total: r.totalCapped ? `${r.total}+` : r.total, total_counts: "speeches with at least one matching paragraph, all pages" } : {}),
+    // a common word is ranked within a window (docs/PERFORMANCE.md §3.2): say so, and how to see the rest
+    ...(r.window ? { ranked_within: { from: r.window.from, to: r.window.to, capped: r.window.capped, note: "Common word: hits and total cover this window only (the most substantive candidates when capped). Add date_from/date_to, member_id or party_id to search outside it." } } : {}),
     hits: r.hits.map((h) => ({
       speech_id: h.speechId, date: h.date, started: h.started, time: fmtTime(h.started),
       member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null },

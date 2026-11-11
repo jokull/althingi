@@ -484,6 +484,12 @@ export const SearchPage = ({ v }: { v: SearchView }) => {
               {r.hits.length > 0 && <span class="hits-x"><a href={`/leit/atom?${v.baseQuery}`} hx-boost="false">Fylgjast með (Atom)</a> · <a href={`/leit.csv?${v.baseQuery}`} hx-boost="false" download>Sækja CSV</a></span>}
             </div>
             {(r.hits.length > 0 || /(^|&)(tegund|flokkur|nyjast|thm|mal|thing|fra|til|embaetti|umraeda|hlutverk)=/.test(v.baseQuery)) && <Filters v={v} />}
+            {r.window && (
+              <p class="hint">
+                Algengt orð: raðað {r.window.from ? `frá ${fmtDate(r.window.from)}` : r.window.to ? `til ${fmtDate(r.window.to)}` : "innan efnismestu málsgreinanna"}
+                {r.window.capped && r.window.from ? " (efnismestu málsgreinarnar)" : ""}. Þrengdu með dagsetningum, þingmanni eða flokki til að leita utan þess.
+              </p>
+            )}
             {r.matterCards.length > 0 && !e && (
               <div class="mcards">
                 {r.matterCards.map((c) => (
