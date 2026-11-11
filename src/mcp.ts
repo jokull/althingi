@@ -115,7 +115,8 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
 /** Stateless Streamable HTTP handler for Hono. */
 export async function handleMcp(c: Context, sql: Sql, currentLthing: number): Promise<Response> {
   const server = buildServer(sql, currentLthing);
-  const transport = new StreamableHTTPTransport({ sessionIdGenerator: undefined });
+  // plain JSON responses: no notifications or progress are ever sent, so an SSE stream buys nothing
+  const transport = new StreamableHTTPTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   const res = await transport.handleRequest(c);
   return res ?? c.body(null, 204);

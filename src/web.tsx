@@ -2,6 +2,8 @@
 import { readFileSync } from "node:fs";
 import { Hono, type Context } from "hono";
 import { etag } from "hono/etag";
+import { cors } from "hono/cors";
+import { clientKey, rateLimiter, type RateOpts } from "./ratelimit.ts";
 import type { Child } from "hono/jsx";
 import type { Sql } from "./db.ts";
 import { route } from "./route.ts";
@@ -11,6 +13,7 @@ import { clearWinner, findMembers, suggest } from "./suggest.ts";
 import { committeePage, composition, corpusStats, dayPage, docPage, isSpeechId, lawPage, matterExtras, matterFeed, matterPage, matterTranscript, memberPage, partiesFor, partyPage, sessionState, speechPage, topicPage } from "./queries.ts";
 import { describeIntent, interpret, type NamedId } from "./intent.ts";
 import { fmtDateTime } from "./pages.tsx";
+import { McpPage } from "./agent-pages.tsx";
 import { KINDS, nameMatches, searchEntities, type Kind } from "./entities.ts";
 import { CommitteePageView, DocPageView, TopicPageView, TranscriptView, Suggest, SITE, AboutPage, DayPageView, HomePage, LawPageView, MatterPageView, MemberPageView, NotFound, PartyPageView, Rows, SearchPage, SpeechPageView, type SearchView } from "./pages.tsx";
 
@@ -27,7 +30,9 @@ const html = (c: Context, node: Child, status: 200 | 404 = 200) =>
 const num = (s: string | undefined): number | undefined => (s !== undefined && /^\d{1,9}$/.test(s) ? Number(s) : undefined);
 const iso = (s: string | undefined): string | undefined => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
 
-export function createApp(sql: Sql) {
+export interface AppOpts { mcpRate?: RateOpts }
+
+export function createApp(sql: Sql, opts: AppOpts = {}) {
   const app = new Hono();
   app.use("*", etag({ weak: false }));
 
@@ -390,9 +395,27 @@ export function createApp(sql: Sql) {
     return html(c, <DayPageView d={d} />);
   });
 
-  // ---- MCP (stateless Streamable HTTP). never cached; the in-process limit is a placeholder for the edge rule (WP7)
+  // ---- MCP (stateless Streamable HTTP, no auth). POST is the protocol; GET in a browser is the connect page; there is
+  // no server-initiated SSE stream, so any other GET is 405 (spec: "MUST either return text/event-stream or 405").
+  const mcpCors = cors({
+    origin: "*", allowMethods: ["GET", "POST", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Accept", "Mcp-Session-Id", "MCP-Protocol-Version", "Last-Event-ID", "Authorization"],
+    exposeHeaders: ["Mcp-Session-Id", "MCP-Protocol-Version", "Retry-After"], maxAge: 86400,
+  });
+  app.use("/mcp", mcpCors);
+  const limited = rateLimiter(opts.mcpRate ?? { capacity: 60, perSecond: 1 });
   app.all("/mcp", async (c) => {
     c.header("Cache-Control", "no-store");
+    if (c.req.method === "GET" || c.req.method === "HEAD") {
+      if ((c.req.header("accept") ?? "").includes("text/html")) return html(c, <McpPage />);
+      return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed: this server is stateless and offers no SSE stream. POST JSON-RPC to /mcp." }, id: null }, 405, { Allow: "POST, OPTIONS" });
+    }
+    if (c.req.method !== "POST") return c.json({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed (stateless server, no sessions to delete)." }, id: null }, 405, { Allow: "POST, OPTIONS" });
+    const wait = limited(clientKey((n) => c.req.header(n)));
+    if (wait !== null) {
+      return c.json({ jsonrpc: "2.0", error: { code: -32000, message: `Rate limited: at most 60 requests a minute per client. Retry after ${wait} s.`, data: { retry_after_seconds: wait } }, id: null },
+        429, { "Retry-After": String(wait) });
+    }
     return handleMcp(c, sql, (await current()).lthing);
   });
 
