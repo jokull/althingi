@@ -171,16 +171,25 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     const t0 = performance.now();
     const st = await readCorpusState(sql);
     const ageH = st.lastIngest ? (Date.now() - st.lastIngest.getTime()) / 3_600_000 : null;
-    const [ing] = await sql<{ last_poll_at: Date | null; last_dump_drop: Date | null; unresolved_speakers: number; blocked_runs: number }[]>`
+    // the corpus_state read above is the liveness check; these stats are extras, so a slow moment on the shared Postgres
+    // (a few seconds' stall past the 2 s statement_timeout, 2026-11-12 20:25) reports them as unavailable instead of a 500
+    type Ing = { last_poll_at: Date | null; last_dump_drop: Date | null; unresolved_speakers: number; blocked_runs: number };
+    let statsError: string | null = null;
+    const [ing] = await sql<Ing[]>`
       select (select max(finished) from ingest_runs where kind = 'service poll' and status = 'ok') as last_poll_at,
              (select max(downloaded_at) from dump_drops) as last_dump_drop,
              (select count(*)::int from speeches where member_id is null) as unresolved_speakers,
-             (select count(*)::int from ingest_runs where status in ('blocked', 'rate-limited') and started > now() - interval '24 hours') as blocked_runs`;
+             (select count(*)::int from ingest_runs where status in ('blocked', 'rate-limited') and started > now() - interval '24 hours') as blocked_runs`.catch((e: Error): Ing[] => {
+      statsError = e.message;
+      console.error(`${new Date().toISOString()} healthz: ingest stats unavailable: ${e.message}`);
+      return [];
+    });
     return c.json({
       ok: true, db_ms: Math.round(performance.now() - t0), speeches: st.speechesDone, last_ingest_age_hours: ageH === null ? null : Math.round(ageH * 10) / 10,
       corpus_state_version: st.version, corpus_state_age_minutes: st.updatedAt ? Math.round((Date.now() - st.updatedAt.getTime()) / 60_000) : null,
       last_poll_at: ing?.last_poll_at ?? null, last_dump_drop: ing?.last_dump_drop ?? null,
-      unresolved_speakers: ing?.unresolved_speakers ?? 0, pending_texts: st.sessions.reduce((a, s) => a + s.pending, 0), blocked_runs_24h: ing?.blocked_runs ?? 0,
+      unresolved_speakers: ing?.unresolved_speakers ?? null, pending_texts: st.sessions.reduce((a, s) => a + s.pending, 0), blocked_runs_24h: ing?.blocked_runs ?? null,
+      ...(statsError ? { stats_error: statsError } : {}),
     });
   });
 
