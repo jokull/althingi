@@ -96,6 +96,7 @@ kbd{font:500 .75rem/1 var(--sans);border:1px solid var(--line-2);border-bottom-w
 .chip[aria-current]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--pc);flex:none}
 .party{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+a.party{color:inherit;text-decoration:none}a.party:hover{text-decoration:underline}
 .party::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pc);flex:none}
 .status{font-weight:500;color:var(--ink-2)}
 .status.ok{color:var(--ok)}

@@ -150,18 +150,18 @@ export async function searchEntities(sql: Sql, q: string, current: number, limit
     meta: `${r.nr}. mál á ${r.lthing}. þingi${r.type_label ? ` · ${r.type_label}` : ""}`,
   }));
   out.thingmenn = thingmenn.map((r) => ({
-    kind: "thingmenn", href: `/thingmadur/${r.id}`, title: r.name, badge: r.party ?? undefined, strong: nameMatches(r.name, raw),
+    kind: "thingmenn", href: `/thingmenn/${r.id}`, title: r.name, badge: r.party ?? undefined, strong: nameMatches(r.name, raw),
     meta: [r.constituency, span(r.first, r.last)].filter(Boolean).join(" · "),
     stats: [`${r.speeches.toLocaleString("is-IS")} ${r.speeches === 1 ? "ræða" : "ræður"} í safni`],
     member: { id: r.id, party: r.party, constituency: r.constituency, first: r.first, last: r.last, speeches: r.speeches, lastSpeech: r.ls_id && r.ls_started ? { id: r.ls_id, started: r.ls_started } : null },
   }));
   out.flokkar = flokkar.map((r) => ({
-    kind: "flokkar", href: `/flokkur/${r.id}`, title: r.name, badge: "flokkur",
+    kind: "flokkar", href: `/flokkar/${r.id}`, title: r.name, badge: "flokkur",
     meta: r.lthing ? `${r.seats} ${r.seats === 1 ? "þingmaður" : "þingmenn"} á ${r.lthing}. þingi` : "",
     stats: [`${r.speeches.toLocaleString("is-IS")} ræður í safni`],
     party: { id: r.id, seats: r.seats, lthing: r.lthing, speeches: r.speeches },
   }));
-  out.nefndir = nefndir.map((r) => ({ kind: "nefndir", href: `/nefnd/${r.id}`, title: r.name, badge: "nefnd", meta: [r.first_lthing ? `frá ${r.first_lthing}. þingi` : "", `${r.n} mál með umsagnarbeiðnum`].filter(Boolean).join(" · ") }));
+  out.nefndir = nefndir.map((r) => ({ kind: "nefndir", href: `/nefndir/${r.id}`, title: r.name, badge: "nefnd", meta: [r.first_lthing ? `frá ${r.first_lthing}. þingi` : "", `${r.n} mál með umsagnarbeiðnum`].filter(Boolean).join(" · ") }));
   out.efni = efni.map((r) => ({
     kind: "efni", href: `/efni/${r.id}`, title: r.name, meta: `${r.parent_name ? r.parent_name + " · " : ""}${r.n} mál`,
   }));

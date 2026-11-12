@@ -9,7 +9,8 @@ import type { Sql } from "./db.ts";
 import { route } from "./route.ts";
 import { search, type SearchParams } from "./search.ts";
 import { buildServer, handleMcp, VERSION } from "./mcp.ts";
-import { renderMd } from "./md-routes.ts";
+import { legacyPath, renderMd } from "./md-routes.ts";
+import { refreshPartyIds } from "./party-ids.ts";
 import { aboutMd, corpusFacts, homeJsonLd, homeMd, llmsFullTxt, llmsTxt, mcpMd, openApi, serverCard } from "./agent-docs.ts";
 import { clearWinner, findMembers, suggest } from "./suggest.ts";
 import { committeePage, composition, corpusStats, dayPage, docPage, isSpeechId, lawPage, matterExtras, matterFeed, matterPage, matterTranscript, memberPage, partiesFor, partyPage, sessionState, speechPage, topicPage } from "./queries.ts";
@@ -18,6 +19,8 @@ import { readCorpusState } from "./corpus.ts";
 import { fmtDateTime, mdHref } from "./pages.tsx";
 import { AgentsSection, McpPage } from "./agent-pages.tsx";
 import { KINDS, nameMatches, searchEntities, type Kind } from "./entities.ts";
+import { CommitteesIndexView, DayYearsView, DaysOfYearView, LatestSpeechesView, LawYearsView, LawsOfYearView, MembersIndexView, PartiesIndexView, SessionDocsView, SessionMattersView, SessionsIndexView, TopicsIndexView } from "./pages.tsx";
+import { committeesIndex, dayYears, daysOfYear, latestSpeeches, lawYears, lawsOfYear, membersIndex, partiesIndex, sessionDocs, sessionMatters, sessionsWith, topicsIndex } from "./indexes.ts";
 import { CommitteePageView, DocPageView, TopicPageView, TranscriptView, Suggest, SITE, AboutPage, DayPageView, HomePage, LawPageView, MatterPageView, MemberPageView, NotFound, PartyPageView, Rows, SearchPage, SpeechPageView, type SearchView } from "./pages.tsx";
 
 const IMMUTABLE = "public, s-maxage=31536000, stale-while-revalidate=86400, stale-if-error=604800";
@@ -89,6 +92,15 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   const tools = () => Object.entries((buildServer(sql, 0) as unknown as { _registeredTools: Record<string, { title?: string; description?: string }> })._registeredTools)
     .map(([name, t]) => ({ name, title: t.title, description: t.description }));
 
+  // singular URLs from before the plural directories (/raeda/… -> /raedur/…): permanent, query string kept
+  app.use("*", async (c, next) => {
+    const u = new URL(c.req.url);
+    const to = legacyPath(u.pathname) ?? (u.pathname.length > 1 && u.pathname.endsWith("/") && c.req.method === "GET" ? u.pathname.replace(/\/+$/, "") : null);
+    if (to) { c.header("Cache-Control", "public, max-age=86400"); return c.redirect(`${to}${u.search}`, 301); }
+    await refreshPartyIds(sql);
+    return next();
+  });
+
   // HTML pages advertise their agent twins in a Link header too (llms.txt, MCP card, Markdown alternate)
   app.use("*", async (c, next) => {
     const path = new URL(c.req.url).pathname;
@@ -123,7 +135,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     if (!path.endsWith(".md")) return next();
     const d = await renderMd(sql, path, (await current()).lthing);
     if (!d) return c.body(`# Fannst ekki\n\nEkkert á ${SITE}${path}. Sjá ${SITE}/llms.txt fyrir slóðir.\n`, 404, MD);
-    const lthing = Number(path.match(/^\/(?:mal|thingskjal)\/(\d+)\//)?.[1] ?? NaN);
+    const lthing = Number(path.match(/^\/(?:mal|thingskjol)\/(\d+)\//)?.[1] ?? NaN);
     if (Number.isFinite(lthing)) await cacheFor(c, lthing); else c.header("Cache-Control", LIVE);
     return c.body(d.markdown, 200, { ...MD, Link: `<${SITE}${d.path}>; rel="canonical"` });
   });
@@ -139,8 +151,8 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
   });
   app.get("/sitemaps/:name{[a-z0-9]+\\.xml}", async (c) => {
     const name = c.req.param("name").replace(/\.xml$/, "");
-    if (name === "static") return c.body(urlset(["/", "/um", "/mcp", "/llms.txt"].map((loc) => ({ loc }))), 200, XMLH);
-    if (name === "members") return c.body(urlset((await sql<{ id: number }[]>`select id from members where exists (select 1 from seats s where s.member_id = members.id) order by id`).map((m) => ({ loc: `/thingmadur/${m.id}` }))), 200, XMLH);
+    if (name === "static") return c.body(urlset(["/", "/um", "/mcp", "/llms.txt", "/thingmenn", "/flokkar", "/mal", "/thingskjol", "/log", "/nefndir", "/efni", "/dagar", "/raedur"].map((loc) => ({ loc }))), 200, XMLH);
+    if (name === "members") return c.body(urlset((await sql<{ id: number }[]>`select id from members where exists (select 1 from seats s where s.member_id = members.id) order by id`).map((m) => ({ loc: `/thingmenn/${m.id}` }))), 200, XMLH);
     if (name === "laws") return c.body(urlset((await sql<{ year: number; nr: number }[]>`select year, nr from laws_current order by year, nr`).map((l) => ({ loc: `/log/${l.year}/${l.nr}` }))), 200, XMLH);
     const lthing = num(name);
     if (lthing === undefined) return c.text("fannst ekki", 404);
@@ -150,7 +162,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     ]);
     if (!ms.length && !sp.length) return c.text("fannst ekki", 404);
     await cacheFor(c, lthing);
-    return c.body(urlset([...ms.map((m) => ({ loc: `/mal/${lthing}/${m.cls.toLowerCase()}/${m.nr}`, lastmod: m.d })), ...sp.map((x) => ({ loc: `/raeda/${x.id}`, lastmod: x.d }))]), 200, { "Content-Type": XMLH["Content-Type"] });
+    return c.body(urlset([...ms.map((m) => ({ loc: `/mal/${lthing}/${m.cls.toLowerCase()}/${m.nr}`, lastmod: m.d })), ...sp.map((x) => ({ loc: `/raedur/${x.id}`, lastmod: x.d }))]), 200, { "Content-Type": XMLH["Content-Type"] });
   });
 
   app.get("/healthz", async (c) => {
@@ -259,7 +271,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       }
       // a bare member name goes to the member page — but never when filters are set (they would be dropped)
       const m = hasFilters ? null : clearWinner(await findMembers(sql, q));
-      if (m && nameMatches(m.name, q) && !sp.get("beint") && !sp.get("ordrett")) return c.redirect(`/thingmadur/${m.id}`, 302);
+      if (m && nameMatches(m.name, q) && !sp.get("beint") && !sp.get("ordrett")) return c.redirect(`/thingmenn/${m.id}`, 302);
     }
     c.header("Cache-Control", SEARCHY);
     const t = new URL(c.req.url).searchParams.get("t") ?? "allt";
@@ -317,7 +329,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     const parties = await partiesFor(sql, r.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
     return c.body(atom(`leit:${base}`, `Alþingi · leit: ${q}`, `/leit/atom?${base}`, r.hits.map((h) => ({
       id: `raeda:${h.speechId}`, title: `${h.memberName}${parties.get(h.speechId) ? ` (${parties.get(h.speechId)})` : ""} – ${h.speechType}, ${fmtDateTime(h.started)}`,
-      href: `${SITE}/raeda/${h.speechId}`, updated: h.started.replace(" ", "T") + "Z",
+      href: `${SITE}/raedur/${h.speechId}`, updated: h.started.replace(" ", "T") + "Z",
       summary: `${h.matter?.title ? h.matter.title + ": " : ""}${h.paragraphs[0]?.snippets[0]?.text ?? ""}`,
     }))), 200, FEED);
   });
@@ -329,7 +341,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       from speeches s left join matters m on m.lthing = s.lthing and m.cls = s.matter_cls and m.nr = s.matter_nr
       where s.text_state = 'done' order by s.started desc limit 30`;
     return c.body(atom("nyjast", "Alþingi · nýjustu ræður", "/nyjast/atom", rows.map((r) => ({
-      id: `raeda:${r.id}`, title: `${r.member_name} – ${r.type}, ${fmtDateTime(r.started)}`, href: `${SITE}/raeda/${r.id}`,
+      id: `raeda:${r.id}`, title: `${r.member_name} – ${r.type}, ${fmtDateTime(r.started)}`, href: `${SITE}/raedur/${r.id}`,
       updated: r.started.replace(" ", "T") + "Z", summary: `${r.title ? r.title + ": " : ""}${(r.text ?? "").slice(0, 300)}`,
     }))), 200, FEED);
   });
@@ -345,7 +357,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       const parties = await partiesFor(sql, r.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
       for (const h of r.hits) {
         rows.push([h.speechId, h.date, h.started.slice(11, 16), h.memberId, h.memberName, parties.get(h.speechId) ?? "", h.speechType, h.matter?.lthing ?? "", h.matter?.cls ?? "", h.matter?.nr ?? "", h.matter?.title ?? "",
-          `${SITE}/raeda/${h.speechId}`, (h.paragraphs[0]?.snippets[0]?.text ?? "").replace(/\s+/g, " ")]);
+          `${SITE}/raedur/${h.speechId}`, (h.paragraphs[0]?.snippets[0]?.text ?? "").replace(/\s+/g, " ")]);
       }
       cursor = r.nextCursor ?? undefined;
       if (!cursor) break;
@@ -366,7 +378,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       const r = await search(sql, { ...p, cursor, limit: Math.min(25, lim - hits.length), withTotal: page === 0 && !p.cursor });
       if (page === 0) { total = r.total; capped = !!r.totalCapped; }
       const parties = await partiesFor(sql, r.hits.map((h) => ({ speechId: h.speechId, memberId: h.memberId, date: h.date })));
-      for (const h of r.hits) hits.push({ speech_id: h.speechId, started: h.started, member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null }, speech_type: h.speechType, debate: h.debate, matter: h.matter, url: `${SITE}/raeda/${h.speechId}`, paragraphs: h.paragraphs.map((x) => ({ mgr: x.seq + 1, text: x.snippets[0]?.text ?? "" })) });
+      for (const h of r.hits) hits.push({ speech_id: h.speechId, started: h.started, member: { id: h.memberId, name: h.memberName, party_at_date: parties.get(h.speechId) ?? null }, speech_type: h.speechType, debate: h.debate, matter: h.matter, url: `${SITE}/raedur/${h.speechId}`, paragraphs: h.paragraphs.map((x) => ({ mgr: x.seq + 1, text: x.snippets[0]?.text ?? "" })) });
       cursor = r.nextCursor ?? undefined;
       if (!cursor) break;
     }
@@ -389,8 +401,40 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
       { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="althingi-${lthing}-atkvaedagreidslur.csv"` });
   });
 
+  // ---- directory index pages: every plural directory lists what is under it (src/indexes.ts)
+  const listed = async (c: Context, el: unknown) => { c.header("Cache-Control", LIVE); return html(c, el as never); };
+  app.get("/raedur", async (c) => listed(c, <LatestSpeechesView rows={await latestSpeeches(sql)} />));
+  app.get("/thingmenn", async (c) => { const l = (await current()).seatLthing; return listed(c, <MembersIndexView rows={await membersIndex(sql, l)} lthing={l} />); });
+  app.get("/flokkar", async (c) => { const l = (await current()).seatLthing; return listed(c, <PartiesIndexView rows={await partiesIndex(sql, l)} lthing={l} />); });
+  app.get("/mal", async (c) => listed(c, <SessionsIndexView kind="mal" rows={await sessionsWith(sql, "matters")} />));
+  app.get("/thingskjol", async (c) => listed(c, <SessionsIndexView kind="thingskjol" rows={await sessionsWith(sql, "documents")} />));
+  app.get("/log", async (c) => listed(c, <LawYearsView rows={await lawYears(sql)} />));
+  app.get("/nefndir", async (c) => listed(c, <CommitteesIndexView rows={await committeesIndex(sql)} />));
+  app.get("/efni", async (c) => listed(c, <TopicsIndexView rows={await topicsIndex(sql)} />));
+  app.get("/dagar", async (c) => listed(c, <DayYearsView rows={await dayYears(sql)} />));
+  app.get("/mal/:lthing", async (c) => {
+    const l = num(c.req.param("lthing"));
+    const r = l === undefined ? null : await sessionMatters(sql, l);
+    if (!r) return html(c, <NotFound what="Þingið fannst ekki." />, 404);
+    await cacheFor(c, r.session.lthing);
+    return html(c, <SessionMattersView s={r.session} matters={r.matters} />);
+  });
+  app.get("/thingskjol/:lthing", async (c) => {
+    const l = num(c.req.param("lthing"));
+    const r = l === undefined ? null : await sessionDocs(sql, l);
+    if (!r) return html(c, <NotFound what="Þingið fannst ekki." />, 404);
+    await cacheFor(c, r.session.lthing);
+    return html(c, <SessionDocsView s={r.session} docs={r.docs} />);
+  });
+  app.get("/log/:year", async (c) => {
+    const y = num(c.req.param("year"));
+    const rows = y === undefined || y < 1200 || y > 2100 ? [] : await lawsOfYear(sql, y);
+    if (!rows.length) return html(c, <NotFound what="Engin lög frá þessu ári í lagasafninu." />, 404);
+    return listed(c, <LawsOfYearView year={y!} rows={rows} />);
+  });
+
   // ---- entities
-  app.get("/raeda/:id", async (c) => {
+  app.get("/raedur/:id", async (c) => {
     const id = c.req.param("id");
     if (!isSpeechId(id)) return html(c, <NotFound what="Ræðan fannst ekki." />, 404);
     const s = await speechPage(sql, id);
@@ -429,14 +473,14 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     const murl = `${SITE}/mal/${lthing}/${cls.toLowerCase()}/${nr}`;
     const ts = (t: string) => t.replace(" ", "T").slice(0, 19) + "Z";
     const entries = [
-      ...f.speeches.map((s) => ({ id: `raeda:${s.id}`, title: `${s.member_name} – ${s.type}, ${fmtDateTime(s.started)}`, href: `${SITE}/raeda/${s.id}`, updated: ts(s.started), summary: (s.text ?? "").slice(0, 300) })),
+      ...f.speeches.map((s) => ({ id: `raeda:${s.id}`, title: `${s.member_name} – ${s.type}, ${fmtDateTime(s.started)}`, href: `${SITE}/raedur/${s.id}`, updated: ts(s.started), summary: (s.text ?? "").slice(0, 300) })),
       ...f.votes.map((v) => ({ id: `atkvaedagreidsla:${v.id}`, title: `Atkvæðagreiðsla: ${v.kind_label}${v.result ? ` – ${v.result}` : ""}`, href: `${murl}#atkvaedi`, updated: ts(v.at), summary: v.yes !== null ? `já ${v.yes}, nei ${v.no ?? 0}, sátu hjá ${v.abstain ?? 0}` : (v.result ?? "") })),
-      ...f.docs.map((d) => ({ id: `thingskjal:${lthing}:${d.nr}`, title: `Þingskjal ${d.nr}: ${d.type}`, href: `${SITE}/thingskjal/${lthing}/${d.nr}`, updated: ts(d.issued), summary: d.type })),
+      ...f.docs.map((d) => ({ id: `thingskjal:${lthing}:${d.nr}`, title: `Þingskjal ${d.nr}: ${d.type}`, href: `${SITE}/thingskjol/${lthing}/${d.nr}`, updated: ts(d.issued), summary: d.type })),
     ].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 50);
     return c.body(atom(`mal:${lthing}:${cls}:${nr}`, `Alþingi · ${nr}. mál: ${m.title}`, `/mal/${lthing}/${cls.toLowerCase()}/${nr}/atom`, entries), 200, { ...FEED, "Cache-Control": LIVE });
   });
 
-  app.get("/thingskjal/:lthing/:nr", async (c) => {
+  app.get("/thingskjol/:lthing/:nr", async (c) => {
     const lthing = num(c.req.param("lthing")), nr = num(c.req.param("nr"));
     const d = lthing === undefined || nr === undefined ? null : await docPage(sql, lthing, nr);
     if (!d) return html(c, <NotFound what="Þingskjalið fannst ekki í safninu." />, 404);
@@ -452,7 +496,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     return html(c, <TopicPageView t={t} />);
   });
 
-  app.get("/nefnd/:id", async (c) => {
+  app.get("/nefndir/:id", async (c) => {
     const id = num(c.req.param("id"));
     const n = id === undefined ? null : await committeePage(sql, id);
     if (!n) return html(c, <NotFound what="Nefndin fannst ekki." />, 404);
@@ -467,7 +511,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     return html(c, <LawPageView l={await lawPage(sql, year, nr)} />);
   });
 
-  app.get("/thingmadur/:id", async (c) => {
+  app.get("/thingmenn/:id", async (c) => {
     const id = num(c.req.param("id"));
     const m = id === undefined ? null : await memberPage(sql, id);
     if (!m) return html(c, <NotFound what="Þingmaðurinn fannst ekki." />, 404);
@@ -475,7 +519,7 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     return html(c, <MemberPageView m={m} />);
   });
 
-  app.get("/flokkur/:id", async (c) => {
+  app.get("/flokkar/:id", async (c) => {
     const id = num(c.req.param("id"));
     const p = id === undefined ? null : await partyPage(sql, id);
     if (!p) return html(c, <NotFound what="Flokkurinn fannst ekki." />, 404);
@@ -483,7 +527,13 @@ export function createApp(sql: Sql, opts: AppOpts = {}) {
     return html(c, <PartyPageView p={p} />);
   });
 
-  app.get("/dagur/:date", async (c) => {
+  app.get("/dagar/:date", async (c) => {
+    if (/^\d{4}$/.test(c.req.param("date"))) {
+      const y = Number(c.req.param("date"));
+      const rows = await daysOfYear(sql, y);
+      if (!rows.length) return html(c, <NotFound what="Engir þingdagar í safninu þetta ár." />, 404);
+      return listed(c, <DaysOfYearView year={y} rows={rows} />);
+    }
     const date = iso(c.req.param("date"));
     const d = date ? await dayPage(sql, date) : null;
     if (!d) return html(c, <NotFound what="Enginn þingfundur fannst þennan dag." />, 404);

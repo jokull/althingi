@@ -329,7 +329,7 @@ export async function matterExtras(sql: Sql, lthing: number, cls: string, nr: nu
   ]);
   const stageLabel = (d: string) => (/^[123]$/.test(d) ? `${d}. umræða hefst` : "Umræða");
   const raw: MatterExtras["timeline"] = [
-    ...docs.map((d) => ({ at: d.issued!, kind: "skjal" as const, label: `Þingskjal ${d.nr}: ${d.type}`, href: `/thingskjal/${lthing}/${d.nr}` })),
+    ...docs.map((d) => ({ at: d.issued!, kind: "skjal" as const, label: `Þingskjal ${d.nr}: ${d.type}`, href: `/thingskjol/${lthing}/${d.nr}` })),
     ...stages.map((s) => ({ at: s.started, kind: "umræða" as const, label: `${stageLabel(s.debate)} (${s.n} ${s.n === 1 ? "ræða" : "ræður"})` })),
     ...votes.filter((v) => v.result || v.yes !== null).map((v) => ({ at: v.at!, kind: "atkvæði" as const, label: `${v.kind_label}${v.result ? `: ${v.result}` : ""}${v.yes !== null ? ` (${v.yes}–${v.no ?? 0})` : ""}` })),
   ].sort((a, b) => a.at.localeCompare(b.at));

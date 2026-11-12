@@ -14,9 +14,9 @@ describe("route", () => {
   });
 
   test("þingskjöl default to the current session", () => {
-    expect(R("þskj. 421")).toBe("/thingskjal/157/421");
-    expect(R("þingskjal 421")).toBe("/thingskjal/157/421");
-    expect(R("þskj. 150/12")).toBe("/thingskjal/150/12");
+    expect(R("þskj. 421")).toBe("/thingskjol/157/421");
+    expect(R("þingskjal 421")).toBe("/thingskjol/157/421");
+    expect(R("þskj. 150/12")).toBe("/thingskjol/150/12");
   });
 
   test("matters: class defaults to A, B when given", () => {
@@ -87,5 +87,5 @@ describe("recall query shape", () => {
 });
 
 test("document reference with the session spelled out", () => {
-  expect(route("þskj. 421 á 157. þingi", 158)?.path).toBe("/thingskjal/157/421");
+  expect(route("þskj. 421 á 157. þingi", 158)?.path).toBe("/thingskjol/157/421");
 });

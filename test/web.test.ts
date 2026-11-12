@@ -75,7 +75,7 @@ describe("web", () => {
     const body = await r.text();
     expect(body).toContain("<mark>");
     expect(body).toContain("Leitað að:");
-    expect(body).toContain(`/raeda/${speechId}`);
+    expect(body).toContain(`/raedur/${speechId}`);
     expect(r.headers.get("cache-control")).toContain("s-maxage=60");
     const part = await get(`/leit/rows?q=${encodeURIComponent(word)}`);
     const pb = await part.text();
@@ -95,9 +95,9 @@ describe("web", () => {
     if (!ok) return;
     const loc = async (q: string) => (await get(`/leit?q=${encodeURIComponent(q)}`)).headers.get("location");
     expect(await loc("lög nr. 34/1991")).toBe("/log/1991/34");
-    expect(await loc("þskj. 421")).toMatch(/^\/thingskjal\/\d+\/421$/);
+    expect(await loc("þskj. 421")).toMatch(/^\/thingskjol\/\d+\/421$/);
     expect(await loc("300. mál")).toMatch(/^\/mal\/\d+\/a\/300$/);
-    expect(await loc("Aðalsteinn Leifsson")).toBe("/thingmadur/1547");
+    expect(await loc("Aðalsteinn Leifsson")).toBe("/thingmenn/1547");
     const blank = await get("/leit?q=");
     expect(blank.status).toBe(302);
     expect(blank.headers.get("location")).toBe("/");
@@ -105,15 +105,15 @@ describe("web", () => {
 
   test("speech page: anchors per paragraph, citation, 404 for junk ids", async () => {
     if (!ok) return;
-    const r = await get(`/raeda/${speechId}`);
+    const r = await get(`/raedur/${speechId}`);
     expect(r.status).toBe(200);
     const body = await r.text();
     expect(body).toContain('id="mgr-1"');
     expect(body).toContain("Tilvitnun");
-    expect(body).toContain(`/raeda/${speechId}`);
+    expect(body).toContain(`/raedur/${speechId}`);
     expect(body).toContain('type="application/ld+json"');
-    expect((await get("/raeda/nonsense")).status).toBe(404);
-    expect((await get("/raeda/rad20000101T000000")).status).toBe(404);
+    expect((await get("/raedur/nonsense")).status).toBe(404);
+    expect((await get("/raedur/rad20000101T000000")).status).toBe(404);
   });
 
   test("SGML-era speech with IGC text renders, has a Markdown twin and is found by search", async () => {
@@ -124,20 +124,20 @@ describe("web", () => {
     await igcIngest(sql, new URL("../fixtures/igc", import.meta.url).pathname, { from: 123, to: 123 });
     try {
       const id = "sgml123_03_r02142606"; // Pétur Blöndal 1999-03-02, stitched from two IGC utterances
-      const r = await get(`/raeda/${id}`);
+      const r = await get(`/raedur/${id}`);
       expect(r.status).toBe(200);
       const body = await r.text();
       expect(body).toContain('id="mgr-1"');
       expect(body).toContain("Pétur H. Blöndal");
       expect(body).toContain("Ögmundur Jónasson: "); // the other speaker's words, shown as an interjection
-      const md = await get(`/raeda/${id}.md`);
+      const md = await get(`/raedur/${id}.md`);
       expect(md.status).toBe(200);
       expect(await md.text()).toContain("mgr-1");
       const [p] = await sql<{ text: string }[]>`select text from paragraphs where speech_id = ${id} order by length(text) desc limit 1`;
       const w = p!.text.split(" ").map((x) => x.replace(/[^\p{L}]/gu, "")).find((x) => x.length > 8)!;
       const s = await (await get(`/leit.json?q=${encodeURIComponent(w)}`)).json() as { hits: { speech_id: string; url: string }[] };
-      expect(s.hits.some((h) => h.speech_id === id && h.url.endsWith(`/raeda/${id}`))).toBe(true);
-      expect((await get("/raeda/sgml123_03_r02133209.md")).status).toBe(200);
+      expect(s.hits.some((h) => h.speech_id === id && h.url.endsWith(`/raedur/${id}`))).toBe(true);
+      expect((await get("/raedur/sgml123_03_r02133209.md")).status).toBe(200);
     } finally {
       await sql`delete from paragraph_tokens where speech_id like 'sgml%'`;
       await sql`delete from paragraphs where speech_id like 'sgml%'`;
@@ -174,22 +174,22 @@ describe("web", () => {
 
   test("day and member pages; an empty day is a 404 that still navigates", async () => {
     if (!ok) return;
-    const day = await get("/dagur/2018-03-06");
+    const day = await get("/dagar/2018-03-06");
     expect(day.status).toBe(200);
     expect(await day.text()).toContain("6. mars 2018");
-    const empty = await get("/dagur/2000-01-01");
+    const empty = await get("/dagar/2000-01-01");
     expect(empty.status).toBe(404);
-    expect((await get("/dagur/not-a-date")).status).toBe(404);
-    const mem = await get("/thingmadur/1547");
+    expect((await get("/dagar/not-a-date")).status).toBe(404);
+    const mem = await get("/thingmenn/1547");
     expect(mem.status).toBe(200);
     expect(await mem.text()).toContain("Aðalsteinn Leifsson");
-    expect((await get("/thingmadur/999999999")).status).toBe(404);
+    expect((await get("/thingmenn/999999999")).status).toBe(404);
   });
 
   test("caching: a session still being ingested is NOT immutable; a complete one is; ETag revalidates", async () => {
     if (!ok) return;
     // 148 still has pending speeches (only 1 of 81 has text) -> short TTL
-    const live = await get(`/raeda/${speechId}`);
+    const live = await get(`/raedur/${speechId}`);
     expect(live.headers.get("cache-control")).toContain("s-maxage=300");
     expect(live.headers.get("cache-control")).not.toContain("31536000");
     // finish the session (no pending left); the state is precomputed (the ingest post step runs corpus_state_refresh),
@@ -198,21 +198,21 @@ describe("web", () => {
     await sql`update speeches set text_state = 'error' where lthing = 148 and text_state = 'pending'`;
     // every text in, but its A-mál have no matter detail yet (a dump-ingested session): still short TTLs
     if ((await sql`select 1 from matters where lthing = 148 and cls = 'A'`).length) {
-      const textsOnly = await get(`/raeda/${speechId}`, {}, await fresh());
+      const textsOnly = await get(`/raedur/${speechId}`, {}, await fresh());
       expect(textsOnly.headers.get("cache-control")).toContain("s-maxage=300");
     }
     await sql`update matters set detail_fetched_at = now() where lthing = 148 and cls = 'A'`;
     // a session that has not ENDED is never immutable, however complete its data looks
     await sql`update sessions set ends = current_date + 1 where lthing = 148`;
-    const running = await get(`/raeda/${speechId}`, {}, await fresh());
+    const running = await get(`/raedur/${speechId}`, {}, await fresh());
     expect(running.headers.get("cache-control")).toContain("s-maxage=300");
     await sql`update sessions set ends = current_date - 1 where lthing = 148`;
-    const done = await get(`/raeda/${speechId}`, {}, await fresh());
+    const done = await get(`/raedur/${speechId}`, {}, await fresh());
     expect(done.headers.get("cache-control")).toContain("s-maxage=31536000");
     expect(done.headers.get("cache-control")).toContain("stale-if-error");
     const etag = done.headers.get("etag");
     expect(etag).toBeTruthy();
-    const again = await get(`/raeda/${speechId}`, { "if-none-match": etag! }, createApp(sql));
+    const again = await get(`/raedur/${speechId}`, { "if-none-match": etag! }, createApp(sql));
     expect(again.status).toBe(304);
   });
 });
@@ -222,7 +222,7 @@ describe("deep links to althingi.is", () => {
   test("every entity page renders its althingi.is page as a plain link", async () => {
     if (!ok) return;
     // speech: the speech list's own <html> link
-    const sp = await (await get(`/raeda/${speechId}`)).text();
+    const sp = await (await get(`/raedur/${speechId}`)).text();
     ext(sp, "https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
     expect(sp).toContain("Á vef Alþingis →");
     // matter (A): the ferill page; its votes link to the vote page; documents to the document page
@@ -230,11 +230,11 @@ describe("deep links to althingi.is", () => {
     ext(m, "https://www.althingi.is/thingstorf/thingmalalistar-eftir-thingum/ferill/157/300/?ltg=157&amp;mnr=300"); // as served in thingmalalisti
     expect(m).toMatch(/href="https:\/\/www\.althingi\.is\/dba-bin\/atkvgr\.pl\?nnafnak=\d+" rel="noopener"/);
     // member: the CV page from the member list's <html><lífshlaup>
-    const mem = await (await get("/thingmadur/633")).text();
+    const mem = await (await get("/thingmenn/633")).text();
     ext(mem, "https://www.althingi.is/altext/cv/?nfaerslunr=633");
     // document
     const [d] = await sql<{ nr: number; html_url: string }[]>`select nr, html_url from documents where lthing = 157 and html_url is not null order by nr limit 1`;
-    const doc = await (await get(`/thingskjal/157/${d!.nr}`)).text();
+    const doc = await (await get(`/thingskjol/157/${d!.nr}`)).text();
     ext(doc, d!.html_url.replace(/^http:/, "https:"));
     // law: the current collection's page
     ext(await (await get("/log/1991/34")).text(), "https://www.althingi.is/lagas/nuna/1991034.html");
@@ -247,7 +247,7 @@ describe("deep links to althingi.is", () => {
     if (!ok) return;
     const r = await (await get(`/leit?q=${encodeURIComponent(word)}&beint=1`)).text();
     expect(r).toContain("https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
-    const sp = await (await get(`/raeda/${speechId}`)).text();
+    const sp = await (await get(`/raedur/${speechId}`)).text();
     expect(sp).not.toContain('target="_blank"');
     const g = await call("get_speech", { speech_id: speechId });
     expect(g.speech.althingi_url).toBe("https://www.althingi.is/altext/raeda/148/rad20180306T163325.html");
@@ -266,7 +266,7 @@ describe("omnisearch", () => {
     expect(personLike("katrín jakobsdóttir")).toBe(true);
     expect(personLike("veiðigjöld")).toBe(false);
     const empty: EntityResult = { mal: [], thingmenn: [], flokkar: [], nefndir: [], efni: [], atkvaedi: [], umsagnir: [], log: [] };
-    const sif = { kind: "thingmenn" as const, href: "/thingmadur/1", title: "Katrín Sif Árnadóttir", meta: "", strong: false };
+    const sif = { kind: "thingmenn" as const, href: "/thingmenn/1", title: "Katrín Sif Árnadóttir", meta: "", strong: false };
     expect(topResult({ ...empty, thingmenn: [sif] }, "katrín jakobsdóttir")).toBeNull();
     const exact = { ...sif, title: "Katrín Jakobsdóttir", strong: true };
     expect(topResult({ ...empty, thingmenn: [sif, exact] }, "Katrín Jakobsdóttir")).toBe(exact);
@@ -290,14 +290,47 @@ describe("omnisearch", () => {
   test("party page lists members and links from party entities", async () => {
     if (!ok) return;
     const [p] = await sql<{ id: number; name: string }[]>`select p.id, p.name from parties p join seats s on s.party_id = p.id where s.member_id = 633 order by s.lthing desc limit 1`;
-    const r = await get(`/flokkur/${p!.id}`);
+    const r = await get(`/flokkar/${p!.id}`);
     expect(r.status).toBe(200);
     const body = await r.text();
     expect(body).toContain(p!.name);
     expect(body).toContain("Þórunn Sveinbjarnardóttir");
-    expect((await get("/flokkur/999999")).status).toBe(404);
+    expect((await get("/flokkar/999999")).status).toBe(404);
     const e = await searchEntities(sql, p!.name, 157);
-    expect(e.flokkar[0]?.href).toBe(`/flokkur/${p!.id}`);
+    expect(e.flokkar[0]?.href).toBe(`/flokkar/${p!.id}`);
+  });
+
+  test("party names deeplink to /flokkar/:id on member pages, except inside an entity row", async () => {
+    if (!ok) return;
+    const [p] = await sql<{ id: number; name: string }[]>`select p.id, p.name from parties p join seats s on s.party_id = p.id where s.member_id = 633 order by s.lthing desc limit 1`;
+    expect(await (await get("/thingmenn/633")).text()).toContain(`<a class="party" href="/flokkar/${p!.id}"`);
+    expect(await (await get("/thingmenn/633.md")).text()).toContain(`(https://althingi.solberg.is/flokkar/${p!.id}.md)`);
+  });
+
+  test("singular URLs 301 to the plural directories, query and .md kept; trailing slash stripped", async () => {
+    if (!ok) return;
+    for (const [from, to] of [["/raeda/rad20180306T163325", "/raedur/rad20180306T163325"], ["/thingmadur/633.md", "/thingmenn/633.md"],
+      ["/flokkur/2?x=1", "/flokkar/2?x=1"], ["/dagur/2018-03-06", "/dagar/2018-03-06"], ["/thingskjal/157/421", "/thingskjol/157/421"],
+      ["/nefnd/201", "/nefndir/201"], ["/flokkar/", "/flokkar"], ["/thingmadur", "/thingmenn"]]) {
+      const r = await get(from!);
+      expect([r.status, r.headers.get("location")]).toEqual([301, to!]);
+    }
+    expect((await get("/raedurx/1")).status).toBe(404);
+  });
+
+  test("every plural directory is an index page", async () => {
+    if (!ok) return;
+    const pages: [string, string][] = [["/thingmenn", "/thingmenn/633"], ["/flokkar", "/flokkar/"], ["/mal", "/mal/157"], ["/mal/157", "/mal/157/a/300"],
+      ["/thingskjol", "/thingskjol/157"], ["/log", "/log/1991"], ["/log/1991", "/log/1991/34"], ["/nefndir", "/nefndir/"], ["/efni", "/efni/"],
+      ["/dagar", "/dagar/2018"], ["/dagar/2018", "/dagar/2018-03-06"], ["/raedur", "/raedur/"]];
+    const laws = (await sql<{ n: number }[]>`select count(*)::int as n from laws`)[0]!.n;
+    for (const [path, link] of pages.filter(([p]) => laws > 0 || !p.startsWith("/log"))) {
+      const r = await get(path);
+      expect([path, r.status]).toEqual([path, 200]);
+      expect([path, (await r.text()).includes(`href="${link}`)]).toEqual([path, true]);
+    }
+    expect((await get("/mal/9999")).status).toBe(404);
+    expect((await get("/dagar/1700")).status).toBe(404);
   });
 });
 
@@ -311,7 +344,7 @@ describe("feeds and export", () => {
     const entries = descendants(root, "entry");
     expect(entries.length).toBeGreaterThan(0);
     const link = kids(entries[0]!, "link")[0]!.attribs.href!;
-    expect(link).toContain(`/raeda/${speechId}`);
+    expect(link).toContain(`/raedur/${speechId}`);
     expect(xmlText(kids(entries[0]!, "title")[0]!)).toContain("ræða");
     expect((await get("/leit/atom")).status).toBe(400);
     const latest = parseXml(await (await get("/nyjast/atom")).text());
@@ -374,7 +407,7 @@ describe("mcp", () => {
     expect(r.hits.length).toBeGreaterThan(0);
     const h = r.hits[0];
     expect(h.speech_id).toMatch(/^rad\d{8}T\d{6}$/);
-    expect(h.url).toContain(`/raeda/${h.speech_id}`);
+    expect(h.url).toContain(`/raedur/${h.speech_id}`);
     expect(h.paragraphs[0].url).toContain("#mgr-");
     expect(h.member).toHaveProperty("party_at_date");
     expect(JSON.stringify(r).length).toBeLessThan(8000);
@@ -396,7 +429,7 @@ describe("mcp", () => {
     if (!ok) return;
     const s = await call("get_speech", { speech_id: speechId });
     expect(s.speech.citation).toContain("2018");
-    expect(s.speech.citation).toContain(`/raeda/${speechId}`);
+    expect(s.speech.citation).toContain(`/raedur/${speechId}`);
     expect(s.speech.revision.raw_sha256).toHaveLength(64);
     expect(s.paragraphs[0].mgr).toBe(1);
     expect(s.next_from).toBeNull();
@@ -471,7 +504,7 @@ describe("persona sweep fixes", () => {
     expect(page).not.toContain("Lesið sem:");
     // the offered filter works
     const f = await (await get(`/leit?q=${encodeURIComponent(word)}&thm=${s!.member_id}`)).text();
-    expect(f).toContain(`/raeda/${speechId}`);
+    expect(f).toContain(`/raedur/${speechId}`);
     // a member name WITH filters stays on the search page
     expect((await get(`/leit?q=${encodeURIComponent(s!.member_name)}&tegund=andsvar`)).status).toBe(200);
   });
@@ -480,9 +513,9 @@ describe("persona sweep fixes", () => {
     if (!ok) return;
     const [s] = await sql<{ member_id: number }[]>`select member_id from speeches where id = ${speechId}`;
     const body = await (await get(`/leit?q=&thm=${s!.member_id}`)).text();
-    expect(body).toContain(`/raeda/${speechId}`);
+    expect(body).toContain(`/raedur/${speechId}`);
     const old = await (await get(`/leit?q=${encodeURIComponent(word)}&nyjast=elst`)).text();
-    expect(old).toContain(`/raeda/${speechId}`);
+    expect(old).toContain(`/raedur/${speechId}`);
     const j = await (await get(`/leit.json?q=${encodeURIComponent(word)}`)).json() as { total: number; hits: { speech_id: string }[] };
     expect(j.total).toBe(1);
     expect(j.hits[0]!.speech_id).toBe(speechId);
@@ -491,10 +524,10 @@ describe("persona sweep fixes", () => {
   test("document, transcript, feed, topic and committee pages exist", async () => {
     if (!ok) return;
     const [d] = await sql<{ nr: number }[]>`select nr from documents where lthing = 157 and matter_nr = 300 order by nr limit 1`;
-    const doc = await get(`/thingskjal/157/${d!.nr}`);
+    const doc = await get(`/thingskjol/157/${d!.nr}`);
     expect(doc.status).toBe(200);
     expect(await doc.text()).toContain("althingi.is");
-    expect((await get("/thingskjal/157/99999")).status).toBe(404);
+    expect((await get("/thingskjol/157/99999")).status).toBe(404);
     const feed = await get("/mal/157/a/300/atom");
     expect(feed.headers.get("content-type")).toContain("atom");
     expect(await feed.text()).toContain("<entry>");
@@ -505,7 +538,7 @@ describe("persona sweep fixes", () => {
     const [t] = await sql<{ efnisflokkur_id: number }[]>`select efnisflokkur_id from matter_efnisflokkar where lthing = 157 and nr = 300 limit 1`;
     if (t) expect(await (await get(`/efni/${t.efnisflokkur_id}`)).text()).toContain("/mal/157/a/300");
     const [c] = await sql<{ committee_id: number }[]>`select committee_id from consultation_requests where lthing = 157 and nr = 300 and committee_id is not null limit 1`;
-    if (c) expect(await (await get(`/nefnd/${c.committee_id}`)).text()).toContain("/mal/157/a/300");
+    if (c) expect(await (await get(`/nefndir/${c.committee_id}`)).text()).toContain("/mal/157/a/300");
   });
 
   test("did-you-mean is not shown above real hits", async () => {

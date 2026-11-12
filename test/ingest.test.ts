@@ -56,12 +56,12 @@ describe("dump ingest", () => {
     expect(await one(sql`select provisional, text_source, text_state from speeches where id = 'rad20260209T163926'`)).toEqual({ provisional: true, text_source: "dump-provisional", text_state: "done" });
     expect(await one(sql`select provisional from speeches where id = 'rad20260527T150044'`)).toEqual({ provisional: false });
     expect((await one(sql<{ n: number }[]>`select count(*)::int n from paragraphs where speech_id = 'rad20260209T163926'`)).n).toBeGreaterThan(0);
-    // pages: provisional flag shown; an unresolved speaker is abbreviation-only, never /thingmadur/null
+    // pages: provisional flag shown; an unresolved speaker is abbreviation-only, never /thingmenn/null
     const app = createApp(sql);
-    expect(await (await app.request("http://x/raeda/rad20260209T163926")).text()).toContain("bráðabirgðatexti");
-    const dmk = await (await app.request("http://x/raeda/rad20250911T104951")).text();
+    expect(await (await app.request("http://x/raedur/rad20260209T163926")).text()).toContain("bráðabirgðatexti");
+    const dmk = await (await app.request("http://x/raedur/rad20250911T104951")).text();
     expect(dmk).toContain("DMK");
-    expect(dmk).not.toContain("/thingmadur/null");
+    expect(dmk).not.toContain("/thingmenn/null");
 
     const st = await dumpSittings(sql);
     expect(st.errors).toBe(0);

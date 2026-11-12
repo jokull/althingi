@@ -154,7 +154,7 @@ describe("mcp tools for agents", () => {
   test("aggregate: member/party buckets carry id, name and url apart; group_by matter; topic_timeline per year with outcomes", async () => {
     if (!s) return;
     const mem = (await call("aggregate", { metric: "speeches", group_by: "member" })).structuredContent.buckets[0];
-    expect(mem).toMatchObject({ key: String(mem.id), name: expect.any(String), url: `https://althingi.solberg.is/thingmadur/${mem.id}` });
+    expect(mem).toMatchObject({ key: String(mem.id), name: expect.any(String), url: `https://althingi.solberg.is/thingmenn/${mem.id}` });
     expect(mem.key).not.toContain(":");
     const party = (await call("aggregate", { metric: "speeches", group_by: "party" })).structuredContent.buckets[0];
     expect(party).toHaveProperty("name");
@@ -223,8 +223,8 @@ describe("mcp tools for agents", () => {
     if (!s) return;
     const r = await call("search", { query: s.word });
     expect(JSON.parse(r.content[0]!.text!)).toEqual(r.structuredContent);
-    const hit = r.structuredContent.results.find((x: any) => x.id === `/raeda/${s!.speechId}`);
-    expect(hit.url).toBe(`https://althingi.solberg.is/raeda/${s.speechId}`);
+    const hit = r.structuredContent.results.find((x: any) => x.id === `/raedur/${s!.speechId}`);
+    expect(hit.url).toBe(`https://althingi.solberg.is/raedur/${s.speechId}`);
     const f = (await call("fetch", { id: hit.id })).structuredContent;
     expect(f).toMatchObject({ id: hit.id, url: hit.url });
     expect(f.text).toContain("#mgr-");
@@ -244,10 +244,10 @@ describe("mcp tools for agents", () => {
   test("resources: templates by https URL, read returns Markdown; guide resource; prompts", async () => {
     if (!s) return;
     const t = (await rpc("resources/templates/list")).json.result.resourceTemplates.map((x: any) => x.uriTemplate);
-    expect(t).toEqual(expect.arrayContaining(["https://althingi.solberg.is/raeda/{speech_id}.md", "https://althingi.solberg.is/log/{year}/{nr}.md"]));
+    expect(t).toEqual(expect.arrayContaining(["https://althingi.solberg.is/raedur/{speech_id}.md", "https://althingi.solberg.is/log/{year}/{nr}.md"]));
     const list = (await rpc("resources/list")).json.result.resources.map((x: any) => x.uri);
     expect(list).toContain("https://althingi.solberg.is/llms.txt");
-    const rd = (await rpc("resources/read", { uri: `https://althingi.solberg.is/raeda/${s.speechId}.md` })).json.result.contents[0];
+    const rd = (await rpc("resources/read", { uri: `https://althingi.solberg.is/raedur/${s.speechId}.md` })).json.result.contents[0];
     expect(rd.mimeType).toBe("text/markdown");
     expect(rd.text).toContain(s.speechId);
     expect((await rpc("resources/read", { uri: "https://althingi.solberg.is/log/1991/34.md" })).json.result.contents[0].text).toContain("fjárfesta");
@@ -271,7 +271,7 @@ describe("tool results follow MCP 2025-11-25 structured output", () => {
     ["aggregate", { metric: "words", group_by: "year", q: x.word }],
     ["topic_timeline", { q: x.word }], ["topic_timeline", { q: x.word, date_from: "2018-01-01", date_to: "2018-12-31", top_matters: 1 }],
     ["first_use", { q: x.word }], ["explain_query", { q: x.word }], ["list_sessions", {}],
-    ["search", { query: x.word }], ["fetch", { id: `/raeda/${x.speechId}` }],
+    ["search", { query: x.word }], ["fetch", { id: `/raedur/${x.speechId}` }],
   ];
 
   test("every tool: structuredContent validates against its outputSchema and the text content is the same JSON", async () => {
@@ -355,8 +355,8 @@ describe("markdown twins", () => {
     const [party] = await s.sql<{ id: number }[]>`select party_id id from seats where member_id = 633 and party_id is not null limit 1`;
     const [doc] = await s.sql<{ nr: number }[]>`select nr from documents where lthing = 157 limit 1`;
     for (const [path, needle] of [
-      [`/raeda/${s.speechId}.md`, "## Ræðutexti"], ["/mal/157/a/300.md", "## Flutningsmenn"], ["/thingmadur/633.md", "## Þingseta"],
-      ["/log/1991/34.md", "## Texti"], [`/dagur/${d!.d}.md`, "Þingdagur"], [`/flokkur/${party!.id}.md`, "## Þingmenn"], [`/thingskjal/157/${doc!.nr}.md`, "Þingskjal"],
+      [`/raedur/${s.speechId}.md`, "## Ræðutexti"], ["/mal/157/a/300.md", "## Flutningsmenn"], ["/thingmenn/633.md", "## Þingseta"],
+      ["/log/1991/34.md", "## Texti"], [`/dagar/${d!.d}.md`, "Þingdagur"], [`/flokkar/${party!.id}.md`, "## Þingmenn"], [`/thingskjol/157/${doc!.nr}.md`, "Þingskjal"],
       ["/index.md", "https://althingi.solberg.is/mcp"], ["/um.md", "Mörk safnsins"], ["/mcp.md", "claude mcp add --transport http althingi"],
     ] as const) {
       const r = await get(path);
@@ -365,19 +365,19 @@ describe("markdown twins", () => {
       expect(r.headers.get("access-control-allow-origin")).toBe("*");
       expect(await r.text()).toContain(needle);
     }
-    expect((await get("/raeda/rad20000101T000000.md")).status).toBe(404);
+    expect((await get("/raedur/rad20000101T000000.md")).status).toBe(404);
   });
 
   test("Accept: text/markdown redirects to the twin; HTML stays HTML; the head and Link header point to it", async () => {
     if (!s) return;
-    const r = await get(`/raeda/${s.speechId}`, { accept: "text/markdown, text/html;q=0.5" });
+    const r = await get(`/raedur/${s.speechId}`, { accept: "text/markdown, text/html;q=0.5" });
     expect(r.status).toBe(302);
-    expect(r.headers.get("location")).toBe(`/raeda/${s.speechId}.md`);
-    const h = await get(`/raeda/${s.speechId}`, { accept: "text/html,*/*" });
+    expect(r.headers.get("location")).toBe(`/raedur/${s.speechId}.md`);
+    const h = await get(`/raedur/${s.speechId}`, { accept: "text/html,*/*" });
     expect(h.status).toBe(200);
     const body = await h.text();
-    expect(body).toContain(`<link rel="alternate" type="text/markdown" href="/raeda/${s.speechId}.md"/>`);
-    expect(h.headers.get("link")).toContain(`</raeda/${s.speechId}.md>; rel="alternate"`);
+    expect(body).toContain(`<link rel="alternate" type="text/markdown" href="/raedur/${s.speechId}.md"/>`);
+    expect(h.headers.get("link")).toContain(`</raedur/${s.speechId}.md>; rel="alternate"`);
     expect(h.headers.get("vary")).toContain("Accept");
     const feedPage = await (await get("/mal/157/a/300")).text();
     expect(feedPage).toContain(`href="/mal/157/a/300.md"`);
@@ -427,9 +427,9 @@ describe("discovery surfaces", () => {
     const maps = [...idx.matchAll(/<loc>https:\/\/althingi\.solberg\.is(\/sitemaps\/[a-z0-9]+\.xml)<\/loc>/g)].map((m) => m[1]!);
     expect(maps).toEqual(["/sitemaps/static.xml", "/sitemaps/members.xml", "/sitemaps/laws.xml", "/sitemaps/148.xml"]);
     const sm = await (await get("/sitemaps/148.xml")).text();
-    expect(sm).toContain(`/raeda/${s.speechId}</loc>`);
+    expect(sm).toContain(`/raedur/${s.speechId}</loc>`);
     expect(await (await get("/sitemaps/laws.xml")).text()).toContain("/log/1991/34</loc>");
-    expect(await (await get("/sitemaps/members.xml")).text()).toContain("/thingmadur/633</loc>");
+    expect(await (await get("/sitemaps/members.xml")).text()).toContain("/thingmenn/633</loc>");
     const st = await (await get("/sitemaps/static.xml")).text();
     expect(st).toContain("https://althingi.solberg.is/mcp</loc>");
     for (const loc of [...st.matchAll(/<loc>https:\/\/althingi\.solberg\.is([^<]*)<\/loc>/g)].map((m) => m[1]!)) {

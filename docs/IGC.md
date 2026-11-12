@@ -109,7 +109,7 @@ artefacts (the SGML era is born-digital).
 2. Download `IGC-Parla-2026.TEI.zip` from the handle (a person in a browser, as for the Alþingi dump), verify the md5,
    unzip to `~/althingi/igc/IGC-Parla-2026.TEI/` (only `IGC-Parla-2026.xml` + `1991/`–`2004/` are needed, 1.1 GB unpacked).
 3. `bun scripts/ingest.ts igc --path ~/althingi/igc/IGC-Parla-2026.TEI --lthing 123 --limit 50`, read a few
-   `/raeda/sgml123_…` pages, then the full run (`--from 115 --to 130`, ≈ 25 min), then `bun scripts/ingest.ts post`.
+   `/raedur/sgml123_…` pages, then the full run (`--from 115 --to 130`, ≈ 25 min), then `bun scripts/ingest.ts post`.
 4. Copy that is now wrong and should change in the same deploy (not changed here because `test/web.test.ts` pins it and
    the MCP files were off limits): "Ræðutexti er til frá 2005" in `src/pages.tsx` (footer, `/um`, search help),
    `src/agent-docs.ts` (llms.txt corpus line, `Dataset` name), `src/markdown.ts` `FOOTER`, and the MCP `corpus.text_from`
@@ -119,6 +119,6 @@ artefacts (the SGML era is born-digital).
 5. `sessionState()` counts only `era='xml'`; sessions 115–130 stay "not complete" for caching purposes, which is fine.
 6. **MCP (off limits in this change, for the agent editing `src/mcp.ts`)**: `get_speech` and `get_context` validate
    `speech_id` with `/^rad\d{8}T\d{6}$/`; they must accept `sgml\d+_\w+_r\w+` too (use `isSpeechId` from `queries.ts`,
-   which the web `/raeda/:id` route and the `.md` twin now use — verified by `test/web.test.ts`: an IGC-filled 1999 speech
+   which the web `/raedur/:id` route and the `.md` twin now use — verified by `test/web.test.ts`: an IGC-filled 1999 speech
    renders, has a Markdown twin and is a `/leit.json` hit). Until then `search_speeches` returns 1991–2004 hits whose ids
    `get_speech` rejects.

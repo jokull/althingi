@@ -116,9 +116,9 @@ export async function searchSpeeches(ctx: Ctx, a: SearchArgs) {
       matter: h.matter ? { lthing: h.matter.lthing, class: h.matter.cls, nr: h.matter.nr, title: h.matter.title, url: `${SITE}/mal/${h.matter.lthing}/${h.matter.cls.toLowerCase()}/${h.matter.nr}`, althingi_url: matterPageUrl(h.matter.lthing, h.matter.cls, h.matter.nr) } : null,
       score: Math.round(h.score * 1000) / 1000, matching_paragraphs: h.matchingParagraphs,
       paragraphs: h.paragraphs.slice(0, compact ? 1 : 2).map((p) => ({
-        mgr: p.seq + 1, text: clip(p.snippets[0]?.text ?? "", compact ? 200 : SNIPPET_MAX), url: `${SITE}/raeda/${h.speechId}#mgr-${p.seq + 1}`,
+        mgr: p.seq + 1, text: clip(p.snippets[0]?.text ?? "", compact ? 200 : SNIPPET_MAX), url: `${SITE}/raedur/${h.speechId}#mgr-${p.seq + 1}`,
       })),
-      url: `${SITE}/raeda/${h.speechId}`, althingi_url: h.althingiUrl,
+      url: `${SITE}/raedur/${h.speechId}`, althingi_url: h.althingiUrl,
     })),
     matter_cards: r.matterCards.map((c) => ({ lthing: c.lthing, class: c.cls, nr: c.nr, title: c.title, url: `${SITE}/mal/${c.lthing}/${c.cls.toLowerCase()}/${c.nr}`, althingi_url: c.althingiUrl })),
     next_cursor: r.nextCursor,
@@ -149,15 +149,15 @@ export async function getSpeech(ctx: Ctx, a: { speech_id: string; from?: number;
   }
   return {
     speech: {
-      id: s.id, url: `${SITE}/raeda/${s.id}`, althingi_url: s.althingiUrl, date: s.date, started: s.started, ended: s.ended, speech_type: s.type, debate: s.debate,
+      id: s.id, url: `${SITE}/raedur/${s.id}`, althingi_url: s.althingiUrl, date: s.date, started: s.started, ended: s.ended, speech_type: s.type, debate: s.debate,
       member: { id: s.memberId, name: s.memberName, party_at_date: s.party, althingi_url: s.memberId === null ? null : memberPageUrl(s.memberId) }, office: s.office, capacity: s.capacity,
       matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title, althingi_url: matterPageUrl(s.matter.lthing, s.matter.cls, s.matter.nr) } : null,
       audio_url: s.audioUrl, video_url: s.vodUrl, word_count: s.wordCount,
       provisional: s.provisional, // true: Alþingi's provisional text (bráðabirgðatexti); replaced when the final arrives
       text_source: s.textSource,
       prev_in_matter: s.prevId, next_in_matter: s.nextId, // same matter, by time: strong link
-      reply_to: link?.reply_to_id ? { speech_id: link.reply_to_id, url: `${SITE}/raeda/${link.reply_to_id}`, inferred: link.reply_to_inferred } : null,
-      replies: replies.map((r) => ({ speech_id: r.id, member_name: r.member_name, speech_type: r.type, url: `${SITE}/raeda/${r.id}`, inferred: r.inferred })),
+      reply_to: link?.reply_to_id ? { speech_id: link.reply_to_id, url: `${SITE}/raedur/${link.reply_to_id}`, inferred: link.reply_to_inferred } : null,
+      replies: replies.map((r) => ({ speech_id: r.id, member_name: r.member_name, speech_type: r.type, url: `${SITE}/raedur/${r.id}`, inferred: r.inferred })),
       citation: citation(s),
       revision: { raw_sha256: rev?.raw_sha256 ?? null, fetched_at: rev?.fetched_at ?? null, lemma_is_version: rev?.lemma_is_version ?? null },
     },
@@ -174,7 +174,7 @@ export async function getContext(ctx: Ctx, a: { speech_id: string; mgr: number; 
   const w = Math.min(Math.max(a.window ?? 1, 0), 5);
   const picked = s.paragraphs.filter((p) => p.seq + 1 >= a.mgr - w && p.seq + 1 <= a.mgr + w);
   return {
-    speech_id: s.id, url: `${SITE}/raeda/${s.id}#mgr-${a.mgr}`, althingi_url: s.althingiUrl, citation: citation(s, a.mgr - 1),
+    speech_id: s.id, url: `${SITE}/raedur/${s.id}#mgr-${a.mgr}`, althingi_url: s.althingiUrl, citation: citation(s, a.mgr - 1),
     member: { id: s.memberId, name: s.memberName, party_at_date: s.party }, started: s.started, speech_type: s.type,
     matter: s.matter ? { lthing: s.matter.lthing, class: s.matter.cls, nr: s.matter.nr, title: s.matter.title } : null,
     paragraphs: picked.map((p) => ({ mgr: p.seq + 1, text: p.text, interjections: p.interjections, is_target: p.seq + 1 === a.mgr })),
@@ -209,7 +209,7 @@ export async function getMatter(ctx: Ctx, a: { lthing: number; class?: string; n
       detail_fetched: m.detailFetched,
       note: m.cls === "B" ? "B-mál: titill úr ræðuskrá, engin þingskjöl eða atkvæðagreiðslur." : undefined,
     },
-    sponsors: sponsors.map((x) => ({ order: x.seq, member: x.member_id === null ? null : { id: x.member_id, name: x.name, url: `${SITE}/thingmadur/${x.member_id}` }, abbr: x.abbr, office: x.office })),
+    sponsors: sponsors.map((x) => ({ order: x.seq, member: x.member_id === null ? null : { id: x.member_id, name: x.name, url: `${SITE}/thingmenn/${x.member_id}` }, abbr: x.abbr, office: x.office })),
     sponsors_note: "Flutningsmenn: the first is the lead sponsor (fyrsti flutningsmaður); a minister sponsors government bills (office set).",
     rapporteurs: rapporteurs.map((r) => ({ id: r.member_id, name: r.name })),
     sitting_events: events.map((e) => ({ at: e.at, kind: e.kind, fundur: e.fundur })),
@@ -240,7 +240,7 @@ export async function getMember(ctx: Ctx, a: { member_id?: number; name?: string
   if (!m) return { error: "member_not_found", hint: "Try get_member with a name (fuzzy), or check the id.", corpus: await corpusBlock(ctx.sql) };
   return {
     corpus: await corpusBlock(ctx.sql),
-    member: { id: m.id, name: m.name, born: m.born, url: `${SITE}/thingmadur/${m.id}`, althingi_url: m.althingiUrl, speeches_in_corpus: m.speechCount },
+    member: { id: m.id, name: m.name, born: m.born, url: `${SITE}/thingmenn/${m.id}`, althingi_url: m.althingiUrl, speeches_in_corpus: m.speechCount },
     seats: m.seats.map((s) => ({ lthing: s.lthing, kind: s.kind, party: s.party, constituency: s.constituency, from: s.from, to: s.to, sitting: s.kind !== "með varamann" })),
     seat_note: "'með varamann' = í leyfi, varamaður situr; flokkur á tilteknum degi er alltaf fundinn með þingsetu á þeim degi.",
     recent_speeches: m.recent.slice(0, 10).map((r) => ({ id: r.id, started: r.started, speech_type: r.type, matter_title: r.matterTitle, althingi_url: speechPageUrl(r.lthing, r.id) })),
@@ -302,7 +302,7 @@ export async function aggregate(ctx: Ctx, a: AggArgs) {
     buckets: rows.map((r) => {
       const b = { key: r.key, value: r.n };
       if (a.group_by === "member") return { ...b, key: r.id === null ? r.key : String(r.id), id: r.id, name: r.name, url: r.id === null ? null : site.member(Number(r.id)) };
-      if (a.group_by === "party") return { ...b, key: r.id === null ? "?" : String(r.id), id: r.id, name: r.name ?? "(óþekktur flokkur)", url: r.id === null ? null : `${SITE}/flokkur/${r.id}` };
+      if (a.group_by === "party") return { ...b, key: r.id === null ? "?" : String(r.id), id: r.id, name: r.name ?? "(óþekktur flokkur)", url: r.id === null ? null : `${SITE}/flokkar/${r.id}` };
       if (a.group_by === "matter") {
         const [l, c, n] = String(r.id ?? "").split("/");
         return l && c && n ? { ...b, matter: { lthing: Number(l), class: c, nr: Number(n), title: r.name, url: site.matter(Number(l), c, Number(n)) } } : { ...b, matter: null };
@@ -412,7 +412,7 @@ export async function firstUse(ctx: Ctx, a: { q: string; limit?: number }) {
     query: { text: a.q, interpreted_as: describe(parsed) },
     earliest: first.map((f) => ({
       speech_id: f.speech_id, mgr: f.seq + 1, started: f.started, member: { id: f.member_id, name: f.member_name, party_at_date: parties.get(f.speech_id) ?? null },
-      speech_type: f.type, text: clip(f.text), url: `${SITE}/raeda/${f.speech_id}#mgr-${f.seq + 1}`, althingi_url: speechPageUrl(f.lthing, f.speech_id, f.html_url),
+      speech_type: f.type, text: clip(f.text), url: `${SITE}/raedur/${f.speech_id}#mgr-${f.seq + 1}`, althingi_url: speechPageUrl(f.lthing, f.speech_id, f.html_url),
     })),
     speeches_per_year: years.map((y) => ({ year: y.year, speeches: y.n })),
     caveat: `„Fyrst“ á aðeins við ræðutexta í safninu (frá ${TEXT_ERA.is}; sjá corpus_detail.text_dates fyrir þau tímabil sem eru komin inn); eldri ræður eru ekki leitarbærar.`,
@@ -433,7 +433,7 @@ const CHOICE_EN: Record<string, string> = {
 };
 const site = {
   matter: (l: number, c: string, n: number) => `${SITE}/mal/${l}/${c.toLowerCase()}/${n}`,
-  member: (id: number) => `${SITE}/thingmadur/${id}`,
+  member: (id: number) => `${SITE}/thingmenn/${id}`,
   law: (y: number, n: number) => `${SITE}/log/${y}/${n}`,
 };
 
@@ -575,10 +575,10 @@ export async function getSitting(ctx: Ctx, a: { lthing?: number; fundur?: number
   ]);
   const EVENT: Record<string, string> = { fundurhefst: "sitting opened", fundiSlitið: "sitting closed", "umræðuLokið": "debate closed", "umræðuOgAtkvæðagreiðsluFrestað": "debate and vote postponed", frvAfgreittSemLög: "bill passed as law" };
   return {
-    sitting: { lthing: key.lthing, fundur: key.fundur, name: st.name, starts: st.starts, ends: st.ends, day_url: st.starts ? `${SITE}/dagur/${st.starts.slice(0, 10)}` : null },
+    sitting: { lthing: key.lthing, fundur: key.fundur, name: st.name, starts: st.starts, ends: st.ends, day_url: st.starts ? `${SITE}/dagar/${st.starts.slice(0, 10)}` : null },
     agenda: agenda.map((x) => ({ seq: x.seq + 1, matter: x.cls && x.nr !== null ? { lthing: key.lthing, class: x.cls, nr: x.nr, url: site.matter(key.lthing, x.cls, x.nr) } : null, title: x.title, document_nr: x.doc_nr, off_agenda: x.off_agenda })),
     events: events.map((e) => ({ at: e.at, kind: e.kind, kind_en: EVENT[e.kind] ?? null, matter: e.cls ? { class: e.cls, nr: e.nr } : null, document_nr: e.doc_nr })),
-    speeches: speeches.map((x) => ({ id: x.id, started: x.started, member: { id: x.member_id, name: x.member_name }, speech_type: x.type, matter: x.matter_cls ? { class: x.matter_cls, nr: x.matter_nr } : null, url: `${SITE}/raeda/${x.id}` })),
+    speeches: speeches.map((x) => ({ id: x.id, started: x.started, member: { id: x.member_id, name: x.member_name }, speech_type: x.type, matter: x.matter_cls ? { class: x.matter_cls, nr: x.matter_nr } : null, url: `${SITE}/raedur/${x.id}` })),
     derived: false,
   };
 }
@@ -593,7 +593,7 @@ export async function listSittings(ctx: Ctx, a: { lthing: number; date_from?: st
       ${a.date_from ? sql`and s.starts::date >= ${a.date_from}` : sql``}
       ${a.date_to ? sql`and s.starts::date <= ${a.date_to}` : sql``}
     order by s.fundur desc limit ${Math.min(a.limit ?? 50, 200)}`;
-  return { lthing: a.lthing, sittings: rows.map((r) => ({ ...r, day_url: r.starts ? `${SITE}/dagur/${r.starts.slice(0, 10)}` : null })), derived: false };
+  return { lthing: a.lthing, sittings: rows.map((r) => ({ ...r, day_url: r.starts ? `${SITE}/dagar/${r.starts.slice(0, 10)}` : null })), derived: false };
 }
 
 // ---------------------------------------------------------------- failures: never a raw Postgres message to the agent

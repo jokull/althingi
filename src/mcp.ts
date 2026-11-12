@@ -277,20 +277,20 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
     const [sp, ent] = await Promise.all([T.searchSpeeches(ctx, { q: query, limit: 10 }), searchEntities(sql, query, currentLthing, 3)]);
     const results = [
       ...[...ent.thingmenn, ...ent.mal, ...ent.log, ...ent.flokkar].map((e) => ({ id: canonicalPath(e.href), title: e.title, url: `${SITE}${e.href}` })),
-      ...sp.hits.map((h) => ({ id: `/raeda/${h.speech_id}`, title: `${h.member.name ?? ""}, ${h.speech_type} ${h.date}${h.matter?.title ? ` – ${h.matter.title}` : ""}: ${h.paragraphs[0]?.text.slice(0, 160) ?? ""}`, url: h.url })),
+      ...sp.hits.map((h) => ({ id: `/raedur/${h.speech_id}`, title: `${h.member.name ?? ""}, ${h.speech_type} ${h.date}${h.matter?.title ? ` – ${h.matter.title}` : ""}: ${h.paragraphs[0]?.text.slice(0, 160) ?? ""}`, url: h.url })),
     ];
     return { results };
   }));
 
   s.registerTool("fetch", {
     title: "Fetch a document (generic)",
-    description: "Full Markdown of one page by id from `search` (or any althingi.solberg.is URL/path): a speech (/raeda/<id>), matter (/mal/<lthing>/a/<nr>), member (/thingmadur/<id>), law (/log/<year>/<nr>), day (/dagur/YYYY-MM-DD), party or document.",
-    inputSchema: { id: z.string().min(2).max(300).describe("e.g. /raeda/rad20180306T163325, /mal/157/a/300, https://althingi.solberg.is/log/1991/34") },
+    description: "Full Markdown of one page by id from `search` (or any althingi.solberg.is URL/path): a speech (/raedur/<id>), matter (/mal/<lthing>/a/<nr>), member (/thingmenn/<id>), law (/log/<year>/<nr>), day (/dagar/YYYY-MM-DD), party or document.",
+    inputSchema: { id: z.string().min(2).max(300).describe("e.g. /raedur/rad20180306T163325, /mal/157/a/300, https://althingi.solberg.is/log/1991/34") },
     outputSchema: z.looseObject({ id: z.string(), title: z.string(), text: z.string(), url: z.string(), metadata: z.record(z.string(), z.string()).nullable(), truncated: z.boolean().optional() }),
     annotations: ro,
   }, ({ id }) => run("fetch", { id }, async () => {
     const d = await renderMd(sql, id, currentLthing);
-    if (!d) return ({ error: "not_found", hint: "Use an id from `search`, or a path like /raeda/rad20180306T163325, /mal/157/a/300, /thingmadur/633, /log/1991/34." });
+    if (!d) return ({ error: "not_found", hint: "Use an id from `search`, or a path like /raedur/rad20180306T163325, /mal/157/a/300, /thingmenn/633, /log/1991/34." });
     const text = capMd(d.markdown, `${SITE}${d.path}`);
     const data = { id: d.path, title: d.title, text, url: `${SITE}${d.path}`, metadata: d.althingi_url ? { althingi_url: d.althingi_url, format: "text/markdown" } : { format: "text/markdown" }, ...(text !== d.markdown ? { truncated: true } : {}) };
     return data;
@@ -303,11 +303,11 @@ export function buildServer(sql: Sql, currentLthing: number): McpServer {
       if (!d) throw new Error(`Not found: ${uri.href}`);
       return { contents: [{ uri: uri.href, mimeType: "text/markdown", text: capMd(d.markdown, `${SITE}${d.path}`) }] };
     });
-  md("speech", "Ræða (speech)", "/raeda/{speech_id}", "Full text of a speech with numbered paragraphs (#mgr-N) and a citation.");
+  md("speech", "Ræða (speech)", "/raedur/{speech_id}", "Full text of a speech with numbered paragraphs (#mgr-N) and a citation.");
   md("matter", "Þingmál (matter)", "/mal/{lthing}/{class}/{nr}", "A matter: status, sponsors, documents, votes, speeches. class is a or b.");
-  md("member", "Þingmaður (member)", "/thingmadur/{member_id}", "A member's seats and recent speeches.");
+  md("member", "Þingmaður (member)", "/thingmenn/{member_id}", "A member's seats and recent speeches.");
   md("law", "Lög (law)", "/log/{year}/{nr}", "A law from the law collection with its text and amendment history.");
-  md("day", "Þingdagur (sitting day)", "/dagur/{date}", "All speeches of one day, grouped by matter. date is YYYY-MM-DD.");
+  md("day", "Þingdagur (sitting day)", "/dagar/{date}", "All speeches of one day, grouped by matter. date is YYYY-MM-DD.");
   s.registerResource("guide", `${SITE}/llms.txt`, { title: "How to use this server (llms.txt)", description: "Corpus boundary, URL scheme, tools, attribution.", mimeType: "text/markdown" },
     async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: await llmsTxt(sql) }] }));
 

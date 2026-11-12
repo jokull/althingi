@@ -22,13 +22,14 @@ export const CLIENTS: { id: string; name: string; steps: string; code?: string }
 ];
 
 export const URL_SCHEME: [string, string][] = [
-  ["/raeda/{speech_id}", "a speech, e.g. /raeda/rad20180306T163325; paragraphs anchor as #mgr-N"],
+  ["/raedur/{speech_id}", "a speech, e.g. /raedur/rad20180306T163325; paragraphs anchor as #mgr-N"],
   ["/mal/{lthing}/{a|b}/{nr}", "a matter (þingmál), e.g. /mal/157/a/300; /umraeda = the whole debate on one page"],
-  ["/thingmadur/{member_id}", "a member of parliament"],
-  ["/flokkur/{party_id}", "a party"],
+  ["/thingmenn/{member_id}", "a member of parliament"],
+  ["/flokkar/{party_id}", "a party"],
   ["/log/{year}/{nr}", "a law, e.g. /log/1991/34 (lög nr. 34/1991)"],
-  ["/thingskjal/{lthing}/{nr}", "a parliamentary document"],
-  ["/dagur/{YYYY-MM-DD}", "every speech of one sitting day"],
+  ["/thingskjol/{lthing}/{nr}", "a parliamentary document"],
+  ["/dagar/{YYYY-MM-DD}", "every speech of one sitting day"],
+  ["/thingmenn, /flokkar, /mal, /mal/{lthing}, /thingskjol, /thingskjol/{lthing}, /log, /log/{year}, /nefndir, /efni, /dagar, /dagar/{YYYY}, /raedur", "index pages: every directory lists what is under it (HTML). Singular paths from before 2026-11-12 (/raeda, /thingmadur, /flokkur, /dagur, /thingskjal, /nefnd) 301 here"],
   ["/leit.json?q=…", "search as JSON (same parameters as /leit; cursor-paged, up to 100 per page)"],
 ];
 
@@ -92,7 +93,7 @@ ${tools.map((t) => `### ${t.name}${t.title ? ` — ${t.title}` : ""}\n\n${t.desc
 
 ## Resources
 
-Resource templates (text/markdown) with the same https URLs as the pages: ${SITE}/raeda/{speech_id}.md, ${SITE}/mal/{lthing}/{class}/{nr}.md, ${SITE}/thingmadur/{member_id}.md, ${SITE}/log/{year}/{nr}.md, ${SITE}/dagur/{date}.md.
+Resource templates (text/markdown) with the same https URLs as the pages: ${SITE}/raedur/{speech_id}.md, ${SITE}/mal/{lthing}/{class}/{nr}.md, ${SITE}/thingmenn/{member_id}.md, ${SITE}/log/{year}/{nr}.md, ${SITE}/dagar/{date}.md.
 
 ## Glossary (orðskýringar)
 
@@ -249,7 +250,7 @@ export function openApi(version: string) {
     "/healthz": { get: { summary: "Health and ingest freshness", responses: { 200: { description: "ok", content: { "application/json": {} } } } } },
     "/llms.txt": { get: { summary: "Guide for language models", responses: { 200: { description: "Markdown", content: { "text/markdown": {} } } } } },
   };
-  for (const [p, s] of [["/raeda/{speech_id}.md", "A speech"], ["/mal/{lthing}/{class}/{nr}.md", "A matter"], ["/thingmadur/{member_id}.md", "A member"], ["/log/{year}/{nr}.md", "A law"], ["/dagur/{date}.md", "A sitting day"]] as const) {
+  for (const [p, s] of [["/raedur/{speech_id}.md", "A speech"], ["/mal/{lthing}/{class}/{nr}.md", "A matter"], ["/thingmenn/{member_id}.md", "A member"], ["/log/{year}/{nr}.md", "A law"], ["/dagar/{date}.md", "A sitting day"]] as const) {
     const { _path: _, ...op } = md(s, p);
     const params = [...p.matchAll(/\{(\w+)\}/g)].map((m) => ({ name: m[1], in: "path", required: true, schema: { type: "string" } }));
     paths[p] = { get: { ...op.get, parameters: params } };
