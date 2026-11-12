@@ -102,6 +102,68 @@ artefacts (the SGML era is born-digital).
   shapes (`/altext/112/r1/1856.html`, `/altext/raeda/?lthing=107&rnr=1882`); the paper says speeches before 1991 carry
   a date only, no timestamp. We have no index rows before 115, so nothing to stitch onto; a pre-1991 corpus would be a
   new-row ingest keyed on those URLs with a new id scheme, with member ids from `listPerson` — a separate decision.
+  Scoped in §8 (not actioned).
+
+## 8. Going back before 1991 (scoped 2026-11-12, not actioned)
+
+The owner asked whether the corpus can reach further back than session 115 (October 1991). It can, from IGC alone,
+without fetching anything from althingi.is beyond the XML service. This section records the plan and its cost in case
+the scope is widened. Nothing below has been started.
+
+**State on 2026-11-12.** The corpus covers sessions 115–158 with 349,471 speeches that have text. The database is
+13 GB. The mini has about 22 GB free. The `members` table goes back to session 92 (691 members), and nothing exists
+before session 115. Only `1991/`–`2004/` of IGC-Parla 2026 are unpacked in `~/althingi/igc/`, and the zip itself was
+deleted after unpacking.
+
+**Steps**
+
+1. **Re-fetch IGC-Parla 2026.** It is `IGC-Parla-2026.TEI.zip` (631 MB, md5 above) from CLARIN-IS
+   (hdl.handle.net/20.500.12537/393). CLARIN-IS is not althingi.is, so the mini may fetch it, or a person can download
+   it in a browser. Unpack `1909/`–`1990/` one decade at a time, or read entries straight from the zip, so the disk
+   never holds the whole tree.
+2. **Measure before loading** (no DB writes): per decade, count utterances, words, distinct `who`/`nfaerslunr` and
+   chamber files. That turns the size estimate below into a measured number.
+3. **Members and seats for sessions 1–114,** from the XML service only: one `thingmenn/?lthing=N` per session plus
+   one `thingseta/?nr=` per member who is new. That is a few hundred requests, about 1–2 h at the 5 s crawl delay,
+   under the crawl lock. It gives party-at-date for aggregates and filters.
+4. **A new kind of row: IGC speeches with nothing in Alþingi's index to attach to.** So far the import only fills
+   text into rows the Alþingi index created. Before 1991 there is no index, so rows must be created from IGC:
+   - id: from the `<u source>` URL (shapes `/altext/112/r1/1856.html`, `/altext/raeda/?lthing=107&rnr=1882`), or
+     from the IGC `xml:id` where there is no URL;
+   - member: from `nfaerslunr`;
+   - date: from the file name;
+   - sitting: from the file;
+   - matter: from `#issue` where present;
+   - `text_source = 'igc-parla-2026'` and `index_source = 'igc'`.
+
+   Extend `src/igc.ts` with a create-rows mode for `--from 1 --to 114`; the 1991–2004 stitching rules stay as they are.
+5. Run `post`, then update the boundary wording, which is currently "frá 115. þingi (október 1991)": `TEXT_ERA` in
+   `src/mcp-tools.ts`, plus `agent-docs.ts`, `markdown.ts`, `pages.tsx` and `agent-pages.tsx`.
+
+**What these rows lack, compared with Alþingi rows**
+
+- **Time:** dates only (the IGC paper: no timestamps before 1991). The `started` column takes midnight plus the
+  utterance order, and pages show the date only.
+- **Speech data:** no speech type, no debate round, no end time. The matter is known only where IGC tags `#issue`.
+- **Chamber:** until 1991 Alþingi had two chambers plus a combined session (efri deild, neðri deild, sameinað
+  þing). That needs a new column (e.g. `chamber`) on speeches and speech_index, and a filter.
+- **Text quality:** older decades are OCR'd from Alþingistíðindi. Expect noisy text and weaker lemma matching from
+  1909 to roughly the 1970s.
+- **Links:** most of these rows have no althingi.is deeplink.
+
+**Disk is the binding constraint.** 13 GB holds about 350k speeches, so roughly 37 KB per speech, all tables and
+indexes included. IGC has about 613k speeches in total, so roughly 260–270k fall before 1991. Loading all of them
+would add about **8–10 GB** and leave the mini with about 12 GB free (it was at about 94 % disk use on 2026-11-11).
+Options:
+
+- **(a) Everything, 1909–1990:** about 8–10 GB.
+- **(b) From about 1959 on:** about half the cost, and the cleaner OCR.
+- **(c) Everything, but lean for the old era (recommended at scoping):** load `paragraphs` and `speech_index` (FTS
+  and the GIN index), but skip `paragraph_tokens` / `paragraph_index` positions for era = `igc-pre1991`. That roughly
+  halves the size. Phrase and proximity search over pre-1991 text falls back to slower verification; everything else
+  works.
+
+If step 2's measurement shows a tighter disk than estimated, fall back from (c) to (b).
 
 ## 7. Deploy steps (owner)
 
