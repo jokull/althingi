@@ -102,9 +102,9 @@ artefacts (the SGML era is born-digital).
   shapes (`/altext/112/r1/1856.html`, `/altext/raeda/?lthing=107&rnr=1882`); the paper says speeches before 1991 carry
   a date only, no timestamp. We have no index rows before 115, so nothing to stitch onto; a pre-1991 corpus would be a
   new-row ingest keyed on those URLs with a new id scheme, with member ids from `listPerson` — a separate decision.
-  Scoped in §8 (not actioned).
+  Scoped in §7 (not actioned).
 
-## 8. Going back before 1991 (scoped 2026-11-12, not actioned)
+## 7. Going back before 1991 (scoped 2026-11-12, not actioned)
 
 The owner asked whether the corpus can reach further back than session 115 (October 1991). It can, from IGC alone,
 without fetching anything from althingi.is beyond the XML service. This section records the plan and its cost in case
@@ -165,7 +165,7 @@ Options:
 
 If step 2's measurement shows a tighter disk than estimated, fall back from (c) to (b).
 
-## 7. Deploy steps (owner)
+## 8. Deploy steps (owner)
 
 1. Merge; `bun install` on the mini if needed. No migration (all columns exist since 0006).
 2. Download `IGC-Parla-2026.TEI.zip` from the handle (a person in a browser, as for the Alþingi dump), verify the md5,
