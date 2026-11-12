@@ -18,7 +18,7 @@ fixture `fixtures/igc/` (CC BY excerpt, see its `LICENCE`).
 
 **Verdict: public display + MCP redistribution of derived text is permitted.** CC BY 4.0 asks only for credit, a licence
 link and a note of changes. Attribution text (shipped in `/um` and `ATTRIBUTION` for llms.txt; the MCP `corpus`
-block and the Markdown footer get the same sentence at deploy time, §7):
+block and the Markdown footer get the same sentence at deploy time, §8):
 
 > Ræðutexti 1991–2004 (þar sem hann er til): Íslenska risamálheildin, þingræðumálheild (IGC-Parla 2026), Stofnun Árna
 > Magnússonar í íslenskum fræðum, CC BY 4.0, http://hdl.handle.net/20.500.12537/393 (klippt úr TEI-skrám, málsgreinaskipt).
